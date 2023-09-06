@@ -7,8 +7,8 @@
 #include "Tensor.hpp"
 
 namespace TensorHetero{
-template<typename datatype, size_t dimension>
-class DenseTensor: public Tensor<datatype, dimension>{
+template<typename datatype, size_t dimension, typename device, typename comm>
+class DenseTensor: public Tensor<datatype, dimension, device, comm>{
 public:
     std::vector<datatype> data;
 
@@ -23,12 +23,12 @@ public:
     //operator=
 
     void insert_value(std::array<size_t, dimension> index, datatype value);
-    DenseTensor<datatype, dimension> clone() {return DenseTensor<datatype, dimension> (this->shape, this->data); };
+    DenseTensor<datatype, dimension, device, comm> clone() {return DenseTensor<datatype, dimension, device, comm> (this->shape, this->data); };
 
 };
 
-template <typename datatype, size_t dimension>
-DenseTensor<datatype, dimension>::DenseTensor(std::array<size_t, dimension> shape){
+template <typename datatype, size_t dimension, typename device, typename comm>
+DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape){
     this->shape = shape;
     //cumulative product
     this->shape_mult[0] = 1;
@@ -40,8 +40,8 @@ DenseTensor<datatype, dimension>::DenseTensor(std::array<size_t, dimension> shap
     this->data = std::vector<datatype>(this->shape_mult[dimension], 0);
 }
 
-template <typename datatype, size_t dimension>
-DenseTensor<datatype, dimension>::DenseTensor(std::array<size_t, dimension> shape, std::vector<datatype> data){
+template <typename datatype, size_t dimension, typename device, typename comm>
+DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape, std::vector<datatype> data){
     this->shape = shape;
     //cumulative product
     this->shape_mult[0] = 1;
@@ -54,8 +54,8 @@ DenseTensor<datatype, dimension>::DenseTensor(std::array<size_t, dimension> shap
     this->data = data;
 }
 
-template <typename datatype, size_t dimension>
-datatype &DenseTensor<datatype, dimension>::operator()(const std::array<size_t, dimension> index){
+template <typename datatype, size_t dimension, typename device, typename comm>
+datatype &DenseTensor<datatype, dimension, device, comm>::operator()(const std::array<size_t, dimension> index){
     // combined index : index[0] + index[1] * dims[0] + index[2] * dimes[0] * dims[1] + ...
     // i.e. 2D matrix : column major, i + row*j
     size_t combined_index = 0;
@@ -65,13 +65,13 @@ datatype &DenseTensor<datatype, dimension>::operator()(const std::array<size_t, 
     return this->data[combined_index];
 }
 
-template <typename datatype, size_t dimension>
-datatype &DenseTensor<datatype, dimension>::operator[](size_t index){
+template <typename datatype, size_t dimension, typename device, typename comm>
+datatype &DenseTensor<datatype, dimension, device, comm>::operator[](size_t index){
     return this->data[index];
 }
 /*
-template <typename datatype, size_t dimension>
-DenseTensor<datatype, dimension> operator+(DenseTensor<datatype, dimension>& a, DenseTensor<datatype, dimension>& b){
+template <typename datatype, size_t dimension, typename device, typename comm>
+DenseTensor<datatype, dimension, device, comm> operator+(DenseTensor<datatype, dimension, device, comm>& a, DenseTensor<datatype, dimension, device, comm>& b){
     if (a.shape != b.shape){
         std::cout << "Can't subtract tensor having different shape." << std::endl;
         exit(-1);
@@ -82,8 +82,8 @@ DenseTensor<datatype, dimension> operator+(DenseTensor<datatype, dimension>& a, 
     return result;
 }
 
-template <typename datatype, size_t dimension>
-DenseTensor<datatype, dimension> operator-(DenseTensor<datatype, dimension>& a, DenseTensor<datatype, dimension>& b){
+template <typename datatype, size_t dimension, typename device, typename comm>
+DenseTensor<datatype, dimension> operator-(DenseTensor<datatype, dimension, device, comm>& a, DenseTensor<datatype, dimension, device, comm>& b){
     if (a.shape != b.shape){
         std::cout << "Can't subtract tensor having different shape." << std::endl;
         exit(-1);
@@ -96,8 +96,8 @@ DenseTensor<datatype, dimension> operator-(DenseTensor<datatype, dimension>& a, 
 */
 
 /*
-template <class datatype, size_t dimension>
-DenseTensor<datatype, dimension>& DenseTensor<datatype, dimension>::operator=(const DenseTensor<datatype, dimension>& tensor){
+template <class datatype, size_t dimension, typename device, typename comm>
+DenseTensor<datatype, dimension>& DenseTensor<datatype, dimension, device, comm>::operator=(const DenseTensor<datatype, dimension, device, comm>& tensor){
     this->shape = tensor.shape;
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0 );
@@ -107,8 +107,8 @@ DenseTensor<datatype, dimension>& DenseTensor<datatype, dimension>::operator=(co
 }
 */
 
-template <typename datatype, size_t dimension>
-void DenseTensor<datatype, dimension>::insert_value(std::array<size_t, dimension> index, datatype value){
+template <typename datatype, size_t dimension, typename device, typename comm>
+void DenseTensor<datatype, dimension, device, comm>::insert_value(std::array<size_t, dimension> index, datatype value){
     this->operator()(index) = value;
     return;
 }

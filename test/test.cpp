@@ -3,8 +3,13 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include "Comm.hpp"
+#include "Device.hpp"
 
 int main(){
+    TensorHetero::Device device;
+    TensorHetero::Comm<double, TensorHetero::Device> comm;
+
     std::cout << "Matrix muliplication test" << std::endl;
     size_t m, k, n;
     m = 4;
@@ -38,7 +43,7 @@ int main(){
 
     std::cout << "DenseTensor Operator test" << std::endl;
     std::array<size_t,4> shape = {1,3,2,4};
-    TensorHetero::DenseTensor<double,4> Aten = TensorHetero::DenseTensor<double,4>(shape);
+    TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm<double, TensorHetero::Device>> Aten = TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm<double, TensorHetero::Device>>(shape);
 
     std::vector<double> Bten_vec = {};
 
@@ -55,7 +60,7 @@ int main(){
         std::cout << Aten.shape_mult[i] << " ";
     }
     std::cout << std::endl;
-    TensorHetero::DenseTensor<double,4> Bten = TensorHetero::DenseTensor<double,4>(shape,Bten_vec);
+    TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm<double, TensorHetero::Device>> Bten = TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm<double, TensorHetero::Device>>(shape,Bten_vec);
     std::array<size_t,4> index_array = {0,1,1,2};
     std::cout << "0,1,1,2 : " << Bten(index_array) << std::endl;
     index_array[3]=0;
@@ -68,7 +73,7 @@ int main(){
         std::cout << Bten[i] << " " ;
     }
     std::cout << std::endl;
-    TensorHetero::DenseTensor<double,4> Cten = Bten.clone();
+    TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm<double, TensorHetero::Device>> Cten = Bten.clone();
     for(size_t i=0; i<Cten.data.size(); ++i){
         std::cout << Cten[i] << " " ;
     }

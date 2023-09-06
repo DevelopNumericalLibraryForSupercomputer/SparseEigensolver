@@ -1,10 +1,11 @@
 #pragma once
 #include <array>
 #include <iostream>
-
+#include "Device.hpp"
+#include "Comm.hpp"
 namespace TensorHetero{
 
-template<typename datatype, size_t dimension>
+template<typename datatype, size_t dimension, typename device, typename comm>
 class Tensor{
 public:
     std::array<size_t, dimension> shape;
