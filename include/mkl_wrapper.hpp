@@ -1,3 +1,4 @@
+#pragma once
 #include <complex>
 #define MKL_Complex16 std::complex<double>
 //#define MKL_Complex8  std::complex<float>

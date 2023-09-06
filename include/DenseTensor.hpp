@@ -4,6 +4,7 @@
 #include <vector>
 #include <cassert>
 #include "mkl_wrapper.hpp"
+#include "Tensor.hpp"
 
 namespace TensorHetero{
 template<typename datatype, size_t dimension>
