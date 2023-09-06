@@ -9,6 +9,7 @@
  *
  * BLAS
  *  gemm
+ *  daxpy
  */ 
 
 
@@ -36,4 +37,13 @@ void gemm<std::complex<double> >(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOS
                                  const std::complex<double> *b, const MKL_INT ldb, const std::complex<double> beta,
                                  std::complex<double> *c, const MKL_INT ldc)
 { return cblas_zgemm(Layout, transa, transb, m, n, k, (const void*) &alpha, (const void*) a, lda, (const void*) b, ldb, (const void*) &beta, (void*) c, ldc); }
+
+template <typename datatype>
+void axpy(const MKL_INT n, const datatype a, const datatype *x, const MKL_INT incx, datatype *y, const MKL_INT incy)
+{  static_assert(false,"This is not implemented yet"); }
+
+template<>
+void axpy<double>(const MKL_INT n, const double a, const double *x, const MKL_INT incx, double *y, const MKL_INT incy)
+{ return cblas_daxpy(n, a, x, incx, y, incy); }
+
 }

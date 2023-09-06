@@ -1,6 +1,6 @@
 #pragma once
 #include <array>
-#include <stdio.h>
+#include <iostream>
 
 namespace TensorHetero{
 
