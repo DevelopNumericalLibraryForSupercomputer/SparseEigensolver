@@ -1,13 +1,15 @@
 // communicator
 // 참고: https://sooftware.io/big-model2/
 // Chat-GPT 3.5
+// To-do : define operator. op link to MPI
+//         connect MPI datatype with datatype variable.
+#pragma once
 #include <iostream>
 #include <string>
 #include <mpi.h>
 //#include <nccl.h>
 
 namespace TensorHetero{
-//template <typename datatype>
 class Comm{
 private:
     // How can I initialize const size_t type variable using MPI_Comm_rank function????
@@ -30,9 +32,9 @@ public:
     const size_t get_world_size();
     const std::string get_comm_protocol();
 
-    //void allreduce<typename datatype> (datatype* src, Operator);       //int MPI_Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
-    //void all2all  <typename datatype> (datatype* src, datatype* trg);  //int MPI_Alltoall (void *sendbuf, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    //void allgather<typename datatype> (datatype* src, datatype* trg);  //int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    //template <typename datatype> void allreduce(datatype* src, Operator);       //int MPI_Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+    template <typename datatype> void alltoall (datatype* src, datatype* trg);  //int MPI_Alltoall (void *sendbuf, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    template <typename datatype> void allgather(datatype* src, datatype* trg);  //int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
 };
 
 Comm::Comm(const std::string &protocol){
@@ -59,6 +61,7 @@ Comm::Comm(const std::string &protocol){
         std::cout << "nccl is not implemented" << std::endl;
     }
 }
+
 Comm::Comm(int argc, char *argv[], const std::string &protocol){
     if (protocol == "mpi"){
         // Initialize MPI (assuming MPI_Init has been called before this)
@@ -72,6 +75,7 @@ Comm::Comm(int argc, char *argv[], const std::string &protocol){
         std::cout << "nccl is not implemented" << std::endl;
     }
 }
+
 Comm::~Comm(){
     if (comm_protocol == "mpi"){
         // Finialize MPI
@@ -83,22 +87,34 @@ Comm::~Comm(){
         ncclCommDestroy(nccl_communicator);
         */
     }
-    // Add more protocol-specific finalization here if needed
 }
-
 inline const size_t Comm::get_rank(){ return rank; }
 inline const size_t Comm::get_local_rank(){ return local_rank; }
 inline const size_t Comm::get_world_size(){ return world_size; }
 inline const std::string Comm::get_comm_protocol(){ return std::string(); }
+
 /*
 template <typename datatype>
 void Comm::allreduce(datatype *src, Operator){
+//int MPI_Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
+    MPI_Allreduce(src, trg, count, datatype, operator, MPI_COMM_WORLD);
 }
+*/
 template <typename datatype>
-void Comm::all2all(datatype *src, datatype *trg){
+void Comm::alltoall(datatype *src, datatype *trg){
+//int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    int sendcount, recvcount;
+    sendcount = src.length();
+    recvcount = sendcount;
+    MPI_Alltoall(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
 }
 template <typename datatype>
 void Comm::allgather(datatype *src, datatype *trg){
+//int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    int sendcount, recvcount;
+    sendcount = src.length();
+    recvcount = sendcount;
+    MPI_Allgather(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
 }
-*/
+
 }
