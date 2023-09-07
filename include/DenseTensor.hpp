@@ -1,7 +1,6 @@
 #pragma once
 #include <iostream>
 #include <array>
-#include <vector>
 #include <cassert>
 #include "mkl_wrapper.hpp"
 #include "Tensor.hpp"
@@ -10,17 +9,17 @@ namespace TensorHetero{
 template<typename datatype, size_t dimension, typename device, typename comm>
 class DenseTensor: public Tensor<datatype, dimension, device, comm>{
 public:
-    std::vector<datatype> data;
+    datatype* data;
 
     DenseTensor(){};
     DenseTensor(std::array<size_t, dimension> shape);
-    DenseTensor(std::array<size_t, dimension> shape, std::vector<datatype> data);
+    DenseTensor(std::array<size_t, dimension> shape, datatype* data);
 
     datatype& operator()(const std::array<size_t, dimension> index);
     datatype& operator[](size_t index);
     //operator+
     //operator-
-    //operator=
+    DenseTensor<datatype, dimension, device, comm>& operator=(const DenseTensor<datatype, dimension, device, comm> &tensor);
 
     void insert_value(std::array<size_t, dimension> index, datatype value);
     DenseTensor<datatype, dimension, device, comm> clone() {return DenseTensor<datatype, dimension, device, comm> (this->shape, this->data); };
@@ -37,11 +36,11 @@ DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, d
     }
     //cumulative product end
     assert(this->shape_mult[dimension] != 0);
-    this->data = std::vector<datatype>(this->shape_mult[dimension], 0);
+    this->data = new datatype[this->shape_mult[dimension]];
 }
 
 template <typename datatype, size_t dimension, typename device, typename comm>
-DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape, std::vector<datatype> data){
+DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape, datatype* data){
     this->shape = shape;
     //cumulative product
     this->shape_mult[0] = 1;
@@ -50,7 +49,8 @@ DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, d
     }
     //cumulative product end
     assert(this->shape_mult[dimension] != 0);
-    assert(this->shape_mult[dimension] == data.size() );
+    //assert(this->shape_mult[dimension] == data.size() ); We don't know.
+    
     this->data = data;
 }
 
@@ -95,17 +95,25 @@ DenseTensor<datatype, dimension> operator-(DenseTensor<datatype, dimension, devi
 }
 */
 
-/*
 template <class datatype, size_t dimension, typename device, typename comm>
-DenseTensor<datatype, dimension>& DenseTensor<datatype, dimension, device, comm>::operator=(const DenseTensor<datatype, dimension, device, comm>& tensor){
+DenseTensor<datatype, dimension, device, comm>& DenseTensor<datatype, dimension, device, comm>::operator=(const DenseTensor<datatype, dimension, device, comm>& tensor){
+    if(this == &tensor){
+        return *this;
+    }
     this->shape = tensor.shape;
-    cumprod<dimension>(this->shape, this->shape_mult);
+    this->shape_mult = tensor.shape_mult;
+    // cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0 );
-    this->data = tensor.data;
 
+    delete[] this->data;
+    this->data = new datatype[this->shape_mult[dimension]];
+    #pragma omp parallel for
+    for(size_t i=0; i<this->shape_mult[dimension]; ++i){
+        this->data[i] = tensor[i];
+    }
     return *this;
 }
-*/
+
 
 template <typename datatype, size_t dimension, typename device, typename comm>
 void DenseTensor<datatype, dimension, device, comm>::insert_value(std::array<size_t, dimension> index, datatype value){
