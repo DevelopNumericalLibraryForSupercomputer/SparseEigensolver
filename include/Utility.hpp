@@ -30,9 +30,6 @@ void free<float, CPU>(float* ptr) {
 template <size_t dimension>
 void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing="F");
 
-
-
-
 template <size_t dimension>
 void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing){
     /* Ex1)

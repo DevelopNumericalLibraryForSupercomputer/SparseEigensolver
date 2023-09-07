@@ -29,12 +29,7 @@ public:
 template <typename datatype, size_t dimension, typename device, typename comm>
 DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape){
     this->shape = shape;
-    //cumulative product
-    this->shape_mult[0] = 1;
-    for(size_t i = 0; i < dimension; ++i){
-        this->shape_mult[i+1] = this->shape_mult[i] * shape[i];
-    }
-    //cumulative product end
+    cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     this->data = new datatype[this->shape_mult[dimension]];
 }
@@ -42,15 +37,9 @@ DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, d
 template <typename datatype, size_t dimension, typename device, typename comm>
 DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, dimension> shape, datatype* data){
     this->shape = shape;
-    //cumulative product
-    this->shape_mult[0] = 1;
-    for(size_t i = 0; i < dimension; ++i){
-        this->shape_mult[i+1] = this->shape_mult[i] * shape[i];
-    }
-    //cumulative product end
+    cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     //assert(this->shape_mult[dimension] == data.size() ); We don't know.
-    
     this->data = data;
 }
 
