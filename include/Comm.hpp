@@ -27,14 +27,14 @@ public:
     Comm(int argc, char *argv[], const std::string &protocol);
     ~Comm();
 
-    const size_t get_rank();
-    const size_t get_local_rank();
-    const size_t get_world_size();
-    const std::string get_comm_protocol();
+    const size_t get_rank(){ return rank; };
+    const size_t get_local_rank(){ return local_rank; };
+    const size_t get_world_size(){ return world_size; };
+    const std::string get_comm_protocol(){ return comm_protocol; };
 
-    //template <typename datatype> void allreduce(datatype* src, Operator);       //int MPI_Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
-    template <typename datatype> void alltoall (datatype* src, datatype* trg);  //int MPI_Alltoall (void *sendbuf, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    template <typename datatype> void allgather(datatype* src, datatype* trg);  //int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    //template <typename datatype> void allreduce(datatype* src, Operator);
+    template <typename datatype> void alltoall (datatype* src, datatype* trg);
+    template <typename datatype> void allgather(datatype* src, datatype* trg);
 };
 
 Comm::Comm(const std::string &protocol){
@@ -65,6 +65,7 @@ Comm::Comm(const std::string &protocol){
 Comm::Comm(int argc, char *argv[], const std::string &protocol){
     if (protocol == "mpi"){
         // Initialize MPI (assuming MPI_Init has been called before this)
+        MPI_Init(&argc, &argv);
         int tmp_rank, tmp_world_size;
         MPI_Comm_rank(MPI_COMM_WORLD, &tmp_rank);
         MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
@@ -88,10 +89,6 @@ Comm::~Comm(){
         */
     }
 }
-inline const size_t Comm::get_rank(){ return rank; }
-inline const size_t Comm::get_local_rank(){ return local_rank; }
-inline const size_t Comm::get_world_size(){ return world_size; }
-inline const std::string Comm::get_comm_protocol(){ return std::string(); }
 
 /*
 template <typename datatype>
@@ -103,18 +100,21 @@ void Comm::allreduce(datatype *src, Operator){
 template <typename datatype>
 void Comm::alltoall(datatype *src, datatype *trg){
 //int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    int sendcount, recvcount;
-    sendcount = src.length();
-    recvcount = sendcount;
-    MPI_Alltoall(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
+    if (comm_protocol == "mpi"){
+        int sendcount = src.length();
+        int recvcount = tfg.length();
+        MPI_Alltoall(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
+    }
 }
 template <typename datatype>
 void Comm::allgather(datatype *src, datatype *trg){
 //int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    int sendcount, recvcount;
-    sendcount = src.length();
-    recvcount = sendcount;
-    MPI_Allgather(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
+    if (comm_protocol == "mpi"){
+        int sendcount = src.length();
+        int recvcount = tfg.length();
+        recvcount = sendcount = src.length();
+        MPI_Allgather(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
+    }
 }
 
 }
