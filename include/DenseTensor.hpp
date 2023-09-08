@@ -5,7 +5,7 @@
 #include "mkl_wrapper.hpp"
 #include "Tensor.hpp"
 #include "Utility.hpp"
-
+#include "DecomposeResult.hpp"
 namespace TensorHetero{
 template<typename datatype, size_t dimension, typename device, typename comm>
 class DenseTensor: public Tensor<datatype, dimension, device, comm>{
@@ -24,6 +24,7 @@ public:
 
     void insert_value(std::array<size_t, dimension> index, datatype value);
     DenseTensor<datatype, dimension, device, comm> clone() {return DenseTensor<datatype, dimension, device, comm> (this->shape, this->data); };
+    DecomposeResult<datatype, dimension, device> decompose(std::string method);
 
 };
 
@@ -111,5 +112,9 @@ void DenseTensor<datatype, dimension, device, comm>::insert_value(std::array<siz
     return;
 }
 
-
+template <typename datatype, size_t dimension, typename device, typename comm>
+DecomposeResult<datatype, dimension, device> DenseTensor<datatype, dimension, device, comm>::decompose(std::string method){
+    std::cout << method << " is not implemented yet." << std::endl;
+    exit(-1);
+}
 };
