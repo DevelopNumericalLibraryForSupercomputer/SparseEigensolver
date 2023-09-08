@@ -99,7 +99,7 @@ DenseTensor<datatype, dimension, device, comm>& DenseTensor<datatype, dimension,
     this->data = new datatype[this->shape_mult[dimension]];
     #pragma omp parallel for
     for(size_t i=0; i<this->shape_mult[dimension]; ++i){
-        this->data[i] = tensor[i];
+        this->data[i] = tensor.data[i];
     }
     return *this;
 }

@@ -33,8 +33,8 @@ public:
     const std::string get_comm_protocol(){ return comm_protocol; };
 
     //template <typename datatype> void allreduce(datatype* src, Operator);
-    template <typename datatype> void alltoall (datatype* src, datatype* trg);
-    template <typename datatype> void allgather(datatype* src, datatype* trg);
+    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
 
 Comm::Comm(const std::string &protocol){
@@ -98,23 +98,26 @@ void Comm::allreduce(datatype *src, Operator){
 }
 */
 template <typename datatype>
-void Comm::alltoall(datatype *src, datatype *trg){
+void Comm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    std::cout << "not implemented" << std::endl;
+}
+template <>
+void Comm::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
 //int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
     if (comm_protocol == "mpi"){
-        int sendcount = src.length();
-        int recvcount = tfg.length();
-        MPI_Alltoall(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
-    }
-}
-template <typename datatype>
-void Comm::allgather(datatype *src, datatype *trg){
-//int MPI_Allgather(void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
-    if (comm_protocol == "mpi"){
-        int sendcount = src.length();
-        int recvcount = tfg.length();
-        recvcount = sendcount = src.length();
-        MPI_Allgather(src, sendcount, datatype, trg, recvcount, datatype, MPI_COMM_WORLD);
+        MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
     }
 }
 
+template <typename datatype>
+void Comm::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    std::cout << "not implemented" << std::endl;
+}
+template <>
+void Comm::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+//int MPI_Alltoall (void *sendbuf, int sendcount, MPI_Datatype sendtype, void *recvbuf, int recvcount, MPI_Datatype recvtype, MPI_Comm comm)
+    if (comm_protocol == "mpi"){
+        MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+    }
+}
 }
