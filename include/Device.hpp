@@ -1,12 +1,26 @@
 // Device information
-// Currently, only CPU case is implemented
 #pragma once
 #include <string>
 namespace TensorHetero{
 class Device{
-public:
+private:
     const std::string device_info;
-
+public:
     Device(){};
+    Device(const std::string info):device_info(info){};
+    
+    const std::string get_device_info(){ return device_info; };
+};
+
+class CPU: public Device{
+public:
+    CPU() : Device("CPU"){};
+};
+
+class GPU: public Device{
+public:
+    GPU() : Device("GPU"){};
 };
 }
+
+

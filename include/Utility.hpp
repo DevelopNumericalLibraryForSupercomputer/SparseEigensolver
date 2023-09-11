@@ -2,36 +2,30 @@
 #pragma once
 #include <iostream>
 #include <cstdlib>
+#include "Device.hpp"
 
 namespace TensorHetero {
 //memory allocation
 // Generic malloc and free functions (default)
 template<typename datatype, typename device>
 datatype* malloc(const size_t size) { return new datatype[size]; }
+
 template<typename datatype, typename device>
 void free(datatype* ptr) {   delete[] ptr; }
 
-/*
 // Specialization for specific data types and devices
 template<>
-float* malloc<float, CPU>(const size_t size) {
-    // Implement CPU-specific allocation for float data type
-    // Example: Allocate memory on CPU
-    return static_cast<float*>(std::malloc(size * sizeof(float)));
+double* malloc<double, CPU>(const size_t size) {
+    return static_cast<double*>(std::malloc(size * sizeof(double)));
 }
 template<>
-void free<float, CPU>(float* ptr) {
-    // Implement CPU-specific deallocation for float data type
-    // Example: Free memory on CPU
+void free<double, CPU>(double* ptr) {
     std::free(ptr);
 }
-*/
+
 //numerical recipies
 template <size_t dimension>
-void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing="F");
-
-template <size_t dimension>
-void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing){
+void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing="F"){
     /* Ex1)
      * shape = {2, 3, 4}, indexing="F"
      * shape_mult = {1, 2, 6, 24}
