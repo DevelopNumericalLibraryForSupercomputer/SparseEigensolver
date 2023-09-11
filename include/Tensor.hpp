@@ -14,5 +14,8 @@ public:
     virtual void complete(){};
     virtual bool get_filled() {return true;};
     virtual void insert_value(std::array<size_t, dimension> index, datatype value) = 0;
+        
+    //virtual datatype* unfold(Tensor<datatype,dimension,device,comm> tensor, size_t axis){};
+    //virtual datatype* fold(Tensor<datatype,dimension,device,comm> tensor, size_t axis){};
 };
 }

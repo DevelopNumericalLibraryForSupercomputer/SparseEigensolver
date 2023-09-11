@@ -22,6 +22,8 @@ public:
     //operator-
     DenseTensor<datatype, dimension, device, comm>& operator=(const DenseTensor<datatype, dimension, device, comm> &tensor);
 
+    //void complete()){};
+    //bool get_filled() {return true;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
     DenseTensor<datatype, dimension, device, comm> clone() {return DenseTensor<datatype, dimension, device, comm> (this->shape, this->data); };
     DecomposeResult<datatype, dimension, device> decompose(std::string method);
