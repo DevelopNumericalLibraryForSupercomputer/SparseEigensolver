@@ -20,8 +20,10 @@ public:
 	// size_t -> size_t
 	virtual const size_t get_global_index(const size_t local_index) = 0;
 	virtual const size_t get_local_index(const size_t global_index) = 0;
+
+	Comm* get_comm(){return comm;};
 	
-private:
+protected:
 	Comm* comm;
 };
 

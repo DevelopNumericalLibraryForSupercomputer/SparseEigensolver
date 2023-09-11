@@ -37,7 +37,7 @@ public:
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
 
-Comm::Comm(const std::string &protocol){
+Comm::Comm(const std::string &protocol) : comm_protocol(protocol){
     if (protocol == "mpi"){
         // Initialize MPI (assuming MPI_Init has been called before this)
         int tmp_rank, tmp_world_size;
@@ -45,7 +45,6 @@ Comm::Comm(const std::string &protocol){
         MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
         rank = tmp_rank;
         world_size = tmp_world_size;
-        comm_protocol = protocol;
     }
     else if (protocol == "nccl") {
         /* Check the following lines are correct
@@ -62,7 +61,7 @@ Comm::Comm(const std::string &protocol){
     }
 }
 
-Comm::Comm(int argc, char *argv[], const std::string &protocol){
+Comm::Comm(int argc, char *argv[], const std::string &protocol) : comm_protocol(protocol){
     if (protocol == "mpi"){
         // Initialize MPI (assuming MPI_Init has been called before this)
         MPI_Init(&argc, &argv);
@@ -71,6 +70,7 @@ Comm::Comm(int argc, char *argv[], const std::string &protocol){
         MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
         rank = tmp_rank;
         world_size = tmp_world_size;
+        std::cout << "rank = " << tmp_rank << ", world_size = " << tmp_world_size << std::endl;
     }
     else {
         std::cout << "nccl is not implemented" << std::endl;

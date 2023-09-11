@@ -4,9 +4,10 @@
 #include <array>
 #include <iostream>
 #include "Device.hpp"
+#include "ContiguousMap.hpp"
 
-int main(){
-    TensorHetero::Device device;
+int main(int argc, char* argv[]){
+    TensorHetero::CPU device;
 
     std::cout << "Matrix muliplication test" << std::endl;
     size_t m, k, n;
@@ -79,8 +80,31 @@ int main(){
     Cten = Aten;
     for(size_t i=0; i<Cten.shape_mult[4]; ++i){
         std::cout << Cten[i] << " " ;
-    }   
+    }
+    Aten = Cten.clone();
+    for(size_t i=0; i<Aten.shape_mult[4]; ++i){
+        std::cout << Aten[i] << " " ;
+    }
+    std::cout << std::endl;
 
+    std::cout << "ContiguousMap test" << std::endl;
+    TensorHetero::Comm* comm = new TensorHetero::Comm(argc, argv, "mpi");
 
+    std::array<size_t,3> shape3 = {1,4,4};
+    TensorHetero::ContiguousMap<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
+    
+    if(comm->get_rank() == 0){
+        std::cout << "initiliazed map" << std::endl;
+        std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
+    }
+    std::cout << "rank " << comm->get_rank() << ", nge : " << cont_map->num_global_elements << ", nme : " << cont_map->num_global_elements << ", fge : "<< cont_map->first_global_index << std::endl;
+    
+    for(int index=0; index<cont_map->num_my_elements ;index++){
+        std::cout << "rank " << comm->get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
+    
+    }
+    delete cont_map;
+    delete comm;
+    std::cout << "After free" << std::endl;
     return 0;
 }
