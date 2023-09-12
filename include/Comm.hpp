@@ -10,6 +10,13 @@
 //#include <nccl.h>
 
 namespace TensorHetero{
+enum TH_op{ //operator
+    TH_max,
+    TH_min,
+    TH_sum,
+    TH_prod
+};
+
 class Comm{
 private:
     // How can I initialize const size_t type variable using MPI_Comm_rank function????
@@ -32,7 +39,7 @@ public:
     const size_t get_world_size(){ return world_size; };
     const std::string get_comm_protocol(){ return comm_protocol; };
 
-    //template <typename datatype> void allreduce(datatype* src, Operator);
+    template <typename datatype> void allreduce(datatype *src, size_t count, datatype *trg, enum TH_op op);
     template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
@@ -90,13 +97,25 @@ Comm::~Comm(){
     }
 }
 
-/*
+
 template <typename datatype>
-void Comm::allreduce(datatype *src, Operator){
-//int MPI_Allreduce(void *sendbuf, void *recvbuf, int count, MPI_Datatype datatype, MPI_Op op, MPI_Comm comm)
-    MPI_Allreduce(src, trg, count, datatype, operator, MPI_COMM_WORLD);
+void Comm::allreduce(datatype *src, size_t count, datatype *trg, TH_op op){
+    std::cout << "not implemented" << std::endl;
 }
-*/
+
+template <>
+void Comm::allreduce(double *src, size_t count, double *trg, TH_op op){
+    if(comm_protocol == "mpi"){
+        switch (op){
+            case TH_sum:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
+            case TH_prod: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
+            case TH_max:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
+            case TH_min:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
+            default: std::cout << "WRONG OPERATION TYPE" << std::endl;
+        }
+    }
+}
+
 template <typename datatype>
 void Comm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
