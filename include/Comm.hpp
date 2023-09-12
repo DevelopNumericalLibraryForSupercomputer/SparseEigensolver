@@ -1,8 +1,3 @@
-// communicator
-// 참고: https://sooftware.io/big-model2/
-// Chat-GPT 3.5
-// To-do : define operator. op link to MPI
-//         connect MPI datatype with datatype variable.
 #pragma once
 #include <iostream>
 #include <string>

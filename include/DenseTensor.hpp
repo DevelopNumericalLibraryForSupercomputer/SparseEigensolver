@@ -35,7 +35,8 @@ DenseTensor<datatype, dimension, device, comm>::DenseTensor(std::array<size_t, d
     this->shape = shape;
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
-    this->data = new datatype[this->shape_mult[dimension]];
+    //this->data = new datatype[this->shape_mult[dimension]];
+    this->data = malloc<datatype, device>(this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename device, typename comm>
@@ -98,8 +99,10 @@ DenseTensor<datatype, dimension, device, comm>& DenseTensor<datatype, dimension,
     // cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0 );
 
-    delete[] this->data;
-    this->data = new datatype[this->shape_mult[dimension]];
+    //delete[] this->data;
+    //this->data = new datatype[this->shape_mult[dimension]];
+    free<datatype, device>(this->data);
+    this->data = malloc<datatype, device>(this->shape_mult[dimension]);
     #pragma omp parallel for
     for(size_t i=0; i<this->shape_mult[dimension]; ++i){
         this->data[i] = tensor.data[i];
