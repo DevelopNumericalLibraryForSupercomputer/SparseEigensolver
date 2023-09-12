@@ -91,15 +91,15 @@ int main(int argc, char* argv[]){
     TensorHetero::Comm* comm = new TensorHetero::Comm(argc, argv, "mpi");
 
     std::array<size_t,3> shape3 = {1,4,4};
-    TensorHetero::ContiguousMap<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
+    TensorHetero::Map<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
     
     if(comm->get_rank() == 0){
         std::cout << "initiliazed map" << std::endl;
         std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
     }
-    std::cout << "rank " << comm->get_rank() << ", nge : " << cont_map->num_global_elements << ", nme : " << cont_map->num_global_elements << ", fge : "<< cont_map->first_global_index << std::endl;
+    std::cout << "rank " << comm->get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
     
-    for(int index=0; index<cont_map->num_my_elements ;index++){
+    for(int index=0; index<cont_map->get_num_my_elements() ;index++){
         std::cout << "rank " << comm->get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
     
     }

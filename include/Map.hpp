@@ -22,9 +22,20 @@ public:
 	virtual const size_t get_local_index(const size_t global_index) = 0;
 
 	Comm* get_comm(){return comm;};
+	const size_t get_num_global_elements(){return num_global_elements;};
+	const size_t get_num_my_elements(){return num_my_elements;};
+	const size_t get_first_my_global_index(){return first_my_global_index;};
+	const size_t* get_element_size_list(){return element_size_list;};
 	
 protected:
 	Comm* comm;
+	std::array<size_t, dimension> tensor_total_size;
+    std::array<size_t, dimension+1> tensor_total_size_mult;
+    size_t num_global_elements = -1;
+    size_t num_my_elements = -1;
+    size_t first_my_global_index = -1;
+    size_t* element_size_list;
+
 };
 
 }

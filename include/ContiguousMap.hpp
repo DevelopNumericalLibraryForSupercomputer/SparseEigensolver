@@ -32,37 +32,31 @@ public:
     const size_t get_global_index(const size_t local_index);
     const size_t get_local_index(const size_t global_index);
     
-//private:
-    std::array<size_t, dimension> total_size;
-    std::array<size_t, dimension+1> total_size_mult;
-    size_t num_global_elements = -1;
-    size_t num_my_elements = -1;
-    size_t first_global_index = -1;
-    size_t* element_size_list;
-
+private:
     size_t tensor_to_array_index(std::array<size_t, dimension> tensor_index) const;
     std::array<size_t, dimension> array_to_tensor_index(size_t array_index) const;
     
 };
 
 template<size_t dimension>
-ContiguousMap<dimension>::ContiguousMap(std::array<size_t,dimension> total_size, Comm *comm) : Map<dimension>(comm), total_size(total_size){
-    cumprod(total_size, total_size_mult);
-    num_global_elements = total_size_mult[dimension];
+ContiguousMap<dimension>::ContiguousMap(std::array<size_t,dimension> total_size, Comm *comm) : Map<dimension>(comm){
+    this->tensor_total_size = total_size;
+    cumprod(total_size, this->tensor_total_size_mult);
+    this->num_global_elements = this->tensor_total_size_mult[dimension];
     const size_t rank = comm->get_rank();
     const size_t world_size = comm->get_world_size();
 
-    size_t quotient  = num_global_elements / world_size;
-    size_t remainder = num_global_elements % world_size;
-    element_size_list = new size_t[world_size];
-    first_global_index = 0;
+    size_t quotient  = this->num_global_elements / world_size;
+    size_t remainder = this->num_global_elements % world_size;
+    this->element_size_list = new size_t[world_size];
+    this->first_my_global_index = 0;
     for(size_t i = 0; i < world_size; ++i){
-        element_size_list[i] = ( i>=remainder ) ? quotient : quotient + 1;
+        this->element_size_list[i] = ( i>=remainder ) ? quotient : quotient + 1;
         if(i<rank) {
-            first_global_index += element_size_list[i];
+            this->first_my_global_index += this->element_size_list[i];
         }
     }
-    num_my_elements = element_size_list[rank];
+    this->num_my_elements = this->element_size_list[rank];
 
 };
 
@@ -109,12 +103,12 @@ const size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, 
 // size_t -> size_t
 template<size_t dimension>
 const size_t ContiguousMap<dimension>::get_global_index(const size_t local_index){
-    return first_global_index + local_index;
+    return this->first_my_global_index + local_index;
 }
 template <size_t dimension>
 const size_t ContiguousMap<dimension>::get_local_index(const size_t global_index){
-    size_t local_index = global_index - first_global_index;
-    if(local_index < 0 || local_index > num_my_elements-1){
+    size_t local_index = global_index - this->first_my_global_index;
+    if(local_index < 0 || local_index > this->num_my_elements-1){
         std::cout << "invalid global index in rank = " << this->comm->get_rank() << std::endl;
         exit(-1);
     }
@@ -122,7 +116,7 @@ const size_t ContiguousMap<dimension>::get_local_index(const size_t global_index
 
 }
 
-/* example
+/* example T_234
 i, j, k = index
 0, 0, 0 = 0
 1, 0, 0 = 1
@@ -155,21 +149,21 @@ size_t ContiguousMap<dimension>::tensor_to_array_index(std::array<size_t, dimens
     size_t return_index = 0;
     size_t multiplier = 1;
     for(size_t dim = 0; dim < dimension; ++dim){
-        assert(tensor_index[dim] >= total_size[dim]);
+        assert(tensor_index[dim] >= this->tensor_total_size[dim]);
         return_index += tensor_index[dim] * multiplier;
-        multiplier *= total_size[dim];
+        multiplier *= this->tensor_total_size[dim];
     }
     return return_index;
 }
 
 template <size_t dimension>
 std::array<size_t, dimension> ContiguousMap<dimension>::array_to_tensor_index(size_t array_index) const {
-    assert(array_index < num_global_elements);
+    assert(array_index < this->num_global_elements);
     size_t input_index = array_index;
     std::array<size_t, dimension> return_index;
     for(size_t dim = 0; dim <dimension; ++dim){
-        return_index[dim] = input_index % total_size[dim];
-        input_index /= total_size[dim];
+        return_index[dim] = input_index % this->tensor_total_size[dim];
+        input_index /= this->tensor_total_size[dim];
     }
     return return_index;
 
