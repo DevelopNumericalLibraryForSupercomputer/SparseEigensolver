@@ -1,6 +1,6 @@
 #pragma once
 #include "Map.hpp"
-#include "Utility.hpp"
+#include "Utility_include.hpp"
 namespace TH{
 template<size_t dimension>
 class ContiguousMap: public Map<dimension>{

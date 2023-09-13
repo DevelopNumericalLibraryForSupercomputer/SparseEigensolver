@@ -3,7 +3,7 @@
 #include <string>
 
 namespace TH{
-enum TH_op{ //operator
+enum TH_op{//opertor for allreduce
     MAX,
     MIN,
     SUM,

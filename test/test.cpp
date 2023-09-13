@@ -5,7 +5,7 @@
 #include <iostream>
 #include "Device.hpp"
 #include "ContiguousMap.hpp"
-#include "Utility.hpp"
+#include "Utility_include.hpp"
 #include <iomanip>
 #include "MpiComm.hpp"
 
@@ -35,12 +35,12 @@ int main(int argc, char* argv[]){
     int myrank = comm.get_rank();
     int nprocs = comm.get_world_size();
         
-    int n=100000;
+    int nn=100000;
     double step = 0.00001;
     
-    int myinit = myrank*(n/nprocs);
-    int myfin =  (myrank+1)*(n/nprocs)-1;
-    if(myfin > n) myfin = n;
+    int myinit = myrank*(nn/nprocs);
+    int myfin =  (myrank+1)*(nn/nprocs)-1;
+    if(myfin > nn) myfin = nn;
     if(myrank == 0) { std::cout << "allreduce test" << std::endl;}
     MPI_Barrier(MPI_COMM_WORLD);
     std::cout << "myrank : " << myrank << ", myinit : " << myinit << ", myfin : " << myfin << std::endl;
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
     sum = tsum = 0;
     MPI_Barrier(MPI_COMM_WORLD);
-    for(int i = myrank ; i<n ;i=i+nprocs){
+    for(int i = myrank ; i<nn ;i=i+nprocs){
         x = ((double)i+0.5)*step;
         sum = sum + 4.0/(1.0+x*x);
     }
@@ -85,8 +85,8 @@ int main(int argc, char* argv[]){
         }
     }
     comm.barrier();
-    /*
-    if(comm.get_rank() == 0){
+    
+    //if(comm.get_rank() == 0){
         std::cout << "Matrix muliplication test" << std::endl;
         size_t m, k, n;
         m = 4;
@@ -120,8 +120,8 @@ int main(int argc, char* argv[]){
 
         std::cout << "DenseTensor Operator test" << std::endl;
         std::array<size_t,4> shape = {1,3,2,4};
-        TH::DenseTensor<double,4,TH::Device,TH::Comm> Aten = TH::DenseTensor<double,4,TH::Device,TH::Comm>(shape);
-
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Aten = TH::DenseTensor<double,4,TH::CPU,TH::Comm>(shape);
+    
         std::vector<double> Bten_vec = {};
 
         std::cout << 1*3*2*4 << " : ";
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]){
             std::cout << Aten.shape_mult[i] << " ";
         }
         std::cout << std::endl;
-        TH::DenseTensor<double,4,TH::Device,TH::Comm> Bten = TH::DenseTensor<double,4,TH::Device,TH::Comm>(shape,Bten_vec.data());
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Bten = TH::DenseTensor<double,4,TH::CPU,TH::Comm>(shape,Bten_vec.data());
         std::array<size_t,4> index_array = {0,1,1,2};
         std::cout << "0,1,1,2 : " << Bten(index_array) << std::endl;
         index_array[3]=0;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
             std::cout << Bten[i] << " " ;
         }
         std::cout << std::endl;
-        TH::DenseTensor<double,4,TH::Device,TH::Comm> Cten = Bten.clone();
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Cten = Bten.clone();
         for(size_t i=0; i<Cten.shape_mult[4]; ++i){
             std::cout << Cten[i] << " " ;
         }
@@ -165,8 +165,9 @@ int main(int argc, char* argv[]){
         }
         std::cout << std::endl;
 
-    }
-    */
+    //}
+    comm.barrier();
+    comm.~MPIComm();
     std::cout << "test" << std::endl;
     return 0;
 }

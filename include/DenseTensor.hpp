@@ -4,7 +4,7 @@
 #include <cassert>
 #include "mkl_wrapper.hpp"
 #include "Tensor.hpp"
-#include "Utility.hpp"
+#include "Utility_include.hpp"
 #include "DecomposeResult.hpp"
 namespace TH{
 template<typename datatype, size_t dimension, typename device, typename comm>
@@ -103,10 +103,7 @@ DenseTensor<datatype, dimension, device, comm>& DenseTensor<datatype, dimension,
     //this->data = new datatype[this->shape_mult[dimension]];
     free<datatype, device>(this->data);
     this->data = malloc<datatype, device>(this->shape_mult[dimension]);
-    #pragma omp parallel for
-    for(size_t i=0; i<this->shape_mult[dimension]; ++i){
-        this->data[i] = tensor.data[i];
-    }
+    memcpy<datatype, device>(this->data, tensor.data, this->shape_mult[dimension]);
     return *this;
 }
 

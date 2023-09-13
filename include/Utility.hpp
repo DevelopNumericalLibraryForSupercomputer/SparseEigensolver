@@ -2,26 +2,23 @@
 #pragma once
 #include <iostream>
 #include <cstdlib>
+#include <cstring>
 #include "Device.hpp"
 
 namespace TH{
-//memory allocation
-// Generic malloc and free functions (default)
-template<typename datatype, typename device>
-datatype* malloc(const size_t size) { return new datatype[size]; }
-
-template<typename datatype, typename device>
-void free(datatype* ptr) {   delete[] ptr; }
-
-// Specialization for specific data types and devices
-template<>
-double* malloc<double, CPU>(const size_t size) {
-    return static_cast<double*>(std::malloc(size * sizeof(double)));
+template<typename datatype, typename device> datatype* malloc(const size_t size){
+    std::cout <<  "This is not implemented yet" << std::endl;
+    exit(-1);
 }
-template<>
-void free<double, CPU>(double* ptr) {
-    std::free(ptr);
+template<typename datatype, typename device> void free(datatype* ptr){
+    std::cout <<  "This is not implemented yet" << std::endl;
+    exit(-1);
 }
+template<typename datatype, typename device> void memcpy(datatype* dest, const datatype* source, size_t size){
+    std::cout <<  "This is not implemented yet" << std::endl;
+    exit(-1);
+}
+
 
 //numerical recipies
 template <size_t dimension>
