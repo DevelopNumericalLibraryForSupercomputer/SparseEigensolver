@@ -1,8 +1,7 @@
 #pragma once
 #include "Comm.hpp"
 
-namespace TensorHetero{
-
+namespace TH{
 class SerialComm: public Comm{
 public:
     SerialComm(){};

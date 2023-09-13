@@ -4,7 +4,7 @@
 #include <cstdlib>
 #include "Device.hpp"
 
-namespace TensorHetero {
+namespace TH{
 //memory allocation
 // Generic malloc and free functions (default)
 template<typename datatype, typename device>

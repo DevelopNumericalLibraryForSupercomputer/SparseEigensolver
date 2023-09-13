@@ -2,12 +2,12 @@
 #include <iostream>
 #include <string>
 
-namespace TensorHetero{
+namespace TH{
 enum TH_op{ //operator
-    TH_max,
-    TH_min,
-    TH_sum,
-    TH_prod
+    MAX,
+    MIN,
+    SUM,
+    PROD
 };
 
 class Comm{

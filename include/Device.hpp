@@ -1,7 +1,7 @@
 // Device information
 #pragma once
 #include <string>
-namespace TensorHetero{
+namespace TH{
 class Device{
 private:
     const std::string device_info;

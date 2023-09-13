@@ -2,7 +2,7 @@
 #include <array>
 #include <iostream>
 
-namespace TensorHetero{
+namespace TH{
 template <typename datatype, size_t dimension, typename device>
 class DecomposeResult{
 public:

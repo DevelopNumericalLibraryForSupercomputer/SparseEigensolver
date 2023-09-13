@@ -7,7 +7,7 @@
 #include "mkl_wrapper.hpp"
 #include "Utility.hpp"
 
-namespace TensorHetero{
+namespace TH{
 template <typename datatype>
 class Matrix{
 private:

@@ -2,7 +2,7 @@
 #include <mpi.h>
 #include "Comm.hpp"
 
-namespace TensorHetero{
+namespace TH{
 
 class MPIComm: public Comm{
 public:
@@ -51,10 +51,10 @@ void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum T
 template <>
 void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op op){
     switch (op){
-        case TH_sum:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
-        case TH_prod: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
-        case TH_max:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
-        case TH_min:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
+        case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
+        case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
+        case MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
+        case MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
         default: std::cout << "WRONG OPERATION TYPE" << std::endl;
     }
 }

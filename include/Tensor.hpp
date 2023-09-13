@@ -3,7 +3,7 @@
 #include <iostream>
 #include "Device.hpp"
 #include "Comm.hpp"
-namespace TensorHetero{
+namespace TH{
 
 template<typename datatype, size_t dimension, typename device, typename comm>
 class Tensor{

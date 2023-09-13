@@ -14,7 +14,7 @@
  */ 
 
 
-namespace TensorHetero{
+namespace TH{
 template <typename datatype>
 void gemm(const CBLAS_LAYOUT Layout, const CBLAS_TRANSPOSE transa, const CBLAS_TRANSPOSE transb,
           const MKL_INT m, const MKL_INT n, const MKL_INT k,

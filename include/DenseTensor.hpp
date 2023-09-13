@@ -6,7 +6,7 @@
 #include "Tensor.hpp"
 #include "Utility.hpp"
 #include "DecomposeResult.hpp"
-namespace TensorHetero{
+namespace TH{
 template<typename datatype, size_t dimension, typename device, typename comm>
 class DenseTensor: public Tensor<datatype, dimension, device, comm>{
 public:

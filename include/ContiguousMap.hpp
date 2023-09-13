@@ -1,7 +1,7 @@
 #pragma once
 #include "Map.hpp"
 #include "Utility.hpp"
-namespace TensorHetero{
+namespace TH{
 template<size_t dimension>
 class ContiguousMap: public Map<dimension>{
 public:

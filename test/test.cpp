@@ -10,13 +10,13 @@
 #include "MpiComm.hpp"
 
 int main(int argc, char* argv[]){
-    TensorHetero::CPU device;
+    TH::CPU device;
 
     std::cout << "ContiguousMap test" << std::endl;
-    TensorHetero::MPIComm comm = TensorHetero::MPIComm(argc, argv, "mpi");
+    TH::MPIComm comm = TH::MPIComm(argc, argv, "mpi");
 
     std::array<size_t,3> shape3 = {1,4,4};
-    TensorHetero::Map<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
+    TH::Map<3>* cont_map = new TH::ContiguousMap<3>(shape3, comm);
     
     if(comm.get_rank() == 0){
         std::cout << "initiliazed map" << std::endl;
@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
     }
     double tsum = 0.0;
     comm.barrier();
-    comm.allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
+    comm.allreduce(&sum,1,&tsum,TH::SUM);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
     sum = tsum = 0;
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
         x = ((double)i+0.5)*step;
         sum = sum + 4.0/(1.0+x*x);
     }
-    comm.allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
+    comm.allreduce(&sum,1,&tsum,TH::SUM);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
 
@@ -98,12 +98,12 @@ int main(int argc, char* argv[]){
         std::vector<double> BT_vec = {1,3,5,2,4,6};
         std::cout << m << " " << k << " " << n << std::endl;
 
-        TensorHetero::Matrix<double> Amat = TensorHetero::Matrix<double>(m,k,A_vec.data());
-        TensorHetero::Matrix<double> Bmat = TensorHetero::Matrix<double>(k,n,B_vec.data());
-        TensorHetero::Matrix<double> Cmat = TensorHetero::Matrix<double>(m,n);
+        TH::Matrix<double> Amat = TH::Matrix<double>(m,k,A_vec.data());
+        TH::Matrix<double> Bmat = TH::Matrix<double>(k,n,B_vec.data());
+        TH::Matrix<double> Cmat = TH::Matrix<double>(m,n);
 
-        TensorHetero::Matrix<double> AmatT = TensorHetero::Matrix<double>(k,m,AT_vec.data());
-        TensorHetero::Matrix<double> BmatT = TensorHetero::Matrix<double>(n,k,BT_vec.data());
+        TH::Matrix<double> AmatT = TH::Matrix<double>(k,m,AT_vec.data());
+        TH::Matrix<double> BmatT = TH::Matrix<double>(n,k,BT_vec.data());
 
 
         Cmat.multiply(Amat,Bmat,"NoT","NoT");
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
 
         std::cout << "DenseTensor Operator test" << std::endl;
         std::array<size_t,4> shape = {1,3,2,4};
-        TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm> Aten = TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm>(shape);
+        TH::DenseTensor<double,4,TH::Device,TH::Comm> Aten = TH::DenseTensor<double,4,TH::Device,TH::Comm>(shape);
 
         std::vector<double> Bten_vec = {};
 
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]){
             std::cout << Aten.shape_mult[i] << " ";
         }
         std::cout << std::endl;
-        TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm> Bten = TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm>(shape,Bten_vec.data());
+        TH::DenseTensor<double,4,TH::Device,TH::Comm> Bten = TH::DenseTensor<double,4,TH::Device,TH::Comm>(shape,Bten_vec.data());
         std::array<size_t,4> index_array = {0,1,1,2};
         std::cout << "0,1,1,2 : " << Bten(index_array) << std::endl;
         index_array[3]=0;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
             std::cout << Bten[i] << " " ;
         }
         std::cout << std::endl;
-        TensorHetero::DenseTensor<double,4,TensorHetero::Device,TensorHetero::Comm> Cten = Bten.clone();
+        TH::DenseTensor<double,4,TH::Device,TH::Comm> Cten = Bten.clone();
         for(size_t i=0; i<Cten.shape_mult[4]; ++i){
             std::cout << Cten[i] << " " ;
         }

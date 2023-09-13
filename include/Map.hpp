@@ -3,7 +3,7 @@
 #include <array>
 #include "Comm.hpp"
 
-namespace TensorHetero{
+namespace TH{
 template<size_t dimension>
 class Map{
 public:
