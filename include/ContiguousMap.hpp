@@ -5,7 +5,7 @@ namespace TensorHetero{
 template<size_t dimension>
 class ContiguousMap: public Map<dimension>{
 public:
-    ContiguousMap(std::array<size_t, dimension> total_size, Comm *comm); 
+    ContiguousMap(std::array<size_t, dimension> total_size, Comm& comm); 
     /*
     num_global_elements = 98개, world_size = 4일때
     num_global_elements / comm->get_world_size() = 98/4 = 24
@@ -39,12 +39,12 @@ private:
 };
 
 template<size_t dimension>
-ContiguousMap<dimension>::ContiguousMap(std::array<size_t,dimension> total_size, Comm *comm) : Map<dimension>(comm){
+ContiguousMap<dimension>::ContiguousMap(std::array<size_t,dimension> total_size, Comm& comm) : Map<dimension>(comm){
     this->tensor_total_size = total_size;
     cumprod(total_size, this->tensor_total_size_mult);
     this->num_global_elements = this->tensor_total_size_mult[dimension];
-    const size_t rank = comm->get_rank();
-    const size_t world_size = comm->get_world_size();
+    const size_t rank = comm.get_rank();
+    const size_t world_size = comm.get_world_size();
 
     size_t quotient  = this->num_global_elements / world_size;
     size_t remainder = this->num_global_elements % world_size;
@@ -109,7 +109,7 @@ template <size_t dimension>
 const size_t ContiguousMap<dimension>::get_local_index(const size_t global_index){
     size_t local_index = global_index - this->first_my_global_index;
     if(local_index < 0 || local_index > this->num_my_elements-1){
-        std::cout << "invalid global index in rank = " << this->comm->get_rank() << std::endl;
+        std::cout << "invalid global index in rank = " << this->comm.get_rank() << std::endl;
         exit(-1);
     }
     return local_index;

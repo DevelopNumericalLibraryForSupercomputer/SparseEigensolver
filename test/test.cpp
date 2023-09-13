@@ -13,27 +13,27 @@ int main(int argc, char* argv[]){
     TensorHetero::CPU device;
 
     std::cout << "ContiguousMap test" << std::endl;
-    TensorHetero::MPIComm* comm = new TensorHetero::MPIComm(argc, argv, "mpi");
+    TensorHetero::MPIComm comm = TensorHetero::MPIComm(argc, argv, "mpi");
 
     std::array<size_t,3> shape3 = {1,4,4};
     TensorHetero::Map<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
     
-    if(comm->get_rank() == 0){
+    if(comm.get_rank() == 0){
         std::cout << "initiliazed map" << std::endl;
         std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
     }
-    std::cout << "rank " << comm->get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
+    std::cout << "rank " << comm.get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
     
     for(int index=0; index<cont_map->get_num_my_elements() ;index++){
-        std::cout << "rank " << comm->get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
+        std::cout << "rank " << comm.get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
     
     }
-    comm->barrier();
+    comm.barrier();
     std::cout << "MPI test" << std::endl;
 
     double x = 0.0, sum = 0.0;
-    int myrank = comm->get_rank();
-    int nprocs = comm->get_world_size();
+    int myrank = comm.get_rank();
+    int nprocs = comm.get_world_size();
         
     int n=100000;
     double step = 0.00001;
@@ -49,8 +49,8 @@ int main(int argc, char* argv[]){
         sum = sum + 4.0/(1.0+x*x);
     }
     double tsum = 0.0;
-    comm->barrier();
-    comm->allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
+    comm.barrier();
+    comm.allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
     sum = tsum = 0;
@@ -59,7 +59,7 @@ int main(int argc, char* argv[]){
         x = ((double)i+0.5)*step;
         sum = sum + 4.0/(1.0+x*x);
     }
-    comm->allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
+    comm.allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
 
@@ -69,25 +69,24 @@ int main(int argc, char* argv[]){
     for(int i=0;i<100;i++){
         test_array[i] = (double)i*(myrank+1);
     }
-    comm->alltoall(test_array,100/nprocs,irecv,100/nprocs);    
+    comm.alltoall(test_array,100/nprocs,irecv,100/nprocs);    
     if(myrank == 1) {
         for(int i=0;i<100;i++){
             std::cout << i << " : " << test_array[i] << " " <<  irecv[i] << std::endl;
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm.barrier();
     if(myrank == 1) { std::cout << "allgather test" << std::endl;}
 
-    comm->allgather(test_array,100/nprocs,irecv,100/nprocs);
+    comm.allgather(test_array,100/nprocs,irecv,100/nprocs);
     if(myrank == 1) {
         for(int i=0;i<100;i++){
             std::cout << i << " : " << test_array[i] << " " <<  irecv[i] << std::endl;
         }
     }
-    MPI_Barrier(MPI_COMM_WORLD);
-    if(comm->get_rank() == 0){
-        std::cout << "After free" << std::endl;
-
+    comm.barrier();
+    /*
+    if(comm.get_rank() == 0){
         std::cout << "Matrix muliplication test" << std::endl;
         size_t m, k, n;
         m = 4;
@@ -167,8 +166,7 @@ int main(int argc, char* argv[]){
         std::cout << std::endl;
 
     }
-
-
+    */
     std::cout << "test" << std::endl;
     return 0;
 }
