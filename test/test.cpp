@@ -7,12 +7,13 @@
 #include "ContiguousMap.hpp"
 #include "Utility.hpp"
 #include <iomanip>
+#include "MpiComm.hpp"
 
 int main(int argc, char* argv[]){
     TensorHetero::CPU device;
 
     std::cout << "ContiguousMap test" << std::endl;
-    TensorHetero::Comm* comm = new TensorHetero::Comm(argc, argv, "mpi");
+    TensorHetero::MPIComm* comm = new TensorHetero::MPIComm(argc, argv, "mpi");
 
     std::array<size_t,3> shape3 = {1,4,4};
     TensorHetero::Map<3>* cont_map = new TensorHetero::ContiguousMap<3>(shape3, comm);
@@ -27,7 +28,7 @@ int main(int argc, char* argv[]){
         std::cout << "rank " << comm->get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
     
     }
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm->barrier();
     std::cout << "MPI test" << std::endl;
 
     double x = 0.0, sum = 0.0;
@@ -48,7 +49,7 @@ int main(int argc, char* argv[]){
         sum = sum + 4.0/(1.0+x*x);
     }
     double tsum = 0.0;
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm->barrier();
     comm->allreduce(&sum,1,&tsum,TensorHetero::TH_sum);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;

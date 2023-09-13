@@ -1,0 +1,80 @@
+#pragma once
+#include <mpi.h>
+#include "Comm.hpp"
+
+namespace TensorHetero{
+
+class MPIComm: public Comm{
+public:
+    MPIComm(){};
+    MPIComm(const std::string &protocol);
+    MPIComm(int argc, char *argv[], const std::string &protocol);
+    ~MPIComm();
+
+    void barrier();
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+};
+
+MPIComm::MPIComm(const std::string &protocol) : Comm(protocol){
+    // Initialize MPI (assuming MPI_Init has been called before this)
+    int tmp_rank, tmp_world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &tmp_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
+    rank = tmp_rank;
+    world_size = tmp_world_size;
+}
+
+MPIComm::MPIComm(int argc, char *argv[], const std::string &protocol) : Comm(protocol){
+    MPI_Init(&argc, &argv);
+    int tmp_rank, tmp_world_size;
+    MPI_Comm_rank(MPI_COMM_WORLD, &tmp_rank);
+    MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
+    rank = tmp_rank;
+    world_size = tmp_world_size;
+}
+
+MPIComm::~MPIComm(){
+    MPI_Finalize();
+}
+
+void MPIComm::barrier(){
+    MPI_Barrier(MPI_COMM_WORLD);
+}
+
+template <typename datatype>
+void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op){
+    std::cout << "not implemented" << std::endl;
+}
+
+template <>
+void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op op){
+    switch (op){
+        case TH_sum:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
+        case TH_prod: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
+        case TH_max:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
+        case TH_min:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
+        default: std::cout << "WRONG OPERATION TYPE" << std::endl;
+    }
+}
+
+template <typename datatype>
+void MPIComm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    std::cout << "not implemented" << std::endl;
+}
+template <>
+void MPIComm::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+}
+
+template <typename datatype>
+void MPIComm::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    std::cout << "not implemented" << std::endl;
+}
+template <>
+void MPIComm::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+}
+
+}
