@@ -14,7 +14,7 @@ class Comm{
 protected:
     size_t rank = 0;           // Process rank
     size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
-    size_t world_size = 0;     // Total number of processes in the job
+    size_t world_size = 1;     // Total number of processes in the job
     std::string comm_protocol; // Communication protocol (e.g., "mpi," "nccl," "gloo," etc.)
 
 public:
