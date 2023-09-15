@@ -1,11 +1,8 @@
 #pragma once
 #include <array>
-#include <iostream>
-#include "Device.hpp"
-#include "Comm.hpp"
 namespace TH{
 
-template<typename datatype, size_t dimension, typename device, typename comm>
+template<typename datatype, size_t dimension, typename device, typename map>
 class Tensor{
 public:
     std::array<size_t, dimension> shape;

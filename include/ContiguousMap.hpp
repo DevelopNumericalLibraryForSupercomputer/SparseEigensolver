@@ -57,34 +57,14 @@ private:
     */
     size_t whole_tensor_to_array_index(std::array<size_t, dimension> tensor_index);
     size_t sliced_tensor_to_array_index(std::array<size_t, dimension> tensor_index, size_t slice_dimension);
-    //size_t tensor_to_array_index(std::array<size_t, dimension> tensor_index);
     std::array<size_t, dimension> array_to_whole_tensor_index(size_t array_index);
     std::array<size_t, dimension> array_to_sliced_tensor_index(size_t array_index, size_t slice_dimension);
-    
-    
 };
 
 template<size_t dimension>
 ContiguousMap<dimension>::ContiguousMap(std::array<size_t,dimension> total_size, Comm& comm) : Map<dimension>(comm){
     this->tensor_total_size = total_size;
     cumprod(total_size, this->tensor_total_size_mult);
-    //this->num_global_elements = this->tensor_total_size_mult[dimension];
-    /*
-    const size_t rank = comm.get_rank();
-    const size_t world_size = comm.get_world_size();
-    size_t quotient  = this->num_global_elements / world_size;
-    size_t remainder = this->num_global_elements % world_size;
-    this->element_size_list = new size_t[world_size];
-    this->first_my_global_index = 0;
-    for(size_t i = 0; i < world_size; ++i){
-        this->element_size_list[i] = ( i>=remainder ) ? quotient : quotient + 1;
-        if(i<rank) {
-            this->first_my_global_index += this->element_size_list[i];
-        }
-    }
-    this->num_my_elements = this->element_size_list[rank];
-    */
-
 };
 
 // array -> array
@@ -227,7 +207,6 @@ std::array<size_t, dimension> ContiguousMap<dimension>::array_to_sliced_tensor_i
         array_index /= sliced_tensor_total_size[dim];
     }
     return return_index;
-
 }
 
 }
