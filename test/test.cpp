@@ -4,35 +4,30 @@
 #include <array>
 #include <iostream>
 #include "Device.hpp"
-#include "ContiguousMap.hpp"
+//#include "ContiguousMap.hpp"
 #include "Utility_include.hpp"
 #include <iomanip>
-#include "MpiComm.hpp"
-#include "SerialComm.hpp"
+#include "Comm.hpp"
+#include "device/CPU/MpiComm.hpp"
 
 int main(int argc, char* argv[]){
-    TH::CPU device;
-
+    //TH::CPU device_CPU;
     std::cout << "ContiguousMap test" << std::endl;
-    TH::MPIComm comm = TH::MPIComm(argc, argv, "mpi");
-    TH::SerialComm scomm = TH::SerialComm();
-
+    TH::Comm<TH::CPU> comm = TH::Comm<TH::CPU>(argc, argv);
+    
     std::array<size_t,3> shape3 = {1,4,4};
-    TH::Map<3>* cont_map = new TH::ContiguousMap<3>(shape3, comm);
+    /*
+    TH::Map<3,TH::CPU>* cont_map = new TH::ContiguousMap<3,TH::CPU>(shape3, comm);
     
     
     if(comm.get_rank() == 0){
         std::cout << "initiliazed map" << std::endl;
         std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
     }
-    /*
+    
     std::cout << "rank " << comm.get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
     
-    for(int index=0; index<cont_map->get_num_my_elements() ;index++){
-        std::cout << "rank " << comm.get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
-    
-    }
-    */
+   
     comm.barrier();
     std::cout << "MPI test" << std::endl;
 
@@ -47,7 +42,7 @@ int main(int argc, char* argv[]){
     int myfin =  (myrank+1)*(nn/nprocs)-1;
     if(myfin > nn) myfin = nn;
     if(myrank == 0) { std::cout << "allreduce test" << std::endl;}
-    MPI_Barrier(MPI_COMM_WORLD);
+    comm.barrier();
     std::cout << "myrank : " << myrank << ", myinit : " << myinit << ", myfin : " << myfin << std::endl;
     for(int i = myinit ; i<=myfin ; i++){
         x = ((double)i+0.5)*step;
@@ -174,5 +169,6 @@ int main(int argc, char* argv[]){
     comm.barrier();
     comm.~MPIComm();
     std::cout << "test" << std::endl;
+    */
     return 0;
 }

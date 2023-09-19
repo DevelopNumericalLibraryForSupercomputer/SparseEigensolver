@@ -13,14 +13,21 @@ public:
     const std::string get_device_info(){ return device_info; };
 };
 
+class Serial: public Device{
+public:
+    Serial() : Device("Serial"){};
+};
 class CPU: public Device{
 public:
     CPU() : Device("CPU"){};
 };
-
-class GPU: public Device{
+class CUDA: public Device{
 public:
-    GPU() : Device("GPU"){};
+    CUDA() : Device("CUDA"){};
+};
+class ROCm: public Device{
+public:
+    ROCm() : Device("ROCm"){};
 };
 
 }
