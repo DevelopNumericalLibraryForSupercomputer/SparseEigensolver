@@ -2,7 +2,6 @@
 #include <iostream>
 #include <array>
 #include <cassert>
-#include "mkl_wrapper.hpp"
 #include "Tensor.hpp"
 #include "Device.hpp"
 #include "Map.hpp"
