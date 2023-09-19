@@ -1,14 +1,15 @@
 // Device information
+// Read https://www.cppstories.com/2018/08/init-string-member/
 #pragma once
 #include <string>
 namespace TH{
 class Device{
-private:
-    const std::string device_info;
+protected:
+    std::string device_info;
 public:
     Device(){};
-    Device(const std::string info):device_info(info){};
-    
+    Device(std::string info): device_info(std::move(info)){};
+
     const std::string get_device_info(){ return device_info; };
 };
 
@@ -21,6 +22,7 @@ class GPU: public Device{
 public:
     GPU() : Device("GPU"){};
 };
+
 }
 
 

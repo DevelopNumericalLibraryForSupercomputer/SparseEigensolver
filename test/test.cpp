@@ -8,26 +8,31 @@
 #include "Utility_include.hpp"
 #include <iomanip>
 #include "MpiComm.hpp"
+#include "SerialComm.hpp"
 
 int main(int argc, char* argv[]){
     TH::CPU device;
 
     std::cout << "ContiguousMap test" << std::endl;
     TH::MPIComm comm = TH::MPIComm(argc, argv, "mpi");
+    TH::SerialComm scomm = TH::SerialComm();
 
     std::array<size_t,3> shape3 = {1,4,4};
     TH::Map<3>* cont_map = new TH::ContiguousMap<3>(shape3, comm);
+    
     
     if(comm.get_rank() == 0){
         std::cout << "initiliazed map" << std::endl;
         std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
     }
+    /*
     std::cout << "rank " << comm.get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
     
     for(int index=0; index<cont_map->get_num_my_elements() ;index++){
         std::cout << "rank " << comm.get_rank() << ", index : " << index <<  " : " << cont_map->get_global_index(index) << std::endl;
     
     }
+    */
     comm.barrier();
     std::cout << "MPI test" << std::endl;
 

@@ -3,8 +3,6 @@
 #include "Comm.hpp"
 
 namespace TH{
-
-template<typename device>
 class MPIComm: public Comm{
 public:
     MPIComm(){};
@@ -13,13 +11,16 @@ public:
     ~MPIComm();
 
     void barrier();
-    template <typename datatype, typename device> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
-    template <typename datatype, typename device> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-    template <typename datatype, typename device> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
 
-MPIComm::MPIComm(const std::string &protocol) : Comm(protocol){
+MPIComm::MPIComm(const std::string &protocol){
     // Initialize MPI (assuming MPI_Init has been called before this)
+    assert( protocol.compare("CPU") || protocol.compare("cpu"));
+    comm_protocol = protocol;
+    this->device = CPU();
     int tmp_rank, tmp_world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &tmp_rank);
     MPI_Comm_size(MPI_COMM_WORLD, &tmp_world_size);
@@ -27,7 +28,9 @@ MPIComm::MPIComm(const std::string &protocol) : Comm(protocol){
     world_size = tmp_world_size;
 }
 
-MPIComm::MPIComm(int argc, char *argv[], const std::string &protocol) : Comm(protocol){
+MPIComm::MPIComm(int argc, char *argv[], const std::string &protocol){
+    assert( protocol.compare("CPU") || protocol.compare("cpu"));
+    comm_protocol = protocol;
     MPI_Init(&argc, &argv);
     int tmp_rank, tmp_world_size;
     MPI_Comm_rank(MPI_COMM_WORLD, &tmp_rank);
@@ -44,15 +47,15 @@ void MPIComm::barrier(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
-template <typename datatype, typename device>
+template <typename datatype>
 void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
 
-template <typename device>
+template <>
 void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op op){
-    assert(device.get_device_info() == "CPU");
+    assert(get_device_info() == "CPU");
     switch (op){
         case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
         case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
@@ -62,25 +65,25 @@ void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op
     }
 }
 
-template <typename datatype, typename device>
+template <typename datatype>
 void MPIComm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
-template <typename device>
+template <>
 void MPIComm::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
-    assert(device.get_device_info() == "CPU");
+    assert(get_device_info() == "CPU");
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 
-template <typename datatype, typename device>
+template <typename datatype>
 void MPIComm::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
-template <typename device>
+template <>
 void MPIComm::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
-    assert(device.get_device_info() == "CPU");
+    assert(get_device_info() == "CPU");
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 
