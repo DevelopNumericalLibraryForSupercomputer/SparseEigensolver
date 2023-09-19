@@ -4,6 +4,7 @@
 
 namespace TH{
 
+template<typename device>
 class MPIComm: public Comm{
 public:
     MPIComm(){};
@@ -12,9 +13,9 @@ public:
     ~MPIComm();
 
     void barrier();
-    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
-    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype, typename device> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype, typename device> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype, typename device> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
 
 MPIComm::MPIComm(const std::string &protocol) : Comm(protocol){
@@ -43,37 +44,43 @@ void MPIComm::barrier(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
-template <typename datatype>
+template <typename datatype, typename device>
 void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op){
     std::cout << "not implemented" << std::endl;
+    exit(-1);
 }
 
-template <>
+template <typename device>
 void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op op){
+    assert(device.get_device_info() == "CPU");
     switch (op){
         case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
         case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
         case MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
         case MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
-        default: std::cout << "WRONG OPERATION TYPE" << std::endl;
+        default: std::cout << "WRONG OPERATION TYPE" << std::endl; exit(-1);
     }
 }
 
-template <typename datatype>
+template <typename datatype, typename device>
 void MPIComm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
+    exit(-1);
 }
-template <>
+template <typename device>
 void MPIComm::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+    assert(device.get_device_info() == "CPU");
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 
-template <typename datatype>
+template <typename datatype, typename device>
 void MPIComm::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
+    exit(-1);
 }
-template <>
+template <typename device>
 void MPIComm::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+    assert(device.get_device_info() == "CPU");
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 

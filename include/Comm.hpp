@@ -10,6 +10,7 @@ enum TH_op{//opertor for allreduce
     PROD
 };
 
+template<typename device>
 class Comm{
 protected:
     size_t rank = 0;           // Process rank
@@ -29,9 +30,9 @@ public:
     const std::string get_comm_protocol(){ return comm_protocol; };
 
     virtual void barrier() = 0;
-    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
-    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype, typename deivce> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype, typename deivce> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype, typename deivce> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 
 };
 }
