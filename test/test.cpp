@@ -4,7 +4,7 @@
 #include <array>
 #include <iostream>
 #include "Device.hpp"
-//#include "ContiguousMap.hpp"
+#include "ContiguousMap.hpp"
 #include "Utility_include.hpp"
 #include <iomanip>
 #include "Comm.hpp"
@@ -16,7 +16,7 @@ int main(int argc, char* argv[]){
     TH::Comm<TH::CPU> comm = TH::Comm<TH::CPU>(argc, argv);
     
     std::array<size_t,3> shape3 = {1,4,4};
-    /*
+    
     TH::Map<3,TH::CPU>* cont_map = new TH::ContiguousMap<3,TH::CPU>(shape3, comm);
     
     
@@ -25,7 +25,7 @@ int main(int argc, char* argv[]){
         std::cout << "shape = (" << shape3[0] << ", " << shape3[1] << ", " << shape3[2] << ")" << std::endl;
     }
     
-    std::cout << "rank " << comm.get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
+    //std::cout << "rank " << comm.get_rank() << ", nge : " << cont_map->get_num_global_elements() << ", nme : " << cont_map->get_num_global_elements() << ", fge : "<< cont_map->get_first_my_global_index() << std::endl;
     
    
     comm.barrier();
@@ -120,7 +120,7 @@ int main(int argc, char* argv[]){
 
         std::cout << "DenseTensor Operator test" << std::endl;
         std::array<size_t,4> shape = {1,3,2,4};
-        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Aten = TH::DenseTensor<double,4,TH::CPU,TH::Comm>(shape);
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm<TH::CPU>> Aten = TH::DenseTensor<double,4,TH::CPU,TH::Comm<TH::CPU>>(shape);
     
         std::vector<double> Bten_vec = {};
 
@@ -137,7 +137,7 @@ int main(int argc, char* argv[]){
             std::cout << Aten.shape_mult[i] << " ";
         }
         std::cout << std::endl;
-        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Bten = TH::DenseTensor<double,4,TH::CPU,TH::Comm>(shape,Bten_vec.data());
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm<TH::CPU>> Bten = TH::DenseTensor<double,4,TH::CPU,TH::Comm<TH::CPU>>(shape,Bten_vec.data());
         std::array<size_t,4> index_array = {0,1,1,2};
         std::cout << "0,1,1,2 : " << Bten(index_array) << std::endl;
         index_array[3]=0;
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
             std::cout << Bten[i] << " " ;
         }
         std::cout << std::endl;
-        TH::DenseTensor<double,4,TH::CPU,TH::Comm> Cten = Bten.clone();
+        TH::DenseTensor<double,4,TH::CPU,TH::Comm<TH::CPU>> Cten = Bten.clone();
         for(size_t i=0; i<Cten.shape_mult[4]; ++i){
             std::cout << Cten[i] << " " ;
         }
@@ -167,8 +167,8 @@ int main(int argc, char* argv[]){
 
     //}
     comm.barrier();
-    comm.~MPIComm();
+    comm.~Comm();
     std::cout << "test" << std::endl;
-    */
+    
     return 0;
 }
