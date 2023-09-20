@@ -25,10 +25,10 @@ private:
     /* contiguous map of the given index.
     num_global_elements / comm.get_world_size() = 98/4 = 24
     num_global_elements % comm.get_world_size() = 98%4 = 2
-    rank = 0 : 0 ~ 24   
-    rank = 1 : 25 ~ 49 
-    rank = 2 : 50 ~ 74 
-    rank = 3 : 75 ~ 97 (25-2)
+    rank = 0 : 0 ~ 23   
+    rank = 1 : 24 ~ 47 
+    rank = 2 : 48 ~ 72 
+    rank = 3 : 73 ~ 97 (25+2)
     */
     size_t calculate_chunk_size(size_t num_global_index);
     size_t local_to_global(size_t num_global_index, size_t local_index);
@@ -109,33 +109,18 @@ const size_t ContiguousMap<dimension, device>::get_local_index(const std::array<
 // size_t -> size_t
 template <size_t dimension, typename device>
 const size_t ContiguousMap<dimension, device>::get_global_index(const size_t local_index, size_t slice_dimension){
-    // return this->first_my_global_index + local_index;
-    exit(-1);
+    return get_global_index(array_to_sliced_tensor_index(local_index, slice_dimension), slice_dimension);
 }
 template <size_t dimension, typename device>
 const size_t ContiguousMap<dimension, device>::get_local_index(const size_t global_index, size_t slice_dimension){
-    /*
-    size_t local_index = global_index - this->first_my_global_index;
-    if(local_index < 0 || local_index > this->num_my_elements-1){
-        std::cout << "invalid global index in rank = " << this->comm.get_rank() << std::endl;
-        exit(-1);
-    }
-    return local_index;
-    */
-    exit(-1);
-
+    return get_local_index(array_to_whole_tensor_index(global_index),slice_dimension);   
 }
 
-
-// Calculate the chunk size for each thread
+// Calculate the chunk size
 template <size_t dimension, typename device>
 size_t ContiguousMap<dimension, device>::calculate_chunk_size(size_t num_global_index){
     size_t num_threads = this->comm.get_world_size();
-    size_t chunk_size = num_global_index / num_threads;
-    size_t remainder = num_global_index % num_threads;
-    // Distribute any remaining elements
-    if(remainder>0) { chunk_size++; }
-    return chunk_size;
+    return num_global_index / num_threads;
 }
 
 // Convert local index to global index
@@ -143,8 +128,9 @@ template <size_t dimension, typename device>
 size_t ContiguousMap<dimension, device>::local_to_global(size_t num_global_index, size_t local_index){
     size_t chunk_size = calculate_chunk_size(num_global_index);
     size_t chunk_start = chunk_size * this->comm.get_rank();
-    size_t chunk_end = std::min(chunk_start + chunk_size, num_global_index);
-    assert (local_index < (chunk_end - chunk_start));
+    size_t chunk_endp1 = this->comm.get_world_size()-1 == this->comm.get_rank() ? num_global_index : chunk_start+chunk_size;
+    //std::cout << "local_to_global, rank " << this->comm.get_rank() << " " << num_global_index << " " << local_index << " " << chunk_size << " " << chunk_start << " " << chunk_endp1 << std::endl;
+    assert (local_index < (chunk_endp1 - chunk_start));
     return chunk_start + local_index;
 }
 
@@ -153,9 +139,9 @@ template <size_t dimension, typename device>
 size_t ContiguousMap<dimension, device>::global_to_local(size_t num_global_index, size_t global_index) {
     size_t chunk_size = calculate_chunk_size(num_global_index);
     size_t chunk_start = chunk_size * this->comm.get_rank();
-    size_t chunk_end = std::min(chunk_start + chunk_size, num_global_index);
+    size_t chunk_end = this->comm.get_world_size()-1 == this->comm.get_rank() ? num_global_index-1 : chunk_start+chunk_size-1;
     assert(global_index >= chunk_start);
-    assert(global_index < chunk_end);
+    assert(global_index <= chunk_end);
     return global_index - chunk_start;
 }
 
@@ -172,7 +158,11 @@ size_t ContiguousMap<dimension, device>::whole_tensor_to_array_index(std::array<
 template <size_t dimension, typename device>
 size_t ContiguousMap<dimension, device>::sliced_tensor_to_array_index(std::array<size_t, dimension> tensor_index, size_t slice_dimension){
     std::array<size_t, dimension> sliced_tensor_total_size = this->tensor_total_size;
-    sliced_tensor_total_size[slice_dimension] = calculate_chunk_size(this->tensor_total_size[slice_dimension]);
+    size_t sliced_index_size = calculate_chunk_size(this->tensor_total_size[slice_dimension]);
+    if(this->comm.get_world_size()-1 == this->comm.get_rank()){
+        sliced_index_size = this->tensor_total_size[slice_dimension] - sliced_index_size * this->comm.get_rank();
+    }
+    sliced_tensor_total_size[slice_dimension] = sliced_index_size;
 
     size_t return_index = 0;
     size_t multiplier = 1;
@@ -198,7 +188,11 @@ std::array<size_t, dimension> ContiguousMap<dimension, device>::array_to_whole_t
 template <size_t dimension, typename device>
 std::array<size_t, dimension> ContiguousMap<dimension, device>::array_to_sliced_tensor_index(size_t array_index, size_t slice_dimension){
     std::array<size_t, dimension> sliced_tensor_total_size = this->tensor_total_size;
-    sliced_tensor_total_size[slice_dimension] = calculate_chunk_size(this->tensor_total_size[slice_dimension]);
+    size_t sliced_index_size = calculate_chunk_size(this->tensor_total_size[slice_dimension]);
+    if(this->comm.get_world_size()-1 == this->comm.get_rank()){
+        sliced_index_size = this->tensor_total_size[slice_dimension] - sliced_index_size * this->comm.get_rank();
+    }
+    sliced_tensor_total_size[slice_dimension] = sliced_index_size;
 
     std::array<size_t, dimension> return_index;
     for(size_t dim = 0; dim <dimension; ++dim){
