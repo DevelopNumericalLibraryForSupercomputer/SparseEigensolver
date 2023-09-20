@@ -4,7 +4,7 @@
 #include <cassert>
 #include "Tensor.hpp"
 #include "Device.hpp"
-#include "Map.hpp"
+#include "ContiguousMap.hpp"
 #include "Utility_include.hpp"
 #include "DecomposeResult.hpp"
 namespace TH{
@@ -120,4 +120,5 @@ DecomposeResult<datatype, dimension, device> DenseTensor<datatype, dimension, de
     std::cout << method << " is not implemented yet." << std::endl;
     exit(-1);
 }
+
 };

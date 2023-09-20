@@ -9,6 +9,7 @@
 #include <iomanip>
 #include "Comm.hpp"
 #include "device/CPU/Comm.hpp"
+#include "decomposition/2D-double.hpp"
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
@@ -303,7 +304,14 @@ int main(int argc, char* argv[]){
     }
     comm.barrier();
 
-    
+    std::array<size_t, 2> test_shape = {3,3};
+    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
+    TH::DenseTensor<double, 2, TH::CPU, TH::ContiguousMap<2,TH::CPU> > test_matrix 
+        = TH::DenseTensor<double, 2, TH::CPU, TH::ContiguousMap<2,TH::CPU> >(test_shape, &test_data[0]);
+    if(comm.get_rank() == 0){
+    test_matrix.decompose("EVD");
+    }
+    comm.barrier();
     //std::cout << "after barrier" << std::endl;
         
     return 0;
