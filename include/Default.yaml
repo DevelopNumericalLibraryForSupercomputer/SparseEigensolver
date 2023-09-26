@@ -1,0 +1,20 @@
+solver_options:
+  algorithm: Davidson  # Specify the algorithm (Davidson / LOBPCG / EVD / ...)
+  max_iterations: 100  # Maximum number of iterations
+  tolerance: 1e-6     # Convergence tolerance
+
+matrix_options:
+  #matrix_format: CSR  # Specify the sparse matrix format (e.g., CSR, CSC, COO)
+  matrix_type: Realsym  # Real, RealSym, Complex, Hermitian
+
+eigenvalue_options:
+  num_eigenvalues: 5  # Number of eigenvalues to compute
+  eigenvalue_guesses: 3  # Number of initial eigenvalue guesses
+  #eigensolver: ARPACK  # Choose an eigensolver library (e.g., ARPACK, Lanczos)
+
+preconditioner_options:
+  use_preconditioner: true  # Enable or disable preconditioning
+  #preconditioner_type: ILU  # Specify the preconditioner type (e.g., ILU, AMG)
+  preconditioner_tolerance: 1e-3  # Tolerance for preconditioner
+  preconditioner_max_iterations: 30  # Tolerance for preconditioner
+
