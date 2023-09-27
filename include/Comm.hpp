@@ -22,11 +22,12 @@ public:
     //Comm(std::string protocol): comm_protocol(std::move(protocol)){};
     //Comm(MPI_Comm new_communicator);
     //Comm(int argc, char *argv[]);
+    Comm(size_t rank, size_t world_size, std::string protocol): rank(rank), world_size(world_size), comm_protocol(std::move(protocol)){};
     ~Comm(){};
 
-    const size_t get_rank(){ return rank; };
-    const size_t get_world_size(){ return world_size; };
-    const std::string get_comm_protocol(){ return comm_protocol; };
+    //const size_t get_rank(){ return rank; };
+    //const size_t get_world_size(){ return world_size; };
+    //const std::string get_comm_protocol(){ return comm_protocol; };
 
     void barrier();
     template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
