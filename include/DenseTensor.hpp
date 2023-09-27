@@ -7,7 +7,7 @@
 #include "ContiguousMap.hpp"
 #include "Utility_include.hpp"
 #include "DecomposeResult.hpp"
-namespace TH{
+namespace SE{
 template<typename datatype, size_t dimension, Comm comm, Map map>{
 
 

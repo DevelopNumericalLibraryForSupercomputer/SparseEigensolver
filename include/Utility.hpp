@@ -5,7 +5,7 @@
 #include <cstring>
 #include "Device.hpp"
 
-namespace TH{
+namespace SE{
 //memory managament
 template<typename datatype, typename device> datatype* malloc(const size_t size){
     std::cout <<  "This is not implemented yet" << std::endl;
@@ -25,22 +25,22 @@ template<typename datatype, typename device> void memcpy(datatype* dest, const d
  * BLAS
  *  gemm
  *  daxpy
- *  TH_Transpose     // matrix transpose
- *  TH_layout        // matrix layout
+ *  SE_Transpose     // matrix transpose
+ *  SE_layout        // matrix layout
  */ 
-enum TH_transpose{
+enum SE_transpose{
     Blas_NoTrans,
     Blas_Trans,
     Blas_ConjTrans
 };
 
-enum TH_layout{
+enum SE_layout{
     Blas_RowMajor,
     Blas_ColMajor
 };
 
 template <typename datatype, typename device>
-void gemm(const TH_layout Layout, const TH_transpose transa, const TH_transpose transb, const size_t m, const size_t n, const size_t k,
+void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
           const datatype alpha, const datatype *a, const size_t lda,
           const datatype *b, const size_t ldb, const datatype beta,
           datatype *c, const size_t ldc)

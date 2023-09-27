@@ -1,7 +1,7 @@
 #pragma once
 #include <array>
 #include "DecomposeOption.hpp"
-namespace TH{
+namespace SE{
 
 template<typename datatype, size_t dimension, typename device, typename map>
 class Tensor{

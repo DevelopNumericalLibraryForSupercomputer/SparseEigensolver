@@ -3,8 +3,8 @@
 #include <string>
 #include "Device.hpp"
 
-namespace TH{
-enum TH_op{//opertor for allreduce
+namespace SE{
+enum SE_op{//opertor for allreduce
     MAX,
     MIN,
     SUM,
@@ -30,7 +30,7 @@ public:
     //const std::string get_comm_protocol(){ return comm_protocol; };
 
     void barrier();
-    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum SE_op op);
     template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 

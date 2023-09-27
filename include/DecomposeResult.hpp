@@ -2,7 +2,7 @@
 #include <array>
 #include <iostream>
 
-namespace TH{
+namespace SE{
 template <typename datatype, size_t dimension, typename device>
 class DecomposeResult{
 public:

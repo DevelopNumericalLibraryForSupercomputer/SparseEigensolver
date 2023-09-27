@@ -2,7 +2,7 @@
 #include <mpi.h>
 #include "../../Comm.hpp"
 
-namespace TH{
+namespace SE{
 
 class MPIComm: public Comm{
 public:
@@ -13,7 +13,7 @@ public:
     //const MPI_Comm mpi_comm;
     void barrier();
     
-    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op);
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, enum SE_op op);
     template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
@@ -47,13 +47,13 @@ void MPIComm::barrier(){
 }
 
 template <typename datatype>
-void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum TH_op op){
+void MPIComm::allreduce(const datatype *src, size_t count, datatype *trg, enum SE_op op){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
 
 template <>
-void MPIComm::allreduce(const double *src, size_t count, double *trg, enum TH_op op){
+void MPIComm::allreduce(const double *src, size_t count, double *trg, enum SE_op op){
     switch (op){
         case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
         case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;

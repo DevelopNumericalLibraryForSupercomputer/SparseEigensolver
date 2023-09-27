@@ -2,7 +2,7 @@
 #include "Comm.hpp"
 #include "Map.hpp"
 #include "Utility_include.hpp"
-namespace TH{
+namespace SE{
 template<size_t dimension, typename device>
 class ContiguousMap: public Map<dimension, device>{
 public:

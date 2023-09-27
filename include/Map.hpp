@@ -3,7 +3,7 @@
 #include <array>
 #include "Comm.hpp"
 
-namespace TH{
+namespace SE{
 template<size_t dimension>
 class Map{
 public:

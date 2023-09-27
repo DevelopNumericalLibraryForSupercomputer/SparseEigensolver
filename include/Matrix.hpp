@@ -6,7 +6,7 @@
 #include <cassert>
 #include "Utility_include.hpp"
 
-namespace TH{
+namespace SE{
 template <typename datatype>
 class Matrix{
 private:
@@ -228,19 +228,19 @@ Matrix<datatype>& Matrix<datatype>::multiply(
     }*/
 
     if(trans1 == "NoT" && trans2 == "NoT"){
-        gemm<datatype,CPU>(TH::Blas_ColMajor, TH::Blas_NoTrans, TH::Blas_NoTrans, row1, column2, column1,
+        gemm<datatype,CPU>(SE::Blas_ColMajor, SE::Blas_NoTrans, SE::Blas_NoTrans, row1, column2, column1,
              1.0, matrix1.pointer, row1, matrix2.pointer, row2, 0.0, this->pointer, this->get_row());
     }
     else if(trans1 == "NoT" && trans2 == "T"){
-        gemm<datatype,CPU>(TH::Blas_ColMajor, TH::Blas_NoTrans, TH::Blas_Trans, row1, row2, column1,
+        gemm<datatype,CPU>(SE::Blas_ColMajor, SE::Blas_NoTrans, SE::Blas_Trans, row1, row2, column1,
              1.0, matrix1.pointer, row1, matrix2.pointer, row2, 0.0, this->pointer, this->get_row());
     }
     else if(trans1 == "T" && trans2 == "NoT"){
-        gemm<datatype,CPU>(TH::Blas_ColMajor, TH::Blas_Trans, TH::Blas_NoTrans, column1, column2, row1,
+        gemm<datatype,CPU>(SE::Blas_ColMajor, SE::Blas_Trans, SE::Blas_NoTrans, column1, column2, row1,
              1.0, matrix1.pointer, row1, matrix2.pointer, row2, 0.0, this->pointer, this->get_row());
     }
     else if(trans1 == "T" && trans2 == "T"){
-        gemm<datatype,CPU>(TH::Blas_ColMajor, TH::Blas_Trans, TH::Blas_Trans, column1, row2, row1,
+        gemm<datatype,CPU>(SE::Blas_ColMajor, SE::Blas_Trans, SE::Blas_Trans, column1, row2, row1,
              1.0, matrix1.pointer, row1, matrix2.pointer, row2, 0.0, this->pointer, this->get_row());
     }
     else{

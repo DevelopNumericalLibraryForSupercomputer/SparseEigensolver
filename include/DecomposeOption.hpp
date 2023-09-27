@@ -2,7 +2,7 @@
 #include <map>
 #include <yaml-cpp/yaml.h>
 
-namespace TH{
+namespace SE{
 
 typedef enum{
     EVD,
