@@ -1,6 +1,7 @@
 # SparseEigensolver
 
 Eigenvalue decomposition library.
+Under development.
 
 Aims.
 - Eigenvalue decomposition for dense matrices.
