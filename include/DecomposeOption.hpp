@@ -7,8 +7,8 @@ namespace TH{
 typedef enum{
     EVD,
     Davidson,
-    LOBPCG,
 } ALGO_TYPE;
+//Lanczos?
 
 typedef enum{
     Real,
@@ -23,8 +23,6 @@ public:
     DecomposeOption(std::string filename);
     void set_option(std::string filename);
     void print();
-
-private:
     ALGO_TYPE algorithm_type = Davidson;
     int max_iterations       = 100;
     double tolerance         = 1E-6;
@@ -35,12 +33,13 @@ private:
     double preconditioner_tolerance      = 1E-3;
     double preconditioner_max_iterations = 30;
 
+private:
     void set_option_worker();
 
     template<typename enum_type> enum_type table_match(std::map<std::string, enum_type> table, std::string str);
 
     std::map<std::string, ALGO_TYPE> const algo_table =
-        { {"EVD", ALGO_TYPE::EVD}, {"Davidson", ALGO_TYPE::Davidson}, {"LOBPCG", ALGO_TYPE::LOBPCG} };
+        { {"EVD", ALGO_TYPE::EVD}, {"Davidson", ALGO_TYPE::Davidson}};//, {"LOBPCG", ALGO_TYPE::LOBPCG} };
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
 
@@ -107,7 +106,7 @@ enum_type DecomposeOption::table_match(std::map<std::string, enum_type> table, s
 }
 
 }
-
+/*
 int main(){
     TH::DecomposeOption first_option;
     TH::DecomposeOption second_option = TH::DecomposeOption("test.yaml");
@@ -117,3 +116,4 @@ int main(){
     second_option.print();
     return 0;
 }
+*/

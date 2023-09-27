@@ -5,7 +5,7 @@ solver_options:
 
 matrix_options:
   #matrix_format: CSR  # Specify the sparse matrix format (e.g., CSR, CSC, COO)
-  matrix_type: Realsym  # Real, RealSym, Complex, Hermitian
+  matrix_type: RealSym  # Real, RealSym, Complex, Hermitian
 
 eigenvalue_options:
   num_eigenvalues: 5  # Number of eigenvalues to compute
