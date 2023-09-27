@@ -8,6 +8,10 @@
 #include "Utility_include.hpp"
 #include "DecomposeResult.hpp"
 namespace TH{
+template<typename datatype, size_t dimension, Comm comm, Map map>{
+
+
+}
 template<typename datatype, size_t dimension, typename device, typename map>
 class DenseTensor: public Tensor<datatype, dimension, device, map>{
 public:

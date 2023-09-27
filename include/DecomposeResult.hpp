@@ -21,11 +21,11 @@ typedef enum{
 // EigenDecomposeResult
 // SysEig?
 // Lanczos?
-/*
+
 template <double, 2, typename device>
 class EigenDecomposeResult: public DecomposeResult<double, 2, device>{
 };
 
-*/
+
 
 }
