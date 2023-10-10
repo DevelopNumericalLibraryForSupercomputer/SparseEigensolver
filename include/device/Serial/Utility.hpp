@@ -1,35 +1,35 @@
-//ChatGPT3.5
 #pragma once
+#include "../../Device.hpp"
 #include "../../Utility.hpp"
-#include <complex>
-//#define MKL_Complex16 std::complex<double>
-//#define MKL_Complex8  std::complex<float>
-#include "mkl.h"
 
 namespace SE{
+//memory managament
 template<>
-double* malloc<double, CPU>(const size_t size) {
+double* malloc<double, Serial>(const size_t size) {
     return static_cast<double*>(std::malloc(size * sizeof(double)));
 }
+
 template<>
-void free<double, CPU>(double* ptr) {
+void free<double, Serial>(double* ptr) {
     std::free(ptr);
 }
+
 template<>
-void memcpy<double, CPU>(double* dest, const double* source, size_t size){
+void memcpy<double, Serial>(double* dest, const double* source, size_t size){
     std::memcpy(dest, source, size * sizeof(double));
 }
 
-/* templated version of mkl wrapper.
- * Containing functions
- * BLAS
- *  gemm
- *  daxpy
-enum type variables
-enum CBLAS_LAYOUT {CblasRowMajor=101, CblasColMajor=102};
-enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
- */
+//mkl - BLAS
+enum SE_transpose{
+    Blas_NoTrans,
+    Blas_Trans,
+    Blas_ConjTrans
+};
+
+enum SE_layout{
+    Blas_RowMajor,
+    Blas_ColMajor
+};
 
 CBLAS_LAYOUT map_layout(SE_layout layout){
     switch (layout){
@@ -48,13 +48,14 @@ CBLAS_TRANSPOSE map_transpose(SE_transpose trans){
 }
 
 template<>
-void gemm<double, CPU>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
+void gemm<double, Serial>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
                        const size_t m, const size_t n, const size_t k,
                        const double alpha, const double *a, const size_t lda,
                        const double *b, const size_t ldb, const double beta,
                        double *c, const size_t ldc){
     return cblas_dgemm(map_layout(Layout), map_transpose(transa), map_transpose(transb), m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 }
+
 /*
 template <>
 void gemm<std::complex<double>, CPU>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
@@ -67,9 +68,8 @@ void gemm<std::complex<double>, CPU>(const SE_layout Layout, const SE_transpose 
 }
 */
 template <>
-void axpy<double, CPU>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
+void axpy<double, Serial>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
 }
-
 
 }

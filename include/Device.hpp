@@ -2,32 +2,32 @@
 // Read https://www.cppstories.com/2018/08/init-string-member/
 #pragma once
 #include <string>
-namespace TH{
-class Device{
-protected:
-    std::string device_info;
-public:
-    Device(){};
-    Device(std::string info): device_info(std::move(info)){};
+namespace SE{
 
-    const std::string get_device_info(){ return device_info; };
+typedef enum{//opertor for allreduce
+    SE_SERIAL,
+    SE_MPI,
+    SE_NCCL,
+    SE_ROCM
+} SE_PROTOCOL;
+
+
+struct Device{
+    const SE_PROTOCOL protocol;
+    constexpr Device(SE_PROTOCOL info): protocol(info){};
 };
 
-class Serial: public Device{
-public:
-    Serial() : Device("Serial"){};
+struct Serial: public Device{
+    constexpr Serial() : Device(SE_SERIAL){};
 };
-class CPU: public Device{
-public:
-    CPU() : Device("CPU"){};
+struct MPI: public Device{
+    constexpr MPI() : Device(SE_MPI){};
 };
-class CUDA: public Device{
-public:
-    CUDA() : Device("CUDA"){};
+struct CUDA: public Device{
+    constexpr CUDA() : Device(SE_NCCL){};
 };
-class ROCm: public Device{
-public:
-    ROCm() : Device("ROCm"){};
+struct ROCm: public Device{
+    constexpr ROCm() : Device(SE_ROCM){};
 };
 
 }

@@ -1,21 +1,29 @@
-//ChatGPT3.5
 #pragma once
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
 #include "Device.hpp"
+#include "mkl.h"
+#include <complex>
+//#define MKL_Complex16 std::complex<double>
+//#define MKL_Complex8  std::complex<float>
 
 namespace SE{
 //memory managament
-template<typename datatype, typename device> datatype* malloc(const size_t size){
+template<typename datatype, typename device>
+datatype* malloc(const size_t size){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
 }
-template<typename datatype, typename device> void free(datatype* ptr){
+
+template<typename datatype, typename device>
+void free(datatype* ptr){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
 }
-template<typename datatype, typename device> void memcpy(datatype* dest, const datatype* source, size_t size){
+
+template<typename datatype, typename device>
+void memcpy(datatype* dest, const datatype* source, size_t size){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
 }
@@ -27,17 +35,13 @@ template<typename datatype, typename device> void memcpy(datatype* dest, const d
  *  daxpy
  *  SE_Transpose     // matrix transpose
  *  SE_layout        // matrix layout
+ * 
+ * FYI
+enum CBLAS_LAYOUT {CblasRowMajor=101, CblasColMajor=102};
+enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
+enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
  */ 
-enum SE_transpose{
-    Blas_NoTrans,
-    Blas_Trans,
-    Blas_ConjTrans
-};
 
-enum SE_layout{
-    Blas_RowMajor,
-    Blas_ColMajor
-};
 
 template <typename datatype, typename device>
 void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
