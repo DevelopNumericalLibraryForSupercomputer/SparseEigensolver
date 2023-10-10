@@ -11,8 +11,7 @@ typedef enum{//opertor for allreduce
     PROD
 } SE_op;
 
-
-template<typename device>
+template<PROTOCOL protocol = PROTOCOL::SERIAL>
 class Comm{
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
@@ -21,8 +20,9 @@ class Comm{
     Comm(){};
     //Comm(std::string protocol): comm_protocol(std::move(protocol)){};
     //Comm(MPI_Comm new_communicator);
-    Comm(int argc, char *argv[]);    
+    //Comm(int argc, char *argv[]) {};
     Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
+    void Initialize() {};
     ~Comm(){};
 
     //const size_t get_rank(){ return rank; };
@@ -34,23 +34,23 @@ class Comm{
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 };
 
-template <typename device>
+template <PROTOCOL protocol>
 template <typename datatype>
-inline void Comm<device>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
+inline void Comm<protocol>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
 
-template <typename device>
+template <PROTOCOL protocol>
 template <typename datatype>
-inline void Comm<device>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+inline void Comm<protocol>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }
 
-template <typename device>
+template <PROTOCOL protocol>
 template <typename datatype>
-inline void Comm<device>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+inline void Comm<protocol>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     std::cout << "not implemented" << std::endl;
     exit(-1);
 }

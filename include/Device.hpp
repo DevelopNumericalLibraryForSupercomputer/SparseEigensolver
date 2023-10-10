@@ -4,32 +4,31 @@
 #include <string>
 namespace SE{
 
-typedef enum{//opertor for allreduce
-    SE_SERIAL,
-    SE_MPI,
-    SE_NCCL,
-    SE_ROCM
-} SE_PROTOCOL;
-
-
+enum class PROTOCOL{
+    SERIAL,
+    MPI,
+    NCCL,
+    ROCM
+};
+/*
 struct Device{
-    const SE_PROTOCOL protocol;
-    constexpr Device(SE_PROTOCOL info): protocol(info){};
+    const PROTOCOL protocol;
+    constexpr Device(PROTOCOL info): protocol(info){};
 };
 
 struct Serial: public Device{
-    constexpr Serial() : Device(SE_SERIAL){};
+    constexpr Serial() : Device(SERIAL){};
 };
 struct MPI: public Device{
-    constexpr MPI() : Device(SE_MPI){};
+    constexpr MPI() : Device(MPI){};
 };
 struct CUDA: public Device{
-    constexpr CUDA() : Device(SE_NCCL){};
+    constexpr CUDA() : Device(NCCL){};
 };
 struct ROCm: public Device{
-    constexpr ROCm() : Device(SE_ROCM){};
+    constexpr ROCm() : Device(ROCM){};
 };
-
+*/
 }
 
 

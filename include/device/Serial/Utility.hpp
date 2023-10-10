@@ -1,35 +1,24 @@
 #pragma once
 #include "../../Device.hpp"
 #include "../../Utility.hpp"
+#include "mkl.h"
 
 namespace SE{
 //memory managament
 template<>
-double* malloc<double, Serial>(const size_t size) {
+double* malloc<double, PROTOCOL::SERIAL>(const size_t size) {
     return static_cast<double*>(std::malloc(size * sizeof(double)));
 }
 
 template<>
-void free<double, Serial>(double* ptr) {
+void free<double, PROTOCOL::SERIAL>(double* ptr) {
     std::free(ptr);
 }
 
 template<>
-void memcpy<double, Serial>(double* dest, const double* source, size_t size){
+void memcpy<double, PROTOCOL::SERIAL>(double* dest, const double* source, size_t size){
     std::memcpy(dest, source, size * sizeof(double));
 }
-
-//mkl - BLAS
-enum SE_transpose{
-    Blas_NoTrans,
-    Blas_Trans,
-    Blas_ConjTrans
-};
-
-enum SE_layout{
-    Blas_RowMajor,
-    Blas_ColMajor
-};
 
 CBLAS_LAYOUT map_layout(SE_layout layout){
     switch (layout){
@@ -48,7 +37,7 @@ CBLAS_TRANSPOSE map_transpose(SE_transpose trans){
 }
 
 template<>
-void gemm<double, Serial>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
+void gemm<double, PROTOCOL::SERIAL>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
                        const size_t m, const size_t n, const size_t k,
                        const double alpha, const double *a, const size_t lda,
                        const double *b, const size_t ldb, const double beta,
@@ -68,7 +57,7 @@ void gemm<std::complex<double>, CPU>(const SE_layout Layout, const SE_transpose 
 }
 */
 template <>
-void axpy<double, Serial>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
+void axpy<double, PROTOCOL::SERIAL>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
 }
 
