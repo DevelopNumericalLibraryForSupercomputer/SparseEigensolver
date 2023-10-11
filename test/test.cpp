@@ -5,6 +5,7 @@
 #include <iostream>
 #include "ContiguousMap.hpp"
 #include <iomanip>
+#include "DenseTensor.hpp"
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
@@ -305,16 +306,14 @@ int main(int argc, char* argv[]){
     
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    /*
-    SE::DenseTensor<double, 2, SE::CPU, SE::ContiguousMap<2,SE::CPU> > test_matrix 
-        = SE::DenseTensor<double, 2, SE::CPU, SE::ContiguousMap<2,SE::CPU> >(test_shape, &test_data[0]);
-    if(comm.rank == 0){
-    test_matrix.decompose("EVD");
-    }
+    
+
+    ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
+
+    SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    //test_matrix.decompose("EVD");
     comm.barrier();
-    */
-    //SE::Tensor<double,2,comm> tensor;
-    //std::cout << "after barrier" << std::endl;
-        
+    //MPI_Finalize();
     return 0;
 }

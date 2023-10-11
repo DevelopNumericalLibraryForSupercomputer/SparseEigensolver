@@ -45,7 +45,12 @@ void Comm<PROTOCOL::MPI>::initialize(int argc, char *argv[]){
 }
 
 Comm<PROTOCOL::MPI>::~Comm(){
-    MPI_Finalize();
+    if(MPI_Finalize() == MPI_SUCCESS){
+        //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
+    }
+    else{
+        std::cout << "The MPI routine MPI_Finalize failed." << std::endl;
+    }
 }
 
 void Comm<PROTOCOL::MPI>::barrier(){

@@ -1,15 +1,17 @@
 #pragma once
 #include <array>
-#include "DecomposeOption.hpp"
+#include "Comm_include.hpp"
+#include "Map.hpp"
+
 namespace SE{
 
-template<typename datatype, size_t dimension, typename device, typename map>
+template<typename datatype, size_t dimension, typename comm, typename map>
 class Tensor{
 public:
     std::array<size_t, dimension> shape;
     std::array<size_t, dimension+1> shape_mult;
 
-    DecomposeOption option;
+    //DecomposeOption option;
 
     virtual void complete(){};
     virtual bool get_filled() {return true;};
