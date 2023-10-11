@@ -2,6 +2,7 @@
 #include <array>
 #include "Comm_include.hpp"
 #include "Map.hpp"
+#include "DecomposeResult.hpp"
 
 namespace SE{
 
@@ -19,5 +20,10 @@ public:
         
     //virtual datatype* unfold(Tensor<datatype,dimension,device,comm> tensor, size_t axis){};
     //virtual datatype* fold(Tensor<datatype,dimension,device,comm> tensor, size_t axis){};
+    
+    //clone
+    //decompose
+protected:
+    bool filled;
 };
 }

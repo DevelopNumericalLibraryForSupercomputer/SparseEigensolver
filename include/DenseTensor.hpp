@@ -3,7 +3,6 @@
 #include <array>
 #include <cassert>
 #include "Tensor.hpp"
-#include "DecomposeResult.hpp"
 
 
 namespace SE{
