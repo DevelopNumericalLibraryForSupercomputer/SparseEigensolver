@@ -7,17 +7,17 @@ public:
     ContiguousMap(std::array<size_t, dimension> total_size) : Map<dimension>(total_size) {};
     // tensor will only be sliced alog the slice dimension
     // array -> array
-    const std::array<size_t, dimension> get_global_array_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size);
-    const std::array<size_t, dimension> get_local_array_index (const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size);
+    std::array<size_t, dimension> get_global_array_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size);
+    std::array<size_t, dimension> get_local_array_index (const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size);
     // size_t -> array
-    const std::array<size_t, dimension> get_global_array_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size);
-    const std::array<size_t, dimension> get_local_array_index (const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size);
+    std::array<size_t, dimension> get_global_array_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size);
+    std::array<size_t, dimension> get_local_array_index (const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size);
     // array -> size_t
-    const size_t get_global_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size);
-    const size_t get_local_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size);
+    size_t get_global_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size);
+    size_t get_local_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size);
     // size_t -> size_t
-    const size_t get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size);
-    const size_t get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size);
+    size_t get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size);
+    size_t get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size);
     
 private:
     /* contiguous map of the given index.
@@ -61,13 +61,13 @@ private:
 
 // array -> array
 template <size_t dimension>
-const std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t, dimension> global_index = local_index;
     global_index[slice_dimension] = local_to_global(this->tensor_total_size[slice_dimension], local_index[slice_dimension], rank, world_size);
     return global_index;
 }
 template <size_t dimension>
-const std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t, dimension> local_index = global_index;
     local_index[slice_dimension] = global_to_local(this->tensor_total_size[slice_dimension], global_index[slice_dimension], rank, world_size);
     return local_index;
@@ -75,36 +75,36 @@ const std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_in
 
 // size_t -> array
 template <size_t dimension>
-const std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t, dimension> local_array_index = array_to_sliced_tensor_index(local_index, slice_dimension, rank, world_size);
     return get_global_array_index(local_array_index,slice_dimension, rank, world_size);
 }
 template <size_t dimension>
-const std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t, dimension> global_array_index = array_to_whole_tensor_index(global_index);
     return get_local_array_index(global_array_index,slice_dimension, rank, world_size);
 }
 
 // array -> size_t
 template <size_t dimension>
-const size_t ContiguousMap<dimension>::get_global_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size){
+size_t ContiguousMap<dimension>::get_global_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t,dimension> global_array_index = get_global_array_index(local_index, slice_dimension, rank, world_size);
     return whole_tensor_to_array_index(global_array_index);
 }
 
 template <size_t dimension>
-const size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size){
+size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size){
     std::array<size_t,dimension> local_array_index = get_local_array_index(global_index, slice_dimension, rank, world_size);
     return sliced_tensor_to_array_index(local_array_index, slice_dimension, rank, world_size);
 }
 
 // size_t -> size_t
 template <size_t dimension>
-const size_t ContiguousMap<dimension>::get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size){
+size_t ContiguousMap<dimension>::get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size){
     return get_global_index(array_to_sliced_tensor_index(local_index, slice_dimension, rank, world_size), slice_dimension, rank, world_size);
 }
 template <size_t dimension>
-const size_t ContiguousMap<dimension>::get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size){
+size_t ContiguousMap<dimension>::get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size){
     return get_local_index(array_to_whole_tensor_index(global_index),slice_dimension, rank, world_size);   
 }
 
