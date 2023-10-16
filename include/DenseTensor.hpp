@@ -4,6 +4,7 @@
 #include <cassert>
 #include "Tensor.hpp"
 
+#include "decomposition/Utility.hpp"
 
 namespace SE{
 template<typename datatype, size_t dimension, typename comm, typename map>
@@ -25,7 +26,7 @@ public:
     //bool get_filled() {return true;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
     DenseTensor<datatype, dimension, comm, map> clone() {return DenseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
-    DecomposeResult<datatype, dimension, comm> decompose(const char* method);
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
 };
 
@@ -35,7 +36,7 @@ DenseTensor<datatype, dimension, comm, map>::DenseTensor(std::array<size_t, dime
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     //this->data = new datatype[this->shape_mult[dimension]];
-    this->data = malloc<datatype, comm>(this->shape_mult[dimension]);
+    this->data = malloc<datatype, comm::protocol_>(this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
@@ -44,7 +45,8 @@ DenseTensor<datatype, dimension, comm, map>::DenseTensor(std::array<size_t, dime
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     //assert(this->shape_mult[dimension] == data.size() ); We don't know.
-    this->data = data;
+    this->data = malloc<datatype, comm::protocol_>(this->shape_mult[dimension]);
+    memcpy<datatype,comm::protocol_>(this->data, data, this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
@@ -114,7 +116,7 @@ void DenseTensor<datatype, dimension, comm, map>::insert_value(std::array<size_t
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
-DecomposeResult<datatype, dimension, comm> DenseTensor<datatype, dimension, comm, map>::decompose(const char* method){
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::decompose(const std::string method){
     std::cout << method << " is not implemented yet." << std::endl;
     //exit(-1);
 }

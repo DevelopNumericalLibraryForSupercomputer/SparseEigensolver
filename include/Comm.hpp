@@ -14,6 +14,7 @@ typedef enum{//opertor for allreduce
 template<PROTOCOL protocol = PROTOCOL::SERIAL>
 class Comm{
     public:
+        static const PROTOCOL protocol_=protocol;
         size_t rank = 0;           // Process rank
         //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
         size_t world_size = 1;     // Total number of processes in the job
@@ -21,7 +22,7 @@ class Comm{
         //Comm(std::string protocol): comm_protocol(std::move(protocol)){};
         //Comm(MPI_Comm new_communicator);
         //Comm(int argc, char *argv[]) {};
-        Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
+        Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size), protocol(protocol)  {};
         void initialize() {};
         void initialize(int argc, char *argv[]) {};
     
