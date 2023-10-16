@@ -17,11 +17,11 @@ template <typename datatype, size_t dimension, typename comm, typename map>
 class DecomposeResult{
 public:
     DecomposeResult(const size_t num_eig, 
-                    std::unique_ptr< datatype[] > real_eigavals,
-                    std::unique_ptr< datatype[] > imag_eigavals
+                    std::unique_ptr< datatype[] > __real_eigvals,
+                    std::unique_ptr< datatype[] > __imag_eigvals
                    ): num_eig(num_eig),
-                     real_eigvals(std::move(real_eigvals )),
-                     imag_eigvals(std::move(imag_eigvals ))
+                     real_eigvals(std::move(__real_eigvals )),
+                     imag_eigvals(std::move(__imag_eigvals ))
                    {};
     const size_t num_eig=0;
     std::unique_ptr<datatype[] > real_eigvals;

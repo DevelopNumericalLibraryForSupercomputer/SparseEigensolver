@@ -74,12 +74,9 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
         std::cout << method << " is not implemented yet." << std::endl;
         exit(-1);
     }
-    auto return_val =  std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n,std::move(real_eigvals),std::move(imag_eigvals));
-    std::cout << "??????" <<std::endl;
-    for (int i=0; i<3; i++){
-        std::cout << return_val.get()->real_eigvals[i] <<" " <<return_val.get()->imag_eigvals[i] <<std::endl;
-    }
-    std::cout << "???" <<std::endl;
+
+    auto return_val =  std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
+
     return std::move(return_val);
 //    return std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n, 
 //                                                                                                     std::move(real_eigvals),
