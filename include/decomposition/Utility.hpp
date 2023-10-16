@@ -7,7 +7,7 @@
 #include "../ContiguousMap.hpp"
 namespace SE{
 
-typedef enum{//opertor for allreduce
+typedef enum{
     Davidson,
     Direct,
 } DecomposeMethod;
@@ -42,23 +42,22 @@ public:
 //}
 
 /* Auxiliary routine: printing eigenvalues */
-void print_eigenvalues( char* desc, MKL_INT n, double* wr, double* wi ) {
-        MKL_INT j;
-        printf( "\n %s\n", desc );
-   for( j = 0; j < n; j++ ) {
+void print_eigenvalues( const std::string desc, size_t n, double* wr, double* wi ) {
+   std::cout << "\n" << desc << std::endl;
+   for(size_t j = 0; j < n; j++ ) {
       if( wi[j] == (double)0.0 ) {
          printf( " %6.8f", wr[j] );
       } else {
          printf( " (%6.2f,%6.2f)", wr[j], wi[j] );
       }
    }
-   printf( "\n" );
+   std::cout << std::endl;
 }
 
 /* Auxiliary routine: printing eigenvectors */
-void print_eigenvectors( char* desc, MKL_INT n, double* wi, double* v, MKL_INT ldv ) {
-        MKL_INT i, j;
-        printf( "\n %s\n", desc );
+void print_eigenvectors( const std::string desc, size_t n, double* wi, double* v, size_t ldv ) {
+   size_t i, j;
+   std::cout << "\n" << desc << std::endl;
    for( i = 0; i < n; i++ ) {
       j = 0;
       while( j < n ) {
@@ -71,7 +70,7 @@ void print_eigenvectors( char* desc, MKL_INT n, double* wi, double* v, MKL_INT l
             j += 2;
          }
       }
-      printf( "\n" );
+      std::cout << std::endl;
    }
 }
 

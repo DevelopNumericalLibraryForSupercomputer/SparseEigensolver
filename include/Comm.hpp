@@ -22,7 +22,7 @@ class Comm{
         //Comm(std::string protocol): comm_protocol(std::move(protocol)){};
         //Comm(MPI_Comm new_communicator);
         //Comm(int argc, char *argv[]) {};
-        Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size), protocol(protocol)  {};
+        Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
         void initialize() {};
         void initialize(int argc, char *argv[]) {};
     

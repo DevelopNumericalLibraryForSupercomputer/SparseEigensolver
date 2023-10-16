@@ -37,6 +37,7 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 }
 */
 
+template<>
 void Comm<PROTOCOL::MPI>::initialize(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
     int tmp_rank, tmp_world_size;
@@ -46,6 +47,7 @@ void Comm<PROTOCOL::MPI>::initialize(int argc, char *argv[]){
     world_size = tmp_world_size;
 }
 
+template<>
 Comm<PROTOCOL::MPI>::~Comm(){
     if(MPI_Finalize() == MPI_SUCCESS){
         //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
@@ -55,6 +57,7 @@ Comm<PROTOCOL::MPI>::~Comm(){
     }
 }
 
+template<>
 void Comm<PROTOCOL::MPI>::barrier(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
