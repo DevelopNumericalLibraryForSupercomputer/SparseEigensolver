@@ -318,12 +318,11 @@ int main(int argc, char* argv[]){
     comm.barrier();
 
     auto out = test_matrix.decompose("EVD");
-    std::cout << "end" <<std::endl;
 
     for (int i=0; i<3; i++){
         std::cout << out.get()->real_eigvals[i] <<" " <<out.get()->imag_eigvals[i] <<std::endl;
     }
-    std::cout << "end2" <<std::endl;
+    std::cout << "end" <<std::endl;
 
     //SERIAL_Finalize();
     return 0;
