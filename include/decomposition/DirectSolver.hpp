@@ -11,8 +11,10 @@ template <>
 std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > > DenseTensor<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> >::decompose(const std::string method){
 
     const int n = shape[0];
-    auto real_eigvals=std::make_unique< std::vector<double> > (n*n);
-    auto imag_eigvals=std::make_unique< std::vector<double> > (n*n);
+    //auto real_eigvals=std::make_unique< std::vector<double> > (n*n);
+    //auto imag_eigvals=std::make_unique< std::vector<double> > (n*n);
+    std::unique_ptr<double[]> real_eigvals(new double[n]);
+    std::unique_ptr<double[]> imag_eigvals(new double[n]);
 
     if(method.compare("EVD")==0){
         //eigenvalue decomposition, N by N matrix A = Q Lambda Q-1
@@ -47,7 +49,8 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
         //lapack_int LAPACKE_dgeev (int matrix_layout, char jobvl, char jobvr, lapack_int n, double* a, lapack_int lda,
         //                           double* wr, double* wi, double* vl, lapack_int ldvl, double* vr, lapack_int ldvr) 
 
-        int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get()->data(), imag_eigvals.get()->data(),
+        //int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get()->data(), imag_eigvals.get()->data(),
+        int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
                                   eigvec_0, n, eigvec_1, n );
 
         /* Check for convergence */
@@ -57,7 +60,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
         }
         /* Print eigenvalues */
         //print_eigenvalues( "Eigenvalues", shape[0], wr, wi );
-        print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get()->data(), imag_eigvals.get()->data() );
+        print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get(), imag_eigvals.get() );
         /* Print left eigenvectors */
         //print_eigenvectors( "Left eigenvectors", shape[0], wi, return_val.factor_matrices[0], 3 );
         /* Print right eigenvectors */
@@ -71,10 +74,11 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
         std::cout << method << " is not implemented yet." << std::endl;
         exit(-1);
     }
-    auto return_val =  std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n, 
-                                                                                                     std::move(real_eigvals),
-                                                                                                     std::move(imag_eigvals)
-                                                                                                    );
+    auto return_val =  std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n,std::move(real_eigvals),std::move(imag_eigvals));
+    std::cout << "??????" <<std::endl;
+    for (int i=0; i<3; i++){
+        std::cout << return_val.get()->real_eigvals[i] <<" " <<return_val.get()->imag_eigvals[i] <<std::endl;
+    }
     std::cout << "???" <<std::endl;
     return std::move(return_val);
 //    return std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n, 

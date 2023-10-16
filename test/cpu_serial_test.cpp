@@ -317,8 +317,14 @@ int main(int argc, char* argv[]){
 //                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     comm.barrier();
 
-    test_matrix.decompose("EVD");
+    auto out = test_matrix.decompose("EVD");
     std::cout << "end" <<std::endl;
+
+    for (int i=0; i<3; i++){
+        std::cout << out.get()->real_eigvals[i] <<" " <<out.get()->imag_eigvals[i] <<std::endl;
+    }
+    std::cout << "end2" <<std::endl;
+
     //SERIAL_Finalize();
     return 0;
 }
