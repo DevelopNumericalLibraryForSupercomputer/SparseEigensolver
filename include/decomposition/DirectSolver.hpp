@@ -8,8 +8,8 @@
 namespace SE{
 
 template <>
-std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > > 
-        DenseTensor<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> >::decompose(const std::string method){
+std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > > 
+        DenseTensor<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> >::decompose(const std::string method){
 
     const int n = shape[0];
     //auto real_eigvals=std::make_unique< std::vector<double> > (n*n);
@@ -45,15 +45,17 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
 
         //lapack_int LAPACKE_dgeev (int matrix_layout, char jobvl, char jobvr, lapack_int n, double* a, lapack_int lda,
         //                           double* wr, double* wi, double* vl, lapack_int ldvl, double* vr, lapack_int ldvr) 
-
-        int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
-                                  eigvec_0, n, eigvec_1, n );
-
+        
+        //int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
+        //                          eigvec_0, n, eigvec_1, n );
+        int info = geev<double, computEnv::MKL>(ColMajor, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0, n, eigvec_1, n);
         /* Check for convergence */
+        
         if( info > 0 ) {
                 printf( "The algorithm failed to compute eigenvalues.\n" );
                 exit( 1 );
         }
+        
         /* Print eigenvalues */
         //print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get(), imag_eigvals.get() );
         /* Print left eigenvectors */
@@ -69,10 +71,10 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
         exit(-1);
     }
 
-    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
+    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
 
     return std::move(return_val);
-//    return std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >(n, 
+//    return std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > >(n, 
 //                                                                                                     std::move(real_eigvals),
 //                                                                                                     std::move(imag_eigvals) )
 }
