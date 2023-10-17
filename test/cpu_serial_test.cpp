@@ -22,7 +22,7 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    Comm<PROTOCOL::SERIAL> comm;
+    Comm<computEnv::MKL> comm;
     std::cout << "SERIAL test" << std::endl;
 
     double x = 0.0, sum = 0.0;
@@ -116,8 +116,8 @@ int main(int argc, char* argv[]){
 
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
 
-    SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > test_matrix(test_shape, &test_data[0]);
-//                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix(test_shape, &test_data[0]);
+//                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     comm.barrier();
 
     auto out = test_matrix.decompose("EVD");

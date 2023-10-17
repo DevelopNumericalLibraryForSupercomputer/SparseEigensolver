@@ -28,6 +28,9 @@ public:
     DenseTensor<datatype, dimension, comm, map> clone() {return DenseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
+    //TEMPORAL
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson(const std::string method);
+
 };
 
 template <typename datatype, size_t dimension, typename comm, typename map>

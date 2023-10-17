@@ -18,10 +18,10 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    Comm<PROTOCOL::MPI> comm;
+    Comm<computEnv::MPI> comm;
     comm.initialize(argc, argv);
     std::cout << "MPI test" << std::endl;
-    //Comm<PROTOCOL::SERIAL> comm;
+    //Comm<computEnv::MKL> comm;
     double x = 0.0, sum = 0.0;
     int myrank = comm.rank;
     int nprocs = comm.world_size;
@@ -227,8 +227,8 @@ int main(int argc, char* argv[]){
 
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
 
-    SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > test_matrix
-                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     //test_matrix.decompose("EVD");
     comm.barrier();
     //MPI_Finalize();

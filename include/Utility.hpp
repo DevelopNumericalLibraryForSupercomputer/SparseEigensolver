@@ -8,19 +8,19 @@
 
 namespace SE{
 //memory managament
-template<typename datatype, PROTOCOL protocol>
+template<typename datatype, computEnv comput_env>
 datatype* malloc(const size_t size){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
 }
 
-template<typename datatype, PROTOCOL protocol>
+template<typename datatype, computEnv comput_env>
 void free(datatype* ptr){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
 }
 
-template<typename datatype, PROTOCOL protocol>
+template<typename datatype, computEnv comput_env>
 void memcpy(datatype* dest, const datatype* source, size_t size){
     std::cout <<  "This is not implemented yet" << std::endl;
     exit(-1);
@@ -34,6 +34,9 @@ void memcpy(datatype* dest, const datatype* source, size_t size){
  *  SE_Transpose     // matrix transpose
  *  SE_layout        // matrix layout
  * 
+ * LAPACK
+ *  geev
+ * 
  * FYI
 enum CBLAS_LAYOUT {CblasRowMajor=101, CblasColMajor=102};
 enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
@@ -41,25 +44,31 @@ enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
  */ 
 //mkl - BLAS
 enum SE_transpose{
-    Blas_NoTrans,
-    Blas_Trans,
-    Blas_ConjTrans
+    NoTrans,
+    Trans,
+    ConjTrans
 };
 
 enum SE_layout{
-    Blas_RowMajor,
-    Blas_ColMajor
+    RowMajor,
+    ColMajor
 };
 
-template <typename datatype, PROTOCOL protocol>
+template <typename datatype, computEnv comput_env>
 void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
           const datatype alpha, const datatype *a, const size_t lda,
           const datatype *b, const size_t ldb, const datatype beta,
           datatype *c, const size_t ldc)
 {  static_assert(false,"This is not implemented yet"); }
 
-template <typename datatype, PROTOCOL protocol>
+template <typename datatype, computEnv comput_env>
 void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy)
+{  static_assert(false,"This is not implemented yet"); }
+
+//LAPACK
+template <typename datatype, computEnv comput_env>
+int geev(const SE_layout Layout, char jobvl, char jobvr, const size_t n, datatype* a, const size_t lda,
+          datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr)
 {  static_assert(false,"This is not implemented yet"); }
 
 //numerical recipies
