@@ -4,7 +4,7 @@
 #include <array>
 #include <iostream>
 
-#include "device/Serial/SerialComm.hpp"
+#include "device/MKL/MKLComm.hpp"
 //#include "ContiguousMap.hpp"
 //#include <iomanip>
 //#include "DenseTensor.hpp"
