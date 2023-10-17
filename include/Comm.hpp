@@ -14,7 +14,7 @@ typedef enum{//opertor for allreduce
 template<PROTOCOL protocol = PROTOCOL::SERIAL>
 class Comm{
     public:
-        static const PROTOCOL protocol_=protocol;
+        static const PROTOCOL _protocol=protocol;
         size_t rank = 0;           // Process rank
         //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
         size_t world_size = 1;     // Total number of processes in the job

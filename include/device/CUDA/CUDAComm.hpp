@@ -1,59 +1,93 @@
 #pragma once
+#include <mpi.h>
+#include <nccl.h>
 #include <iostream>
 #include <string>
-//#include "nccl.h"
+#include <stdexcept>
+
 #include "../../Comm.hpp"
 
-namespace TH{
-class NcclComm: public Comm{
-public:
-    NcclComm(){};
-    NcclComm(const std::string &protocol);
-    NcclComm(int argc, char *argv[], const std::string &protocol);
-    ~NcclComm();
+namespace SE{
 
-    template <typename datatype> void allreduce(datatype *src, size_t count, datatype *trg, enum TH_op op);
-    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-};
+ncclComm_t nccl_comm;
+//MPI_Comm mpi_comm = MPI_COMM_WORLD;
+cudaStream_t stream;
 
-NcclComm::NcclComm(const std::string &protocol) : Comm(protocol){
-    /* Check the following lines are correct
-    // Initialize NCCL (assuming NCCL has been initialized before this)
-    ncclComm_t nccl_comm;
-    ncclGetUniqueId(&nccl_id);
-    ncclCommInitRank(&nccl_comm, world_size, nccl_id, rank);
-    // Assign the local rank
-    ncclCommUserRank(nccl_comm, &local_rank);
-    // Assign the communicator and initialize NCCL
-    nccl_communicator = nccl_comm;
-    */
+Comm<PROTOCOL::NCCL>::Comm(int argc, char *argv[]) {
     std::cout << "nccl is not implemented" << std::endl;
+    int myRank, nRanks;
+    MPI_Init(&argc, &argv);
+    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
+    MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
+    ncclUniqueId id;
+    if (myRank == 0) ncclGetUniqueId(&id);
+    MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+    ncclCommInitRank(&nccl_comm, nRanks, id, myRank);
+    cudaStreamCreate(&stream);
+
 }
 
-NcclComm::NcclComm(int argc, char *argv[], const std::string &protocol) : Comm(protocol){
-    std::cout << "nccl is not implemented" << std::endl;
-}
-
-NcclComm::~NcclComm(){
-    /*
+Comm<PROTOCOL::NCCL>::~Comm(){
     // Finalize NCCL
-    ncclCommDestroy(nccl_communicator);
-    */
+    ncclCommDestroy(nccl_comm);
+    // Finalize MPI
+    MPI_Finalize();
+}
+
+template<typename datatype>
+ncclDataType_t check_type(){
+    if ( std::is_same<datatype, double> ){
+        return ncclDouble;
+    }
+    else if (std::is_same<datatype, float> ){
+        return ncclFloat;
+    }
+    throw std::runtime_error("NCCL does not support the type ");
+}
+ncclRedOp_t check_op(SE_op op){
+    switch (op){
+        case SUM: return ncclSum;
+        case PROD: return ncclProd;
+        case MIN: return ncclMin;
+        case MAX: return ncclMax;
+        default: throw std::runtime_error("CUDAComm check_op") ;
+    }
+}
+template <typename datatype>
+void Comm<PROTOCOL::NCCL>::allreduce(datatype *src, size_t count, datatype *trg, SE_op op){
+
+    ncclDataType_t __datatype = check_type<datatype>();
+    ncclRedOp_t    __op       = check_op(op);
+    auto result = ncclAllreduce( (void*) src, (void*) trg, count, __datatype, __op,  nccl_comm);
+    cudaStreamSynchronize(stream);
+    return;
 }
 
 template <typename datatype>
-void NcclComm::allreduce(datatype *src, size_t count, datatype *trg, TH_op op){
-    std::cout << "not implemented" << std::endl;
+void Comm<PROTOCOL::NCCL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    ncclDataType_t __datatype = check_type<datatype>();
+    int nRanks;
+    ncclCommCount(nccl_comm, &nRanks);
+    size_t rankOffset = count * wordSize(type);
+  
+    ncclGroupStart();
+    for (int r=0; r<nRanks; r++) {
+        ncclSend( (void*) (sendbuff+r*rankOffset), count, __datatype, r, nccl_comm, stream);
+        ncclRecv( (void*) (recvbuff+r*rankOffset), count, __datatype, r, nccl_comm, stream);
+    }
+    ncclGroupEnd();
+    cudaStreamSynchronize(stream);
+    return ;
 }
 
 template <typename datatype>
-void NcclComm::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<PROTOCOL::NCCL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    auto __datatype = check_type<datatype>();
+    auto __op       = check_op(op);
+    auto result     = ncclAllGather( (void*) sendbuff, (void*) recvbuff, sendcount, __datatype, nccl_comm, stream);
+    cudaStreamSynchronize(stream);
     std::cout << "not implemented" << std::endl;
 }
 
-template <typename datatype>
-void NcclComm::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
-    std::cout << "not implemented" << std::endl;
-}
 }

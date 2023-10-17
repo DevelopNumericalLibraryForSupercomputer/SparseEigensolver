@@ -26,7 +26,7 @@ public:
     void insert_value(std::array<size_t, dimension> index, datatype value);
 
     SparseTensor<datatype, dimension, comm, map> clone() {return SparseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
-    DecomposeResult<datatype, dimension, comm> decompose(const char* method);
+    DecomposeResult<datatype, dimension, comm, map> decompose(const std::string method);
 
     void export_csr( const size_t dim, 
                      std::vector<size_t>& Bp,      // ROW_INDEX

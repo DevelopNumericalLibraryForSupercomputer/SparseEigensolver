@@ -17,11 +17,11 @@ template <typename datatype, size_t dimension, typename comm, typename map>
 class DecomposeResult{
 public:
     DecomposeResult(const size_t num_eig, 
-                    std::unique_ptr< datatype[] > __real_eigvals,
-                    std::unique_ptr< datatype[] > __imag_eigvals
+                    std::unique_ptr< datatype[] > real_eigvals,
+                    std::unique_ptr< datatype[] > imag_eigvals
                    ): num_eig(num_eig),
-                     real_eigvals(std::move(__real_eigvals )),
-                     imag_eigvals(std::move(__imag_eigvals ))
+                     real_eigvals(std::move(real_eigvals )),
+                     imag_eigvals(std::move(imag_eigvals ))
                    {};
     const size_t num_eig=0;
     std::unique_ptr<datatype[] > real_eigvals;
@@ -42,9 +42,9 @@ public:
 //}
 
 /* Auxiliary routine: printing eigenvalues */
-void print_eigenvalues( char* desc, MKL_INT n, double* wr, double* wi ) {
-        MKL_INT j;
-        printf( "\n %s\n", desc );
+void print_eigenvalues( char* desc, int n, double* wr, double* wi ) {
+   int j;
+   printf( "\n %s\n", desc );
    for( j = 0; j < n; j++ ) {
       if( wi[j] == (double)0.0 ) {
          printf( " %6.8f", wr[j] );
@@ -56,9 +56,9 @@ void print_eigenvalues( char* desc, MKL_INT n, double* wr, double* wi ) {
 }
 
 /* Auxiliary routine: printing eigenvectors */
-void print_eigenvectors( char* desc, MKL_INT n, double* wi, double* v, MKL_INT ldv ) {
-        MKL_INT i, j;
-        printf( "\n %s\n", desc );
+void print_eigenvectors( char* desc, int n, double* wi, double* v, int ldv ) {
+   int i, j;
+   printf( "\n %s\n", desc );
    for( i = 0; i < n; i++ ) {
       j = 0;
       while( j < n ) {

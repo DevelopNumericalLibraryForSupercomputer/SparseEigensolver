@@ -3,7 +3,7 @@
 #include "Comm.hpp"
 //#include "Comm_include.hpp"
 #include "Map.hpp"
-#include "DecomposeResult.hpp"
+//#include "DecomposeResult.hpp"
 
 namespace SE{
 
