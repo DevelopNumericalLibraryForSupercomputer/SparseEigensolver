@@ -6,7 +6,7 @@ namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_WORLD;
 //template<>
-//class Comm<PROTOCOL::MPI>{
+//class Comm<computEnv::MPI>{
 //    void initialize(int argc, char *argv[]);
 //public:
 //    MPI_Comm mpi_comm;
@@ -37,7 +37,8 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 }
 */
 
-void Comm<PROTOCOL::MPI>::initialize(int argc, char *argv[]){
+template<>
+void Comm<computEnv::MPI>::initialize(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
     int tmp_rank, tmp_world_size;
     MPI_Comm_rank(mpi_comm, &tmp_rank);
@@ -46,7 +47,8 @@ void Comm<PROTOCOL::MPI>::initialize(int argc, char *argv[]){
     world_size = tmp_world_size;
 }
 
-Comm<PROTOCOL::MPI>::~Comm(){
+template<>
+Comm<computEnv::MPI>::~Comm(){
     if(MPI_Finalize() == MPI_SUCCESS){
         //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
     }
@@ -55,12 +57,13 @@ Comm<PROTOCOL::MPI>::~Comm(){
     }
 }
 
-void Comm<PROTOCOL::MPI>::barrier(){
+template<>
+void Comm<computEnv::MPI>::barrier(){
     MPI_Barrier(MPI_COMM_WORLD);
 }
 
 template <> template<>
-void Comm<PROTOCOL::MPI>::allreduce<double>(const double *src, size_t count, double *trg, SE_op op){
+void Comm<computEnv::MPI>::allreduce<double>(const double *src, size_t count, double *trg, SE_op op){
     switch (op){
         case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
         case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
@@ -70,12 +73,12 @@ void Comm<PROTOCOL::MPI>::allreduce<double>(const double *src, size_t count, dou
     }
 }
 template <> template<>
-void Comm<PROTOCOL::MPI>::alltoall<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<computEnv::MPI>::alltoall<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 
 template <> template<>
-void Comm<PROTOCOL::MPI>::allgather<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<computEnv::MPI>::allgather<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
 }
 

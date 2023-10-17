@@ -27,7 +27,7 @@ public:
     int max_iterations       = 100;
     double tolerance         = 1E-6;
     MAT_TYPE matrix_type     = RealSym;
-    int num_eigenvalues      = 5;
+    int num_eigenvalues      = 3;
     int eigenvalue_guesses   = 0;
     bool use_preconditioner              = false;
     double preconditioner_tolerance      = 1E-3;

@@ -1,14 +1,13 @@
 // Device information
 // Read https://www.cppstories.com/2018/08/init-string-member/
 #pragma once
-#include <string>
+//#include <string>
 namespace SE{
 
-enum class PROTOCOL{
-    SERIAL,
-    MPI,
-    NCCL,
-    ROCM
+enum class computEnv{
+    MKL, CUDA,
+    MPI, NCCL,
+    //ROCM
 };
 /*
 struct Device{

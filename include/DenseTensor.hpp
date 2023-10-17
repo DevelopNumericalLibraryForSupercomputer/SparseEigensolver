@@ -28,6 +28,9 @@ public:
     DenseTensor<datatype, dimension, comm, map> clone() {return DenseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
+    //TEMPORAL
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson(const std::string method);
+
 };
 
 template <typename datatype, size_t dimension, typename comm, typename map>
@@ -36,7 +39,7 @@ DenseTensor<datatype, dimension, comm, map>::DenseTensor(std::array<size_t, dime
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     //this->data = new datatype[this->shape_mult[dimension]];
-    this->data = malloc<datatype, comm::_protocol>(this->shape_mult[dimension]);
+    this->data = malloc<datatype, comm::env>(this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
@@ -45,8 +48,8 @@ DenseTensor<datatype, dimension, comm, map>::DenseTensor(std::array<size_t, dime
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     //assert(this->shape_mult[dimension] == data.size() ); We don't know.
-    this->data = malloc<datatype, comm::_protocol>(this->shape_mult[dimension]);
-    memcpy<datatype,comm::_protocol>(this->data, data, this->shape_mult[dimension]);
+    this->data = malloc<datatype, comm::env>(this->shape_mult[dimension]);
+    memcpy<datatype,comm::env>(this->data, data, this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>

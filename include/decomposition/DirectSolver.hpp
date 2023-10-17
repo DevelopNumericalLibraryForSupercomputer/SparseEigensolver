@@ -8,7 +8,9 @@
 namespace SE{
 
 template <>
-std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > > DenseTensor<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> >::decompose(const std::string method){
+std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > > 
+        DenseTensor<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> >::decompose(const std::string method){
+
     const int n = shape[0];
     //auto real_eigvals=std::make_unique< std::vector<double> > (n*n);
     //auto imag_eigvals=std::make_unique< std::vector<double> > (n*n);
@@ -52,7 +54,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap
     delete eigvec_0;
     delete eigvec_1;
 
-    auto return_val =  std::make_unique< DecomposeResult<double, 2, Comm<PROTOCOL::SERIAL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
+    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
 
     return std::move(return_val);
 }
