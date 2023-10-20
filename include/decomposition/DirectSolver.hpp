@@ -49,6 +49,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         //int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
         //                          eigvec_0, n, eigvec_1, n );
         int info = geev<double, computEnv::MKL>(ColMajor, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0, n, eigvec_1, n);
+
         /* Check for convergence */
         
         if( info > 0 ) {
@@ -56,6 +57,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
                 exit( 1 );
         }
         
+        eigenvec_sort<double, computEnv::MKL>(real_eigvals.get(), eigvec_0, n, n);
         /* Print eigenvalues */
         //print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get(), imag_eigvals.get() );
         /* Print left eigenvectors */

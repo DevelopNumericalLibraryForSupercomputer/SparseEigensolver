@@ -14,7 +14,7 @@ typedef enum{//opertor for allreduce
 template<computEnv comput_env = computEnv::MKL>
 class Comm{
     public:
-        static const computEnv comput_env = comput_env;
+        static const computEnv comput_env_ = comput_env;
         size_t rank = 0;           // Process rank
         //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
         size_t world_size = 1;     // Total number of processes in the job

@@ -10,13 +10,14 @@
 
 namespace SE{
 
-void orthonormalize(double* eigvec, std::string method){
+void orthonormalize(double* eigvec, int vector_size, int number_of_vectors, std::string method){
     DecomposeOption option;
     if(method == "qr"){
-        std::cout << "not implemented" << std::endl;
-    }
-    else if(method == "cholesky"){
-        std::cout << "not implemented" << std::endl;
+        //int LAPACKE_dgeqrf(int matrix_layout, int m, int n, double *a, int lda, double *tau)
+        double* tau = malloc<double, computEnv::MKL>(number_of_vectors);
+        LAPACKE_dgeqrf(LAPACK_COL_MAJOR, vector_size, number_of_vectors, eigvec, vector_size, tau);
+        //int LAPACKE_dorgqr(int matrix_layout, int m, int n, int k, double *a, int lda, const double *tau)
+        LAPACKE_dorgqr(LAPACK_COL_MAJOR, vector_size, number_of_vectors, number_of_vectors, eigvec, vector_size, tau);
     }
     else{
         std::cout << "not implemented" << std::endl;
@@ -25,39 +26,111 @@ void orthonormalize(double* eigvec, std::string method){
 }
 
 
-int davidson_real(size_t n, double* matrix, double* eigval, double* eigvec){
+int davidson_worker(size_t n, double* matrix, double* eigval, double* imag_eigval, double* eigvec, double* imag_eigvec){
     DecomposeOption option;
+    
+    //imag_eigval = malloc<double, computEnv::MKL>(option.num_eigenvalues);
+    //imag_eigvec = malloc<double, computEnv::MKL>(n*option.num_eigenvalues);
 
-    int num_eigenvalues = option.num_eigenvalues;
-    double* guess = new double[n*n];
-    double* rayliegh = new double[n*n];
+    int block_size = option.num_eigenvalues;
+    double* guess = malloc<double, computEnv::MKL>(n*n);
     // initialization of gusss vector(s), V
     // guess : unit vector
-    for(int i=0;i<n;i++){
+    for(int i=0;i<option.num_eigenvalues;i++){
+        imag_eigval[i] = 0.0;
         for(int j=0;j<n;j++){
             guess[n*i+j] = 0.0;
+            imag_eigvec[n*i+j] = 0.0;
         }
-        if(i < num_eigenvalues){
-            guess[n*i+i] = 1.0;
-        }        
+        guess[n*i+i] = 1.0;
     }
+    double* old_residual = malloc<double, computEnv::MKL>(n*option.num_eigenvalues);
     for(int iter=0;iter<option.max_iterations;iter++){
+        std::cout << iter << "th iteration start:" << std::endl;
         //guess vector를 orthomormalize
-        orthonormalize(guess, "qr");
+        orthonormalize(guess, n, block_size, "qr");
+        
+    std::cout << "end of qr" << std::endl;
         //subspace matrix (Rayleigh matrix) 생성
-        // T = V^t A V
-        // i.e. 2D matrix : column major, i + row*j
-        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans,
-                                
+        // W_iterk = A V_k
+        double* W_iter = malloc<double, computEnv::MKL>(n*block_size);
+        //계산이 중복일것임. qr은 앞에 벡터들은 걍 유지하기때문. <- 아님. numerical instability
+        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, n, 1.0, matrix, n, guess, n, 0.0, W_iter, n);
+        std::cout << "end of Witerk" << std::endl;
+        //H_k = V_k^t A V_k
+        double* rayleigh = malloc<double, computEnv::MKL>(block_size*block_size);
+        gemm<double, computEnv::MKL>(ColMajor, Trans, NoTrans, block_size, block_size, n, 1.0, guess, n, W_iter, n, 0.0, rayleigh, block_size);
+        std::cout << "end of rayleigh" << std::endl;
+        //get eigenpair of Rayleigh matrix
+        //lambda_ki, y_ki of H_k
 
-        )
-        //submatrix 대각화
+        double* rayleigh_eigval_0 = malloc<double, computEnv::MKL>(block_size);
+        double* rayleigh_eigval_1 = malloc<double, computEnv::MKL>(block_size);
+        double* rayleigh_eigvec_0 = malloc<double, computEnv::MKL>(block_size * block_size);
+        double* rayleigh_eigvec_1 = malloc<double, computEnv::MKL>(block_size * block_size);
+        geev<double, computEnv::MKL>(ColMajor, 'N', 'V', block_size, rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigval_1, rayleigh_eigvec_0, block_size, rayleigh_eigvec_1, block_size);
+        std::cout << "end of rayleigh matrix diag." << std::endl;
+        //Ritz vector calculation
+        //x_ki = V_k y_ki
+        double* ritz_vec = malloc<double, computEnv::MKL>(n*block_size);
+        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, block_size, 1.0, guess, n, rayleigh_eigvec_0, block_size, 0.0, ritz_vec, n); 
+        std::cout << "end of ritz_vec" << std::endl;
         //residual 계산
+        //r_ki =  W_iterk y_ki - lambda_ki x_ki
+        //double* residual = malloc<double, computEnv::MKL>(n * num_eigenvalues);
+        //lambda_ki x_ki
+        /*
+        for(int eigen_index = 0; eigen_index < num_eigenvalues; eigen_index++){
+            scal<double, computEnv::MKL>(n, rayleigh_eigval_0[eigen_index], &ritz_vec[n*eigen_index],n);
+        }
+        */
+        for(int index = 0; index < n*block_size; index++){
+            ritz_vec[index] *= rayleigh_eigval_0[index/n];
+        }
+        //ritz_vec becomes residual.
+        //W_iterk y_ki - lambda_ki x_ki
+        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, block_size, 1.0, W_iter, n, rayleigh_eigvec_0, block_size, -1.0, ritz_vec, n);
+        std::cout << "end of residual" << std::endl;
+        //convergence check
+        //axpy<double, computEnv::MKL>(n,);
+        double sum_of_norm_square = 0.0;
+        for(int index = 0; index < n*option.num_eigenvalues; index++){
+            sum_of_norm_square += (ritz_vec[index] - old_residual[index])*(ritz_vec[index] - old_residual[index]);
+        }
+        std::cout << "sum_of_norm_square : " << sum_of_norm_square << std::endl;
+        free<double, computEnv::MKL>(W_iter);
+        free<double, computEnv::MKL>(rayleigh);
+        free<double, computEnv::MKL>(rayleigh_eigval_1);
+        free<double, computEnv::MKL>(rayleigh_eigvec_0);
+        free<double, computEnv::MKL>(rayleigh_eigvec_1);
+        if(iter != 0 && sum_of_norm_square < option.tolerance*option.tolerance){
+            memcpy<double, computEnv::MKL>(eigvec, ritz_vec, n*option.num_eigenvalues);
+            memcpy<double, computEnv::MKL>(eigval, rayleigh_eigval_0, option.num_eigenvalues);
+            free<double, computEnv::MKL>(guess);
+            free<double, computEnv::MKL>(old_residual);
+            free<double, computEnv::MKL>(rayleigh_eigval_0);
+            free<double, computEnv::MKL>(ritz_vec);
+            break;
+        }
         //correction vector 계산
-        //correction, or converged
-
+        // diagonal preconditioner
+        assert(block_size < n-option.num_eigenvalues);
+        memcpy<double, computEnv::MKL>(old_residual, ritz_vec, n*option.num_eigenvalues);
+                
+        for(int i=0;i<option.num_eigenvalues;i++){
+            double coeff_i = rayleigh_eigval_0[i] - matrix[i + n*i];
+            if(coeff_i > option.preconditioner_tolerance){
+                for(int j=0;j<n;j++){
+                    guess[n*(block_size+i) + j] = ritz_vec[n*i + j] / coeff_i;
+                }
+            }
+        }
+        block_size += option.num_eigenvalues;
+        
+        free<double, computEnv::MKL>(rayleigh_eigval_0);
+        free<double, computEnv::MKL>(ritz_vec);
     }
-    
+    return 0;
 
 
 }
@@ -92,7 +165,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         //lapack_int LAPACKE_dgeev (int matrix_layout, char jobvl, char jobvr, lapack_int n, double* a, lapack_int lda,
         //                           double* wr, double* wi, double* vl, lapack_int ldvl, double* vr, lapack_int ldvr) 
 
-        int info = davidson_real(n, this->data, real_eigvals.get(), eigvec_0);
+        int info = davidson_worker(n, this->data, real_eigvals.get(), imag_eigvals.get(), eigvec_0, eigvec_1);
 
         /* Check for convergence */
         if( info > 0 ) {
@@ -107,7 +180,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         //print_eigenvectors( "Right eigenvectors", shape[0], wi, return_val.factor_matrices[1], 3 );
 
         delete eigvec_0;
-        delete eigvec_1;
+        
     }
     else{
         std::cout << method << " is not implemented yet." << std::endl;

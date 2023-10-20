@@ -1,7 +1,7 @@
 #pragma once
 #include "../../Comm.hpp"
+#include "device/MKL/Utility.hpp"
 #include <cassert>
-#include "Utility.hpp"
 
 namespace SE{
 //template<>

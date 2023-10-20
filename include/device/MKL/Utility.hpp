@@ -66,6 +66,11 @@ void gemm<std::complex<double>, CPU>(const SE_layout Layout, const SE_transpose 
 }
 */
 template <>
+void scal<double, computEnv::MKL>(const size_t n, const double alpha, double *x, const size_t incx){
+    return cblas_dscal(n, alpha, x, incx);
+}
+
+template <>
 void axpy<double, computEnv::MKL>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
 }
@@ -75,6 +80,12 @@ int geev<double, computEnv::MKL>(const SE_layout Layout, char jobvl, char jobvr,
           double* wr, double* wi, double* vl, const size_t ldvl, double* vr, const size_t ldvr){
     return LAPACKE_dgeev(map_layout_lapack(Layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);
 }
+
+template <>
+void eigenvec_sort<double, computEnv::MKL>(double* eigvals, double* eigvecs, const size_t number_of_eigvals, const size_t vector_size){
+    double* old_eigvals = new double[number_of_eigvals];
+    double* old_eigvecs = new double[number_of_eigvals * vector_size];
+    //size_t sorted_indicies = sort_indicies<double>(eigvals, number_of_eigvals);
 
 
 }
