@@ -3,6 +3,7 @@
 #include <vector>
 #include <array>
 #include <iostream>
+#include <iomanip>
 
 #include "device/MKL/MKLComm.hpp"
 //#include "ContiguousMap.hpp"
@@ -125,29 +126,44 @@ int main(int argc, char* argv[]){
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 
-    size_t N = 87;
+    size_t N = 99;
     std::array<size_t, 2> test_shape2 = {N,N};
     double* test_data2 = malloc<double, computEnv::MKL>(N*N);
     for(int i=0;i<N*N;i++){
         test_data2[i] = 0;
         if(i%(N+1)==0){
-            test_data2[i] = i/(N+1) + 1;
+            test_data2[i] = (i/(N+1) + 1);
+            if (i-1 >0) test_data2[i-1] += 0.4;
+            if (i-2 >0) test_data2[i-2] += -0.1;
+            if (i-3 >0) test_data2[i-3] += 0.04;
         }
         else if(i%13==0){
-            test_data2[i] += 0.1; //(i/N, i%N) i/N * N + i%N
-            test_data2[(i%N)*N + i/N] += 0.1; 
+            test_data2[i] += 0.03; //(i%N, i/N) i%N + i/N * N 
         }
     }
+    for(int i=0;i<N;i++){
+        for(int j=i;j<N;j++){
+            test_data2[j*N+i] = test_data2[j*N+i] + test_data2[i+j*N];
+            test_data2[i*N+j] = test_data2[j*N+i];
+        }
+    }
+    std::cout << "matrix!" << std::endl;
+    for(int i=0;i<N;i++){
+        for(int j=0;j<N;j++){
+            std::cout << std::setw(6) << test_data2[i+j*N] << " ";
+        }
+        std::cout << std::endl;
+    }
+    std::cout << "matrix!" << std::endl;
     ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
     SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix2(test_shape2, test_data2);
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    //auto out1 = test_matrix2.decompose("EVD");
+    auto out1 = test_matrix2.decompose("EVD");
     print_eigenvalues( "Eigenvalues", out1.get()->num_eig, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
-    //auto out2 = test_matrix2.davidson("Davidson");
-    //print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
-
+    auto out2 = test_matrix2.davidson("Davidson");
+    print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
+   
     
-
     
     std::cout<<std::endl;
     return 0;

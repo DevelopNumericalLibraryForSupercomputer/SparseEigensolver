@@ -26,7 +26,7 @@ void orthonormalize(double* eigvec, int vector_size, int number_of_vectors, std:
 }
 
 
-int davidson_worker(size_t n, double* matrix, double* eigval, double* imag_eigval, double* eigvec, double* imag_eigvec){
+int davidson_worker(size_t n, double* matrix, double* eigval, double* eigvec){
     DecomposeOption option;
     
     //imag_eigval = malloc<double, computEnv::MKL>(option.num_eigenvalues);
@@ -37,10 +37,10 @@ int davidson_worker(size_t n, double* matrix, double* eigval, double* imag_eigva
     // initialization of gusss vector(s), V
     // guess : unit vector
     for(int i=0;i<option.num_eigenvalues;i++){
-        imag_eigval[i] = 0.0;
+        //imag_eigval[i] = 0.0;
         for(int j=0;j<n;j++){
             guess[n*i+j] = 0.0;
-            imag_eigvec[n*i+j] = 0.0;
+            //imag_eigvec[n*i+j] = 0.0;
         }
         guess[n*i+i] = 1.0;
     }
@@ -65,63 +65,71 @@ int davidson_worker(size_t n, double* matrix, double* eigval, double* imag_eigva
         //lambda_ki, y_ki of H_k
 
         double* rayleigh_eigval_0 = malloc<double, computEnv::MKL>(block_size);
-        double* rayleigh_eigval_1 = malloc<double, computEnv::MKL>(block_size);
+        double* rayleigh_eigval_imag = malloc<double, computEnv::MKL>(block_size);
         double* rayleigh_eigvec_0 = malloc<double, computEnv::MKL>(block_size * block_size);
-        double* rayleigh_eigvec_1 = malloc<double, computEnv::MKL>(block_size * block_size);
-        geev<double, computEnv::MKL>(ColMajor, 'N', 'V', block_size, rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigval_1, rayleigh_eigvec_0, block_size, rayleigh_eigvec_1, block_size);
+        double* rayleigh_eigvec_left = malloc<double, computEnv::MKL>(block_size * block_size);
+        geev<double, computEnv::MKL>(ColMajor, 'N', 'V', block_size, rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigval_imag, rayleigh_eigvec_left, block_size, rayleigh_eigvec_0, block_size);
         std::cout << "end of rayleigh matrix diag." << std::endl;
+        
+        eigenvec_sort<double, computEnv::MKL>(rayleigh_eigval_0, rayleigh_eigvec_0, block_size, block_size);
+        for(int index = 0;index<block_size;index++){
+            std::cout << rayleigh_eigval_0[index] << " : ";/*
+            for(int j = 0;j<block_size;j++){
+                std::cout << rayleigh_eigvec_0[index*block_size + j] << " ";
+            }
+            std::cout << std::endl;
+
+            */
+        }
         //Ritz vector calculation
         //x_ki = V_k y_ki
         double* ritz_vec = malloc<double, computEnv::MKL>(n*block_size);
         gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, block_size, 1.0, guess, n, rayleigh_eigvec_0, block_size, 0.0, ritz_vec, n); 
         std::cout << "end of ritz_vec" << std::endl;
+        
         //residual 계산
         //r_ki =  W_iterk y_ki - lambda_ki x_ki
-        //double* residual = malloc<double, computEnv::MKL>(n * num_eigenvalues);
+        double* residual = malloc<double, computEnv::MKL>(n * block_size);
         //lambda_ki x_ki
-        /*
-        for(int eigen_index = 0; eigen_index < num_eigenvalues; eigen_index++){
-            scal<double, computEnv::MKL>(n, rayleigh_eigval_0[eigen_index], &ritz_vec[n*eigen_index],n);
-        }
-        */
         for(int index = 0; index < n*block_size; index++){
-            ritz_vec[index] *= rayleigh_eigval_0[index/n];
+            residual[index] = ritz_vec[index] * rayleigh_eigval_0[index/n];
         }
-        //ritz_vec becomes residual.
         //W_iterk y_ki - lambda_ki x_ki
-        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, block_size, 1.0, W_iter, n, rayleigh_eigvec_0, block_size, -1.0, ritz_vec, n);
+        gemm<double, computEnv::MKL>(ColMajor, NoTrans, NoTrans, n, block_size, block_size, 1.0, W_iter, n, rayleigh_eigvec_0, block_size, -1.0, residual, n);
         std::cout << "end of residual" << std::endl;
         //convergence check
         //axpy<double, computEnv::MKL>(n,);
         double sum_of_norm_square = 0.0;
         for(int index = 0; index < n*option.num_eigenvalues; index++){
-            sum_of_norm_square += (ritz_vec[index] - old_residual[index])*(ritz_vec[index] - old_residual[index]);
+            sum_of_norm_square += (residual[index] - old_residual[index])*(residual[index] - old_residual[index]);
         }
         std::cout << "sum_of_norm_square : " << sum_of_norm_square << std::endl;
         free<double, computEnv::MKL>(W_iter);
         free<double, computEnv::MKL>(rayleigh);
-        free<double, computEnv::MKL>(rayleigh_eigval_1);
+        free<double, computEnv::MKL>(rayleigh_eigval_imag);
         free<double, computEnv::MKL>(rayleigh_eigvec_0);
-        free<double, computEnv::MKL>(rayleigh_eigvec_1);
+        free<double, computEnv::MKL>(rayleigh_eigvec_left);
         if(iter != 0 && sum_of_norm_square < option.tolerance*option.tolerance){
             memcpy<double, computEnv::MKL>(eigvec, ritz_vec, n*option.num_eigenvalues);
             memcpy<double, computEnv::MKL>(eigval, rayleigh_eigval_0, option.num_eigenvalues);
             free<double, computEnv::MKL>(guess);
             free<double, computEnv::MKL>(old_residual);
+            free<double, computEnv::MKL>(residual);
             free<double, computEnv::MKL>(rayleigh_eigval_0);
             free<double, computEnv::MKL>(ritz_vec);
+            
             break;
         }
         //correction vector 계산
         // diagonal preconditioner
         assert(block_size < n-option.num_eigenvalues);
-        memcpy<double, computEnv::MKL>(old_residual, ritz_vec, n*option.num_eigenvalues);
+        memcpy<double, computEnv::MKL>(old_residual, residual, n*option.num_eigenvalues);
                 
         for(int i=0;i<option.num_eigenvalues;i++){
             double coeff_i = rayleigh_eigval_0[i] - matrix[i + n*i];
             if(coeff_i > option.preconditioner_tolerance){
                 for(int j=0;j<n;j++){
-                    guess[n*(block_size+i) + j] = ritz_vec[n*i + j] / coeff_i;
+                    guess[n*(block_size+i) + j] = residual[n*i + j] / coeff_i;
                 }
             }
         }
@@ -129,6 +137,7 @@ int davidson_worker(size_t n, double* matrix, double* eigval, double* imag_eigva
         
         free<double, computEnv::MKL>(rayleigh_eigval_0);
         free<double, computEnv::MKL>(ritz_vec);
+        free<double, computEnv::MKL>(residual);
     }
     return 0;
 
@@ -165,8 +174,10 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         //lapack_int LAPACKE_dgeev (int matrix_layout, char jobvl, char jobvr, lapack_int n, double* a, lapack_int lda,
         //                           double* wr, double* wi, double* vl, lapack_int ldvl, double* vr, lapack_int ldvr) 
 
-        int info = davidson_worker(n, this->data, real_eigvals.get(), imag_eigvals.get(), eigvec_0, eigvec_1);
-
+        int info = davidson_worker(n, this->data, real_eigvals.get(), eigvec_0);
+        for(int i=0;i<n;i++){
+            imag_eigvals.get()[i] = 0;
+        }
         /* Check for convergence */
         if( info > 0 ) {
                 printf( "The algorithm failed to compute eigenvalues.\n" );
@@ -178,7 +189,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         //print_eigenvectors( "Left eigenvectors", shape[0], wi, return_val.factor_matrices[0], 3 );
         /* Print right eigenvectors */
         //print_eigenvectors( "Right eigenvectors", shape[0], wi, return_val.factor_matrices[1], 3 );
-
+        //print_eigenvectors( "Right eigenvectors", n, imag_eigvals.get(), eigvec_0, n);
         delete eigvec_0;
         
     }

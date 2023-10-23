@@ -38,8 +38,8 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
 
         //return_val.factor_matrices[0] = new double[n*n];
         //return_val.factor_matrices[1] = new double[n*n];
-        auto eigvec_0 = new double[n*n];
-        auto eigvec_1 = new double[n*n];
+        auto eigvec_left = new double[n*n];
+        auto eigvec_right = new double[n*n];
         
         //return_val.factor_matrix_sizes[0] = return_val.factor_matrix_sizes[1] = std::make_pair(n,n);
 
@@ -48,7 +48,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         
         //int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
         //                          eigvec_0, n, eigvec_1, n );
-        int info = geev<double, computEnv::MKL>(ColMajor, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0, n, eigvec_1, n);
+        int info = geev<double, computEnv::MKL>(ColMajor, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_left, n, eigvec_right, n);
 
         /* Check for convergence */
         
@@ -56,17 +56,16 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
                 printf( "The algorithm failed to compute eigenvalues.\n" );
                 exit( 1 );
         }
-        
-        eigenvec_sort<double, computEnv::MKL>(real_eigvals.get(), eigvec_0, n, n);
+        eigenvec_sort<double, computEnv::MKL>(real_eigvals.get(), eigvec_right, n, n);
         /* Print eigenvalues */
         //print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get(), imag_eigvals.get() );
         /* Print left eigenvectors */
         //print_eigenvectors( "Left eigenvectors", shape[0], wi, return_val.factor_matrices[0], 3 );
         /* Print right eigenvectors */
-        //print_eigenvectors( "Right eigenvectors", shape[0], wi, return_val.factor_matrices[1], 3 );
+        //print_eigenvectors( "Right eigenvectors", n, imag_eigvals.get(), eigvec_1, n);
 
-        delete eigvec_0;
-        delete eigvec_1;
+        delete eigvec_left;
+        delete eigvec_right;
     }
     else{
         std::cout << method << " is not implemented yet." << std::endl;

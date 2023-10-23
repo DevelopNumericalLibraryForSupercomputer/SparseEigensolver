@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <map>
-#include <yaml-cpp/yaml.h>
+//#include <yaml-cpp/yaml.h>
 #include "Utility.hpp"
 namespace SE{
 
@@ -15,13 +15,13 @@ typedef enum{
 
 class DecomposeOption{
 public:
-    DecomposeOption();
-    DecomposeOption(std::string filename);
-    void set_option(std::string filename);
-    void print();
+    DecomposeOption() {};
+    //DecomposeOption(std::string filename);
+    //void set_option(std::string filename);
+    //void print();
     DecomposeMethod algorithm_type = Davidson;
     int max_iterations       = 100;
-    double tolerance         = 1E-6;
+    double tolerance         = 1E-8;
     MAT_TYPE matrix_type     = RealSym;
     int num_eigenvalues      = 3;
     int eigenvalue_guesses   = 0;
@@ -30,7 +30,7 @@ public:
     double preconditioner_max_iterations = 30;
 
 private:
-    void set_option_worker();
+    //void set_option_worker();
 
     template<typename enum_type> enum_type table_match(std::map<std::string, enum_type> table, std::string str);
 
@@ -39,9 +39,9 @@ private:
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
 
-    YAML::Node config;
+    //YAML::Node config;
 };
-
+/*
 DecomposeOption::DecomposeOption(){
     config = YAML::LoadFile("Default.yaml");
     set_option_worker();
@@ -89,7 +89,7 @@ void DecomposeOption::set_option_worker(){
     this->preconditioner_tolerance = config["preconditioner_options"]["preconditioner_tolerance"].as<double>();
     this->preconditioner_max_iterations = config["preconditioner_options"]["preconditioner_max_iterations"].as<double>();
 }
-
+*/
 template <typename enum_type>
 enum_type DecomposeOption::table_match(std::map<std::string, enum_type> table, std::string str){
     if(table.find(str) != table.end()){

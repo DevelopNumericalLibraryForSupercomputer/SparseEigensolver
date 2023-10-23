@@ -2,7 +2,10 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
-
+#include <numeric>
+#include <iterator>
+#include <algorithm>
+#include <array>
 //#define MKL_Complex16 std::complex<double>
 //#define MKL_Complex8  std::complex<float>
 
@@ -101,16 +104,17 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
 }
 
 
-/*
-template<typename datatype>
-size_t* sort_indicies(const datatype* array, const size_t size){
-    size_t* idx = new datatype[size];
-    std::iota(std::begin(idx), std::end(idx), 0);
 
-    stable_sort(std::begin(idx), std::end(idx), [array](size_t i1, size_t i2) {return array[i1] < array[i2];});
+template<typename datatype>
+std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array_size){
+    //std::array<size_t, array_size> idx;
+    std::vector<size_t> idx;
+    idx.resize(array_size);
+    std::iota(std::begin(idx), std::end(idx), 0);
+    std::stable_sort(std::begin(idx), std::end(idx), [data_array](size_t i1, size_t i2) {return data_array[i1] < data_array[i2];});
     return idx;
 }
-*/
+
 template <typename datatype, computEnv comput_env>
 void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
 {  static_assert(false,"This is not implemented yet");  }
