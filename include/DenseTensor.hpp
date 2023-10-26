@@ -5,7 +5,6 @@
 #include "Tensor.hpp"
 
 #include "decomposition/Utility.hpp"
-
 namespace SE{
 template<typename datatype, size_t dimension, typename comm, typename map>
 class DenseTensor: public Tensor<datatype, dimension, comm, map>{
@@ -49,7 +48,7 @@ DenseTensor<datatype, dimension, comm, map>::DenseTensor(std::array<size_t, dime
     assert(this->shape_mult[dimension] != 0);
     //assert(this->shape_mult[dimension] == data.size() ); We don't know.
     this->data = malloc<datatype, comm::env>(this->shape_mult[dimension]);
-    memcpy<datatype,comm::env>(this->data, data, this->shape_mult[dimension]);
+    memcpy<datatype,comm::env>( this->data, data, this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>

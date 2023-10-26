@@ -34,9 +34,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
     //                           double* wr, double* wi, double* vl, lapack_int ldvl, double* vr, lapack_int ldvr) 
 
     //int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get()->data(), imag_eigvals.get()->data(),
-    int info = LAPACKE_dgeev( LAPACK_COL_MAJOR, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(),
-                              eigvec_0, n, eigvec_1, n );
-
+    int info = geev<double, computEnv::MKL>(ColMajor, 'V', 'V', n, this->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0, n, eigvec_1, n);
     /* Check for convergence */
     if( info > 0 ) {
             printf( "The algorithm failed to compute eigenvalues.\n" );
@@ -54,9 +52,12 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
     delete eigvec_0;
     delete eigvec_1;
 
-    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > >( (const size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
+    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2> > >( (size_t) n,std::move(real_eigvals),std::move(imag_eigvals));
 
     return std::move(return_val);
 }
+
+
+
 }
 

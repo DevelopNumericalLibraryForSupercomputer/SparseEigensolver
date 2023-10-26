@@ -38,13 +38,17 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 */
 
 template<>
-void Comm<computEnv::MPI>::initialize(int argc, char *argv[]){
+static std::pair<size_t,size_t> Comm<computEnv::MPI>::initialize(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
-    int tmp_rank, tmp_world_size;
-    MPI_Comm_rank(mpi_comm, &tmp_rank);
-    MPI_Comm_size(mpi_comm, &tmp_world_size);
-    rank = tmp_rank;
-    world_size = tmp_world_size;
+    int myRank ,nRanks;
+    MPI_Comm_rank(mpi_comm, &myRank);
+    MPI_Comm_size(mpi_comm, &nRanks);
+    assert nRanks>0;
+    assert myRank>=0;
+
+    //rank = tmp_rank;
+    //world_size = tmp_world_size;
+    return std::make_pair( (size_t) myRank, (size_t) nRanks);
 }
 
 template<>

@@ -1,93 +1,63 @@
 #pragma once
-#include <mpi.h>
-#include <nccl.h>
 #include <iostream>
 #include <string>
 #include <stdexcept>
+#include <cassert>
 
 #include "../../Comm.hpp"
+#include "Utility.hpp"
 
 namespace SE{
 
-ncclComm_t nccl_comm;
-//MPI_Comm mpi_comm = MPI_COMM_WORLD;
 cudaStream_t stream;
 
-Comm<PROTOCOL::NCCL>::Comm(int argc, char *argv[]) {
-    std::cout << "nccl is not implemented" << std::endl;
-    int myRank, nRanks;
-    MPI_Init(&argc, &argv);
-    MPI_Comm_rank(MPI_COMM_WORLD, &myRank);
-    MPI_Comm_size(MPI_COMM_WORLD, &nRanks);
-    ncclUniqueId id;
-    if (myRank == 0) ncclGetUniqueId(&id);
-    MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
+template<>
+std::unique_ptr<Comm<computEnv::CUDA> > createComm< computEnv::CUDA >(int argc, char *argv[]){
 
-    ncclCommInitRank(&nccl_comm, nRanks, id, myRank);
+    return std::make_unique< Comm<computEnv::CUDA> >( 0, 1);
+}
+
+template<>
+Comm<computEnv::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
+{
+    auto status =cublasCreate(&SE::cublasHandle);
+    assert (CUBLAS_STATUS_SUCCESS==status);
+
     cudaStreamCreate(&stream);
-
-}
-
-Comm<PROTOCOL::NCCL>::~Comm(){
-    // Finalize NCCL
-    ncclCommDestroy(nccl_comm);
-    // Finalize MPI
-    MPI_Finalize();
-}
-
-template<typename datatype>
-ncclDataType_t check_type(){
-    if ( std::is_same<datatype, double> ){
-        return ncclDouble;
-    }
-    else if (std::is_same<datatype, float> ){
-        return ncclFloat;
-    }
-    throw std::runtime_error("NCCL does not support the type ");
-}
-ncclRedOp_t check_op(SE_op op){
-    switch (op){
-        case SUM: return ncclSum;
-        case PROD: return ncclProd;
-        case MIN: return ncclMin;
-        case MAX: return ncclMax;
-        default: throw std::runtime_error("CUDAComm check_op") ;
-    }
-}
-template <typename datatype>
-void Comm<PROTOCOL::NCCL>::allreduce(datatype *src, size_t count, datatype *trg, SE_op op){
-
-    ncclDataType_t __datatype = check_type<datatype>();
-    ncclRedOp_t    __op       = check_op(op);
-    auto result = ncclAllreduce( (void*) src, (void*) trg, count, __datatype, __op,  nccl_comm);
-    cudaStreamSynchronize(stream);
     return;
 }
 
+template<>
+Comm<computEnv::CUDA>::~Comm(){
+    //Finalize cublas 
+    auto status = cublasDestroy(SE::cublasHandle);
+    assert (CUBLAS_STATUS_SUCCESS==status);
+    // Finalize CUDA stream
+    cudaStreamDestroy(stream);
+}
+
+template<>
 template <typename datatype>
-void Comm<PROTOCOL::NCCL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
-    ncclDataType_t __datatype = check_type<datatype>();
-    int nRanks;
-    ncclCommCount(nccl_comm, &nRanks);
-    size_t rankOffset = count * wordSize(type);
-  
-    ncclGroupStart();
-    for (int r=0; r<nRanks; r++) {
-        ncclSend( (void*) (sendbuff+r*rankOffset), count, __datatype, r, nccl_comm, stream);
-        ncclRecv( (void*) (recvbuff+r*rankOffset), count, __datatype, r, nccl_comm, stream);
-    }
-    ncclGroupEnd();
-    cudaStreamSynchronize(stream);
+void Comm<computEnv::CUDA>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
+
+    memcpy<datatype, computEnv::CUDA> (trg,src,count);
+    return;
+}
+
+template<>
+template <typename datatype>
+void Comm<computEnv::CUDA>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    assert(sendcount == recvcount);
+    memcpy<datatype, computEnv::CUDA> (trg,src,sendcount);
     return ;
 }
 
+template<>
 template <typename datatype>
-void Comm<PROTOCOL::NCCL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
-    auto __datatype = check_type<datatype>();
-    auto __op       = check_op(op);
-    auto result     = ncclAllGather( (void*) sendbuff, (void*) recvbuff, sendcount, __datatype, nccl_comm, stream);
-    cudaStreamSynchronize(stream);
-    std::cout << "not implemented" << std::endl;
+void Comm<computEnv::CUDA>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    assert(sendcount == recvcount);
+    memcpy<datatype, computEnv::CUDA> (trg,src,sendcount);
+  
 }
 
 }
