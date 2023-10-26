@@ -123,4 +123,11 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<da
     //exit(-1);
 }
 
+template <typename datatype, size_t dimension, typename comm, typename map>
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::davidson(const std::string method){
+    std::cout << method << " is not implemented yet." << std::endl;
+    //exit(-1);
+}
+
+
 };

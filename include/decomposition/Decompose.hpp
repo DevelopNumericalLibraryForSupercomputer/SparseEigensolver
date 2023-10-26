@@ -1,9 +1,8 @@
 #pragma once
 #include <memory>
 #include <functional>
-#include "../Tensor.hpp"
-#include "Utility.hpp"
-#include "../device/Serial/Utility.hpp"
+#include "../DenseTensor.hpp"
+#include "../device/MKL/Utility.hpp"
 
 namespace SE{
 
