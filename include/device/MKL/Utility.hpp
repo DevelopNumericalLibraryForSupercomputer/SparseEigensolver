@@ -61,6 +61,11 @@ void gemm<double, computEnv::MKL>(const SE_layout Layout, const SE_transpose tra
 }
 
 template <>
+void scal<double, computEnv::MKL>(const size_t n, const double alpha, double *x, const size_t incx){
+    return cblas_dscal(n, alpha, x, incx);
+}
+
+template <>
 void axpy<double, computEnv::MKL>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
 }
@@ -71,5 +76,19 @@ int geev<double, computEnv::MKL>(const SE_layout Layout, char jobvl, char jobvr,
     return LAPACKE_dgeev(map_layout_lapack(Layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);
 }
 
-
+template <>
+void eigenvec_sort<double, computEnv::MKL>(double* eigvals, double* eigvecs, const size_t number_of_eigvals, const size_t vector_size){
+    double* new_eigvals = new double[number_of_eigvals];
+    double* new_eigvecs = new double[number_of_eigvals*vector_size];
+    std::vector<size_t> sorted_indicies = sort_indicies<double>(eigvals, number_of_eigvals);
+    for(int i=0;i<number_of_eigvals;i++){
+        new_eigvals[i] = eigvals[sorted_indicies[i]];
+        for(int j=0;j<vector_size;j++){
+            new_eigvecs[i*number_of_eigvals+j] = eigvecs[sorted_indicies[i]*number_of_eigvals+j];
+        }
+    }
+    
+    memcpy<double, computEnv::MKL>(eigvals, new_eigvals, number_of_eigvals);
+    memcpy<double, computEnv::MKL>(eigvecs, new_eigvecs, number_of_eigvals*vector_size);
+}
 }

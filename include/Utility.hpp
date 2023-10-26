@@ -2,7 +2,10 @@
 #include <iostream>
 #include <cstdlib>
 #include <cstring>
-#include <complex>
+#include <numeric>
+#include <iterator>
+#include <algorithm>
+#include <array>
 //#define MKL_Complex16 std::complex<double>
 //#define MKL_Complex8  std::complex<float>
 
@@ -56,6 +59,8 @@ enum SE_layout{
     ColMajor
 };
 
+//alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
+//output : C
 template <typename datatype, computEnv comput_env>
 void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
           const datatype alpha, const datatype *a, const size_t lda,
@@ -64,6 +69,9 @@ void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose 
 
 template <typename datatype, computEnv comput_env>
 void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy);
+
+template <typename datatype, computEnv comput_env>
+void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx);
 
 //LAPACK
 template <typename datatype, computEnv comput_env>
@@ -93,4 +101,23 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
     }
 }
 
+<<<<<<< HEAD
 }
+=======
+
+
+template<typename datatype>
+std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array_size){
+    //std::array<size_t, array_size> idx;
+    std::vector<size_t> idx;
+    idx.resize(array_size);
+    std::iota(std::begin(idx), std::end(idx), 0);
+    std::stable_sort(std::begin(idx), std::end(idx), [data_array](size_t i1, size_t i2) {return data_array[i1] < data_array[i2];});
+    return idx;
+}
+
+template <typename datatype, computEnv comput_env>
+void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
+{  static_assert(false,"This is not implemented yet");  }
+}
+>>>>>>> 5dd70f5596567c4aeda710dbf77472bedf58000a
