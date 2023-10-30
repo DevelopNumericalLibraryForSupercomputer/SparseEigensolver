@@ -13,6 +13,8 @@
 
 #include "decomposition/IterativeSolver.hpp"
 
+#include <chrono>
+
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
     for(int i = 0; i<3; i++){
@@ -126,19 +128,20 @@ int main(int argc, char* argv[]){
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 
-    size_t N = 99;
+    size_t N = 100;
     std::array<size_t, 2> test_shape2 = {N,N};
     double* test_data2 = malloc<double, computEnv::MKL>(N*N);
     for(int i=0;i<N*N;i++){
         test_data2[i] = 0;
         if(i%(N+1)==0){
-            test_data2[i] = (i/(N+1) + 1);
-            if (i-1 >0) test_data2[i-1] += 0.4;
-            if (i-2 >0) test_data2[i-2] += -0.1;
-            if (i-3 >0) test_data2[i-3] += 0.04;
+            test_data2[i]  = -((double)N) + (double)(i/(N+1) + 1);
+            if (i-1 >0) test_data2[i-1] += 3.0;
+            if (i-2 >0) test_data2[i-2] += -1.0;
+            if (i-3 >0) test_data2[i-3] += 0.3;
+            if (i-4 >0) test_data2[i-4] += -0.1;
         }
-        else if(i%13==0){
-            test_data2[i] += 0.03; //(i%N, i/N) i%N + i/N * N 
+        else if(i%7==0){
+            test_data2[i] += 0.1; //(i%N, i/N) i%N + i/N * N 
         }
     }
     for(int i=0;i<N;i++){
@@ -147,6 +150,7 @@ int main(int argc, char* argv[]){
             test_data2[i*N+j] = test_data2[j*N+i];
         }
     }
+    /*
     std::cout << "matrix!" << std::endl;
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
@@ -155,16 +159,24 @@ int main(int argc, char* argv[]){
         std::cout << std::endl;
     }
     std::cout << "matrix!" << std::endl;
+    */
     ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
     SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix2(test_shape2, test_data2);
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = test_matrix2.decompose("EVD");
-    print_eigenvalues( "Eigenvalues", out1.get()->num_eig, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
+    print_eigenvalues( "Eigenvalues", 10, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    
+    std::cout << "Time difference = " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
+
+    std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = test_matrix2.davidson("Davidson");
-    print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
-   
+    print_eigenvalues( "Eigenvalues", 10, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
+    std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     
+    std::cout << "Time difference = " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
     
-    std::cout<<std::endl;
     return 0;
 }
