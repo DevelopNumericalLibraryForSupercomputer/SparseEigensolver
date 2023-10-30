@@ -20,6 +20,12 @@ void memcpy<double, computEnv::MKL>(double* dest, const double* source, size_t s
     std::memcpy(dest, source, size * sizeof(double));
 }
 
+template<>
+void memset<double, computEnv::MKL>(double* dest, int value, size_t size){
+    std::memset(dest, value, size * sizeof(double));
+}
+
+
 CBLAS_LAYOUT map_layout_blas(SE_layout layout){
     switch (layout){
         case RowMajor: return CblasRowMajor;
@@ -54,17 +60,6 @@ void gemm<double, computEnv::MKL>(const SE_layout Layout, const SE_transpose tra
     return cblas_dgemm(map_layout_blas(Layout), map_transpose(transa), map_transpose(transb), m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 }
 
-/*
-template <>
-void gemm<std::complex<double>, CPU>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
-                                     const size_t m, const size_t n, const size_t k,
-                                     const std::complex<double> alpha, const std::complex<double> *a, const size_t lda,
-                                     const std::complex<double> *b, const size_t ldb, const std::complex<double> beta,
-                                     std::complex<double> *c, const size_t ldc){
-    return cblas_zgemm(map_layout(Layout), map_transpose(transa), map_transpose(transb),
-                       m, n, k, (const void *)&alpha, (const void *)a, lda, (const void *)b, ldb, (const void *)&beta, (void *)c, ldc);
-}
-*/
 template <>
 void scal<double, computEnv::MKL>(const size_t n, const double alpha, double *x, const size_t incx){
     return cblas_dscal(n, alpha, x, incx);

@@ -1,7 +1,8 @@
 #pragma once
-#include "../../Comm.hpp"
-#include "device/MKL/Utility.hpp"
 #include <cassert>
+
+#include "../../Comm.hpp"
+#include "Utility.hpp"
 
 namespace SE{
 //template<>
@@ -20,21 +21,29 @@ public:
     template <typename double> void allgather(double* src, size_t sendcount, double* trg, size_t recvcount);
 };
 */
-template<> template<>
-void Comm<computEnv::MKL>::allreduce<double>(const double *src, size_t count, double *trg, SE_op op){
-    memcpy<double, computEnv::MKL>(trg, src, count);
+template<>
+std::unique_ptr<Comm<computEnv::MKL> > createComm< computEnv::MKL >(int argc, char *argv[]){
+    return std::make_unique< Comm<computEnv::MKL> >( 0,1 );
 }
 
-template<> template<>
-void Comm<computEnv::MKL>::alltoall<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
-    assert(sendcount == recvcount);
-    memcpy<double, computEnv::MKL>(trg, src, sendcount);
+template<>
+template<typename datatype>
+void Comm<computEnv::MKL>::allreduce<datatype>(const datatype *src, size_t count, datatype *trg, SE_op op){
+    memcpy<datatype, computEnv::MKL>(trg, src, count);
 }
 
-template<> template<>
-void Comm<computEnv::MKL>::allgather<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
+template<> 
+template<typename datatype>
+void Comm<computEnv::MKL>::alltoall<datatype>(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<double, computEnv::MKL>(trg, src, sendcount);
+    memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
+}
+
+template<> 
+template<typename datatype>
+void Comm<computEnv::MKL>::allgather<datatype>(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    assert(sendcount == recvcount);
+    memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
 }
 
 }

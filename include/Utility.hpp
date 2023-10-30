@@ -11,22 +11,24 @@
 
 namespace SE{
 //memory managament
-template<typename datatype, computEnv comput_env>
+template<typename datatype, computEnv comput_env=computEnv::BASE>
 datatype* malloc(const size_t size){
-    std::cout <<  "This is not implemented yet" << std::endl;
-    exit(-1);
-}
+    return static_cast<datatype*>(std::malloc(size * sizeof(datatype)));
+};
 
-template<typename datatype, computEnv comput_env>
+template<typename datatype, computEnv comput_env=computEnv::BASE>
 void free(datatype* ptr){
-    std::cout <<  "This is not implemented yet" << std::endl;
-    exit(-1);
+    std::free(ptr);
+}
+
+template<typename datatype, computEnv comput_env=computEnv::BASE>
+void memcpy(datatype* dest, const datatype* source, size_t size){
+    std::memcpy(dest, source, size * sizeof(double));
 }
 
 template<typename datatype, computEnv comput_env>
-void memcpy(datatype* dest, const datatype* source, size_t size){
-    std::cout <<  "This is not implemented yet" << std::endl;
-    exit(-1);
+void memset(datatype* dest, int value, size_t size){
+    std::memset(dest, value, size * sizeof(double));
 }
 
 /* templated version of mkl wrapper.
@@ -63,22 +65,18 @@ template <typename datatype, computEnv comput_env>
 void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
           const datatype alpha, const datatype *a, const size_t lda,
           const datatype *b, const size_t ldb, const datatype beta,
-          datatype *c, const size_t ldc)
-{  static_assert(false,"This is not implemented yet"); }
+          datatype *c, const size_t ldc);
 
 template <typename datatype, computEnv comput_env>
-void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy)
-{  static_assert(false,"This is not implemented yet"); }
+void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy);
 
 template <typename datatype, computEnv comput_env>
-void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx)
-{  static_assert(false,"This is not implemented yet"); }
+void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx);
 
 //LAPACK
 template <typename datatype, computEnv comput_env>
 int geev(const SE_layout Layout, char jobvl, char jobvr, const size_t n, datatype* a, const size_t lda,
-          datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr)
-{  static_assert(false,"This is not implemented yet"); return -1;}
+          datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr);
 
 //numerical recipies
 template <size_t dimension>
@@ -103,6 +101,9 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
     }
 }
 
+<<<<<<< HEAD
+}
+=======
 
 
 template<typename datatype>
@@ -119,3 +120,4 @@ template <typename datatype, computEnv comput_env>
 void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
 {  static_assert(false,"This is not implemented yet");  }
 }
+>>>>>>> 5dd70f5596567c4aeda710dbf77472bedf58000a
