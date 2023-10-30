@@ -28,20 +28,20 @@ std::unique_ptr<Comm<computEnv::MKL> > createComm< computEnv::MKL >(int argc, ch
 
 template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::allreduce<datatype>(const datatype *src, size_t count, datatype *trg, SE_op op){
+void Comm<computEnv::MKL>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
     memcpy<datatype, computEnv::MKL>(trg, src, count);
 }
 
-template<> 
+template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::alltoall<datatype>(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<computEnv::MKL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
     memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
 }
 
-template<> 
+template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::allgather<datatype>(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<computEnv::MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
     memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
 }

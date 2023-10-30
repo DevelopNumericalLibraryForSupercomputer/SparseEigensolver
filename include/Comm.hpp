@@ -20,7 +20,7 @@ class Comm{
     public:
         static constexpr computEnv env = comput_env;
 
-        Comm(size_t rank=0, size_t world_size=1): rank(rank), world_size(world_size) {};
+        Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
         Comm(){ };
         ~Comm(){};
     
