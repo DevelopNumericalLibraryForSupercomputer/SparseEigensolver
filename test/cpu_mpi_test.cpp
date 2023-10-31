@@ -3,10 +3,13 @@
 #include <vector>
 #include <array>
 #include <iostream>
-#include "ContiguousMap.hpp"
 #include <iomanip>
-#include "DenseTensor.hpp"
 #include "device/MPI/MPIComm.hpp"
+//#include "ContiguousMap.hpp"
+//#include <iomanip>
+//#include "DenseTensor.hpp"
+#include "decomposition/DirectSolver.hpp"
+#include "SparseTensor.hpp"
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
@@ -19,7 +22,7 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<computEnv::MPI >(argc, argv);
+    auto comm = createComm<computEnv::MPI>(argc, argv);
     std::cout << "MPI test" << std::endl;
     //Comm<computEnv::MKL> comm;
     double x = 0.0, sum = 0.0;
@@ -223,14 +226,55 @@ int main(int argc, char* argv[]){
     
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    
-
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
-
-    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix
-                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    //test_matrix.decompose("EVD");
+    SE::DenseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    auto out = test_matrix.decompose("EVD");
+    if (comm->rank == 0){
+        print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
+    }
     comm->barrier();
-    //MPI_Finalize();
+
+    std::cout << "Sparse Matrix test" << std::endl;
+
+    size_t N = 1000;
+    std::array<size_t, 2> test_shape2 = {N,N};
+    ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
+    SE::SparseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_matrix2(test_shape2);
+ 
+    for(size_t i=0;i<N;i++){
+        for(size_t j=0;j<N;j++){
+            if(i == j){
+                std::array<size_t,2> index = {i,j};
+                test_matrix2.insert_value(index, (double)i+1.0-(double)N);
+                /*
+                if (i-1 >0) test_data2[i-1] += 3.0;
+                if (i-2 >0) test_data2[i-2] += -1.0;
+                if (i-3 >0) test_data2[i-3] += 0.3;
+                if (i-4 >0) test_data2[i-4] += -0.1;
+                */
+            }
+        }
+        /*
+        else if(i%7==0){
+            test_data2[i] += 0.1; //(i%N, i/N) i%N + i/N * N 
+        }
+        */
+    }
+    test_matrix2.complete();
+    if (comm->rank == 0){
+    std::cout << "matrix!" << std::endl;
+    for(size_t i=0;i<N;i++){
+            std::array<size_t,2> index = {i,i};
+            std::cout << i << std::setw(6) << test_matrix2(index) << std::endl;
+    }
+    std::cout << "matrix!" << std::endl;
+    }
+    comm->barrier();
+
+
+
+
+
     return 0;
 }

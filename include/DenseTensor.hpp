@@ -27,8 +27,8 @@ public:
     DenseTensor<datatype, dimension, comm, map> clone() {return DenseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
-    //TEMPORAL
-    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson(const std::string method);
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > evd();
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
 
 };
 
@@ -119,15 +119,28 @@ void DenseTensor<datatype, dimension, comm, map>::insert_value(std::array<size_t
 
 template <typename datatype, size_t dimension, typename comm, typename map>
 std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::decompose(const std::string method){
-    std::cout << method << " is not implemented yet." << std::endl;
-    //exit(-1);
+    if(method.compare("EVD")==0){
+        return evd();
+    }
+    else if(method.compare("Davidson")==0){
+        return davidson();
+    }
+    else{
+        std::cout << method << " is not implemented yet." << std::endl;
+        exit(-1);
+    }
+    
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
-std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::davidson(const std::string method){
-    std::cout << method << " is not implemented yet." << std::endl;
-    //exit(-1);
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::evd(){
+    std::cout << "EVD is not implemented yet." << std::endl;
+    exit(-1);
 }
 
-
+template <typename datatype, size_t dimension, typename comm, typename map>
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::davidson(){
+    std::cout << "davidson is not implemented yet." << std::endl;
+    exit(-1);
+}
 };

@@ -5,6 +5,7 @@
 #include <algorithm>
 #include "Tensor.hpp"
 
+#include "decomposition/Utility.hpp"
 namespace SE{
 
 //COO sparse matrix
@@ -26,7 +27,9 @@ public:
     void insert_value(std::array<size_t, dimension> index, datatype value);
 
     SparseTensor<datatype, dimension, comm, map> clone() {return SparseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
-    DecomposeResult<datatype, dimension, comm, map> decompose(const std::string method);
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
+
+    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
 
     void export_csr( const size_t dim, 
                      std::vector<size_t>& Bp,      // ROW_INDEX
@@ -71,8 +74,6 @@ datatype &SparseTensor<datatype, dimension, comm, map>::operator()(const std::ar
             return this->data[i].second;
         }
     }
-    std::cout << "data not found in this tensor." << std::endl;
-    exit(-1);
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
@@ -154,6 +155,25 @@ size_t SparseTensor<datatype, dimension, comm, map>::calculate_column(std::array
     }
     return return_val;
 }
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::decompose(const std::string method){
+    if(method.compare("Davidson")==0){
+        return davidson();
+    }
+    else{
+        std::cout << method << " is not implemented yet." << std::endl;
+        exit(-1);
+    }
+    
+}
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::davidson(){
+    std::cout << "davidson is not implemented yet." << std::endl;
+    exit(-1);
+}
+
 /*
 template <typename datatype, size_t dimension, typename comm, typename map>
 void SparseTensor<datatype, dimension, comm, map>::read_csr(const int *row_ptr, const int *col_ind, const datatype *val, const size_t row_size,

@@ -1,7 +1,8 @@
 #pragma once
 #include <mpi.h>
+#include <cassert>
 #include "../../Comm.hpp"
-
+#include "Utility.hpp"
 namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_WORLD;

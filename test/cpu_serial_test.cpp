@@ -1,6 +1,5 @@
 //#include "Matrix.hpp"
 //#include "DenseTensor.hpp"
-using namespace std;
 #include <vector>
 #include <array>
 #include <iostream>
@@ -171,7 +170,7 @@ int main(int argc, char* argv[]){
     std::cout << "Time difference = " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
 
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    auto out2 = test_matrix2.davidson("Davidson");
+    auto out2 = test_matrix2.decompose("Davidson");
     print_eigenvalues( "Eigenvalues", 10, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     
