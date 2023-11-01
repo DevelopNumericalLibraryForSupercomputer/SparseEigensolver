@@ -35,6 +35,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
         printf( "The algorithm failed to compute eigenvalues.\n" );
         exit( 1 );
     }
+    eigenvec_sort<double, computEnv::MKL>(real_eigvals.get(), eigvec_0, n,n);
     //Print eigenvalues
     //print_eigenvalues( "Eigenvalues", shape[0], real_eigvals.get(), imag_eigvals.get() );
     
@@ -64,6 +65,7 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MPI>, ContiguousMap<2
         printf( "The algorithm failed to compute eigenvalues.\n" );
         exit( 1 );
     }
+    eigenvec_sort<double, computEnv::MKL>(real_eigvals.get(), eigvec_0, n,n);
     delete eigvec_0;
     delete eigvec_1;
     auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> > >( (size_t) n,std::move(real_eigvals),std::move(imag_eigvals));

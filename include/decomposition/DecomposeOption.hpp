@@ -21,7 +21,7 @@ public:
     //void print();
     DecomposeMethod algorithm_type = Davidson;
     int max_iterations       = 100;
-    double tolerance         = 1E-8;
+    double tolerance         = 1E-10;
     MAT_TYPE matrix_type     = RealSym;
     int num_eigenvalues      = 3;
     int eigenvalue_guesses   = 0;

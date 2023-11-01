@@ -24,6 +24,7 @@ public:
     //void complete(){};
     //bool get_filled() {return true;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
+    void print_tensor();
     DenseTensor<datatype, dimension, comm, map> clone() {return DenseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
@@ -116,6 +117,26 @@ void DenseTensor<datatype, dimension, comm, map>::insert_value(std::array<size_t
     this->operator()(index) = value;
     return;
 }
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+void DenseTensor<datatype, dimension, comm, map>::print_tensor(){
+    //if(dimension == 2){
+        std::cout << "=======================" << std::endl;
+        for(int i=0;i<this->shape[0];i++){
+            for(int j=0;j<this->shape[1];j++){
+                std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "=======================" << std::endl;
+        /*
+    }
+    else{
+        std::cout << "print is not implemented yet." << std::endl;
+        exit(-1);
+    }*/
+}
+
 
 template <typename datatype, size_t dimension, typename comm, typename map>
 std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<datatype, dimension, comm, map>::decompose(const std::string method){

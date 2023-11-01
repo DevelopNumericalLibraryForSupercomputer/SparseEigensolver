@@ -17,6 +17,7 @@ public:
 
     SparseTensor(){filled = false;};
     SparseTensor(std::array<size_t, dimension> shape);
+    SparseTensor(std::array<size_t, dimension> shape, size_t data_size);
     SparseTensor(std::array<size_t, dimension> shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
 
     datatype& operator()(const std::array<size_t, dimension> index);
@@ -25,6 +26,7 @@ public:
     void complete();
     bool get_filled(){return filled;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
+    void print_tensor();
 
     SparseTensor<datatype, dimension, comm, map> clone() {return SparseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
@@ -53,13 +55,16 @@ SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, di
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
-SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data)
-    : SparseTensor(shape){
-    /*
+SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape, size_t data_size): SparseTensor(shape){
+    this->data.reserve(data_size);
+}
+
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data){
     this->shape = shape;
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
-    */
     this->data = data;
     this->filled = true;
     this->complete();
@@ -74,12 +79,25 @@ datatype &SparseTensor<datatype, dimension, comm, map>::operator()(const std::ar
             return this->data[i].second;
         }
     }
+    datatype* null_data;
+    return *null_data;
 }
 
 template <typename datatype, size_t dimension, typename comm, typename map>
 inline void SparseTensor<datatype, dimension, comm, map>::insert_value(std::array<size_t, dimension> index, datatype value){
     assert(this->filled == false);
     this->data.push_back(std::make_pair(index, value));
+}
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+void SparseTensor<datatype, dimension, comm, map>::print_tensor(){
+    std::cout << "=======================" << std::endl;
+    for(auto const &i: this->data){
+        for(int j=0;j<dimension;j++) std::cout << i.first[j] << '\t';
+        std::cout << std::setw(6) << i.second << std::endl;
+    }
+    std::cout << "=======================" << std::endl;
+    return;
 }
 
 template<typename datatype, size_t dimension, typename comm, typename map>
@@ -161,12 +179,13 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<d
     if(method.compare("Davidson")==0){
         return davidson();
     }
-    else{
+    else{    
         std::cout << method << " is not implemented yet." << std::endl;
         exit(-1);
     }
     
 }
+
 
 template <typename datatype, size_t dimension, typename comm, typename map>
 std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::davidson(){
