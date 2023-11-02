@@ -5,6 +5,7 @@
 #include "Tensor.hpp"
 
 #include "decomposition/Utility.hpp"
+#include "decomposition/DecomposeOption.hpp"
 namespace SE{
 template<typename datatype, size_t dimension, typename comm, typename map>
 class DenseTensor: public Tensor<datatype, dimension, comm, map>{
@@ -30,6 +31,7 @@ public:
 
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > evd();
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
+    void preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess);
 
 };
 
@@ -164,4 +166,11 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > DenseTensor<da
     std::cout << "davidson is not implemented yet." << std::endl;
     exit(-1);
 }
+
+template <typename datatype, size_t dimension, typename comm, typename map>
+void DenseTensor<datatype, dimension, comm, map>::preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
+    std::cout << "invalid preconditioner." << std::endl;
+    exit(-1);
+}
+
 };

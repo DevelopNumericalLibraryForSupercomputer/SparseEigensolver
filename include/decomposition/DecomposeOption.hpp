@@ -13,6 +13,10 @@ typedef enum{
     Hermitian,
 } MAT_TYPE;
 
+typedef enum{
+    Diagonal
+} PRECOND_TYPE;
+
 class DecomposeOption{
 public:
     DecomposeOption() {};
@@ -25,7 +29,8 @@ public:
     MAT_TYPE matrix_type     = RealSym;
     int num_eigenvalues      = 3;
     int eigenvalue_guesses   = 0;
-    bool use_preconditioner              = false;
+    //bool use_preconditioner    = false;
+    PRECOND_TYPE preconditioner = Diagonal;
     double preconditioner_tolerance      = 1E-10;
     double preconditioner_max_iterations = 30;
 
@@ -38,7 +43,8 @@ private:
         { {"Direct", DecomposeMethod::Direct}, {"Davidson", DecomposeMethod::Davidson}};//, {"LOBPCG", DecomposeMethod::LOBPCG} };
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
-
+    std::map<std::string, PRECOND_TYPE> const precond_table =
+        { {"Diagonal", PRECOND_TYPE::Diagonal}};
     //YAML::Node config;
 };
 /*

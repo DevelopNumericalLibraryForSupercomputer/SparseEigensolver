@@ -6,6 +6,7 @@
 #include "Tensor.hpp"
 
 #include "decomposition/Utility.hpp"
+#include "decomposition/DecomposeOption.hpp"
 namespace SE{
 
 //COO sparse matrix
@@ -32,6 +33,7 @@ public:
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
+    void preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess);
 
     void export_csr( const size_t dim, 
                      std::vector<size_t>& Bp,      // ROW_INDEX
@@ -193,6 +195,11 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<d
     exit(-1);
 }
 
+template <typename datatype, size_t dimension, typename comm, typename map>
+void SparseTensor<datatype, dimension, comm, map>::preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
+    std::cout << "invalid preconditioner." << std::endl;
+    exit(-1);
+}
 /*
 template <typename datatype, size_t dimension, typename comm, typename map>
 void SparseTensor<datatype, dimension, comm, map>::read_csr(const int *row_ptr, const int *col_ind, const datatype *val, const size_t row_size,

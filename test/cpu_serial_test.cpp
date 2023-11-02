@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 1000;
+    size_t N = 3000;
     std::array<size_t, 2> test_shape2 = {N,N};
     double* test_data2 = malloc<double, computEnv::MKL>(N*N);
 
@@ -96,8 +96,8 @@ int main(int argc, char* argv[]){
             if(i == j)                  test_data2[i+j*N] += 2.0*((double)i+1.0-(double)N);
             if(i == j +1 || i == j -1)  test_data2[i+j*N] += 3.0;
             if(i == j +2 || i == j -2)  test_data2[i+j*N] -= 1.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 1.3;
-            //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.03;
         }
     }
@@ -108,8 +108,8 @@ int main(int argc, char* argv[]){
             if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
             if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
             if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
-            //if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 1.3);
-            //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+            if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
             //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
             //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
         }
