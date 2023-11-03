@@ -22,28 +22,28 @@ public:
 };
 */
 template<>
-std::unique_ptr<Comm<computEnv::MKL> > createComm< computEnv::MKL >(int argc, char *argv[]){
-    return std::make_unique< Comm<computEnv::MKL> >( 0,1 );
+std::unique_ptr<Comm<MKL> > createComm<MKL>(int argc, char *argv[]){
+    return std::make_unique< Comm<MKL> >( 0, 1 );
 }
 
 template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
-    memcpy<datatype, computEnv::MKL>(trg, src, count);
+void Comm<MKL>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op){
+    memcpy<datatype, MKL>(trg, src, count);
 }
 
 template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<MKL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
+    memcpy<datatype, MKL>(trg, src, sendcount);
 }
 
 template<>
 template<typename datatype>
-void Comm<computEnv::MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, computEnv::MKL>(trg, src, sendcount);
+    memcpy<datatype, MKL>(trg, src, sendcount);
 }
 
 }

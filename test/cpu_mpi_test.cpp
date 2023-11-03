@@ -10,6 +10,8 @@
 //#include "DenseTensor.hpp"
 #include "decomposition/DirectSolver.hpp"
 #include "SparseTensor.hpp"
+#include "decomposition/IterativeSolver.hpp"
+#include <chrono>
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
@@ -237,41 +239,36 @@ int main(int argc, char* argv[]){
 
     std::cout << "Sparse Matrix test" << std::endl;
 
-    size_t N = 1000;
+    size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
     ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
-    SE::SparseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_matrix2(test_shape2);
- 
+    SE::SparseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_sparse(test_shape2);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
-            if(i == j){
-                std::array<size_t,2> index = {i,j};
-                test_matrix2.insert_value(index, (double)i+1.0-(double)N);
-                /*
-                if (i-1 >0) test_data2[i-1] += 3.0;
-                if (i-2 >0) test_data2[i-2] += -1.0;
-                if (i-3 >0) test_data2[i-3] += 0.3;
-                if (i-4 >0) test_data2[i-4] += -0.1;
-                */
-            }
+            std::array<size_t,2> index = {i,j};
+            if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
+            if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
+            if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
+            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+            if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
+            //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
         }
-        /*
-        else if(i%7==0){
-            test_data2[i] += 0.1; //(i%N, i/N) i%N + i/N * N 
-        }
-        */
     }
-    test_matrix2.complete();
+    test_sparse.complete();
+    std::cout << "matrix construction complete" << std::endl;
     if (comm->rank == 0){
-    std::cout << "matrix!" << std::endl;
-    for(size_t i=0;i<N;i++){
-            std::array<size_t,2> index = {i,i};
-            std::cout << i << std::setw(6) << test_matrix2(index) << std::endl;
-    }
-    std::cout << "matrix!" << std::endl;
+        test_sparse.print_tensor();
     }
     comm->barrier();
-
+    if (comm->rank == 0) std::cout << "Sparsematrix Davidson" << std::endl;
+    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
+    auto out3 = test_sparse.decompose("Davidson");
+    if (comm->rank == 0) print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
+    comm->barrier();
+    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+    if (comm->rank == 0) std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
+   
 
 
 

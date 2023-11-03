@@ -165,11 +165,18 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
     std::unique_ptr<double[]> imag_eigvals(new double[option.num_eigenvalues]);
 
     assert(shape[0] == shape[1]);
+    const size_t n = shape[0];
+
     auto eigvec_0 = new double[option.num_eigenvalues*shape[0]];
 
-    size_t n = shape[0];
     int block_size = option.num_eigenvalues;
-    double* guess = malloc<double, computEnv::MKL>(n*n);
+    if(option.max_iterations * block_size > n){
+        std::cout << "max iteration number " << option.max_iterations << " is too large!" << std::endl;
+        option.max_iterations = n/block_size;
+        std::cout << "max_iterateion is changed to " << option.max_iterations << std::endl;
+    }
+
+    double* guess = malloc<double, computEnv::MKL>(n*block_size*option.max_iterations);
     // initialization of gusss vector(s), V
     // guess : unit vector
     for(int i=0;i<option.num_eigenvalues;i++){
@@ -244,7 +251,12 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
     
     //davidson start
     int block_size = option.num_eigenvalues;
-    double* guess = malloc<double, computEnv::MKL>(n*option.max_iterations);
+    if(option.max_iterations * block_size > n){
+        std::cout << "max iteration number " << option.max_iterations << " is too large!" << std::endl;
+        option.max_iterations = n/block_size;
+        std::cout << "max_iterateion is changed to " << option.max_iterations << std::endl;
+    }
+    double* guess = malloc<double, computEnv::MKL>(n*block_size*option.max_iterations);
     // initialization of gusss vector(s), V
     // guess : unit vector
     for(int i=0;i<option.num_eigenvalues;i++){
@@ -301,6 +313,101 @@ std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MKL>, ContiguousMap<2
 
     return std::move(return_val);
 }
+
+/*
+template <>
+std::unique_ptr<DecomposeResult<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> > > 
+        SparseTensor<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> >::davidson(){
+    DecomposeOption option;
+    std::unique_ptr<double[]> real_eigvals(new double[option.num_eigenvalues]);
+    std::unique_ptr<double[]> imag_eigvals(new double[option.num_eigenvalues]);
+
+    assert(shape[0] == shape[1]);
+    const size_t n = shape[0];
+
+
+    std::array<size_t, 2> eigvec_shape = {n, option.num_eigenvalues};
+    auto eigvec_map = ContiguousMap<2>(eigvec_shape);
+
+    auto eigvec_0 = new DenseTensor<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> >(eigvec_shape);
+    
+    //davidson start
+    int block_size = option.num_eigenvalues;
+    if(option.max_iterations * block_size > n){
+        std::cout << "max iteration number " << option.max_iterations << " is too large!" << std::endl;
+        option.max_iterations = n/block_size;
+        std::cout << "max_iterateion is changed to " << option.max_iterations << std::endl;
+    }
+
+    DenseTensor<double, 2, Comm<computeEnv::MPI>, contiguousMap<2> > guess = new DenseTensor<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> >({n, block_size*option.max_iterations});
+    
+    // initialization of gusss vector(s), V
+    // guess : unit vector
+    
+    for(int i=0;i<option.num_eigenvalues;i++){
+        for(int j=0;j<n;j++){
+            guess[n*i+j] = 0.0;
+        }
+        guess[n*i+i] = 1.0;
+    }
+    
+    double* old_residual = malloc<double, computEnv::MPI>(n*option.num_eigenvalues);
+    for(int i=0;i<n*option.num_eigenvalues;i++){
+        old_residual[i] = 0.0;
+    }
+    std::cout << "not completed" << std::endl;
+    
+    for(int iter=0;iter<option.max_iterations;iter++){
+        orthonormalize(guess, n, block_size, "qr");
+
+        double* W_iter = malloc<double, computEnv::MKL>(n*block_size);
+        spmv(n, this->data, guess, block_size, W_iter);
+        
+        double* rayleigh = malloc<double, computEnv::MKL>(block_size* block_size);
+        double* rayleigh_eigval_0 = malloc<double, computEnv::MKL>(block_size);
+        double* rayleigh_eigvec_0 = malloc<double, computEnv::MKL>(block_size * block_size);
+        double* ritz_vec = malloc<double, computEnv::MKL>(n*block_size);
+        double* residual = malloc<double, computEnv::MKL>(n * block_size);
+
+        get_rayleigh<double, Comm<computEnv::MKL> >(guess, W_iter, n, block_size, rayleigh);
+        subspace_diagonalization<double, Comm<computEnv::MKL> >(guess, rayleigh, n, block_size, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec);
+        calculate_residual<double, Comm<computEnv::MKL> >(W_iter, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec, n, block_size, residual);
+        free<double, computEnv::MKL>(W_iter);
+
+        double is_converged = check_convergence<double, Comm<computEnv::MKL> >(residual, old_residual, n, option.num_eigenvalues, option.tolerance);
+        if(iter != 0 && is_converged){
+            memcpy<double, computEnv::MKL>(eigvec_0, ritz_vec, n*option.num_eigenvalues);
+            memcpy<double, computEnv::MKL>(real_eigvals.get(), rayleigh_eigval_0, option.num_eigenvalues);
+            break;
+        }
+        //correction vector
+        //Using diagonal preconditioner
+        if(block_size > n-option.num_eigenvalues){
+            std::cout << "davidson diagonalization is not converged!" << std::endl;
+            exit(1);
+        }
+        preconditioner(option, rayleigh_eigval_0, residual, block_size, guess);
+        block_size += option.num_eigenvalues;
+        free<double, computEnv::MKL>(rayleigh);
+        free<double, computEnv::MKL>(rayleigh_eigval_0);
+        free<double, computEnv::MKL>(ritz_vec);
+        free<double, computEnv::MKL>(residual);
+    }
+    for(int i=0;i<option.num_eigenvalues;i++){
+        imag_eigvals.get()[i] = 0;
+    }
+    free<double,computEnv::MKL>(eigvec_0);
+    
+    for(int i=0;i<option.num_eigenvalues;i++){
+        real_eigvals.get()[i] = -1;
+        imag_eigvals.get()[i] = 0;
+    }
+    auto return_val = std::make_unique< DecomposeResult<double, 2, Comm<computEnv::MPI>, ContiguousMap<2> > >( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals));
+    
+    return std::move(return_val);
+}
+
+*/
 
 }
 

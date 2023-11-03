@@ -30,11 +30,12 @@ public:
     void print_tensor();
 
     SparseTensor<datatype, dimension, comm, map> clone() {return SparseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
+    /*
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
 
     std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
     void preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess);
-
+    */
     void export_csr( const size_t dim, 
                      std::vector<size_t>& Bp,      // ROW_INDEX
                      std::vector<size_t>& Bj,      // COL_INDEX
@@ -175,7 +176,7 @@ size_t SparseTensor<datatype, dimension, comm, map>::calculate_column(std::array
     }
     return return_val;
 }
-
+/*
 template <typename datatype, size_t dimension, typename comm, typename map>
 std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::decompose(const std::string method){
     if(method.compare("Davidson")==0){
@@ -188,7 +189,6 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<d
     
 }
 
-
 template <typename datatype, size_t dimension, typename comm, typename map>
 std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::davidson(){
     std::cout << "davidson is not implemented yet." << std::endl;
@@ -200,6 +200,8 @@ void SparseTensor<datatype, dimension, comm, map>::preconditioner(DecomposeOptio
     std::cout << "invalid preconditioner." << std::endl;
     exit(-1);
 }
+*/
+
 /*
 template <typename datatype, size_t dimension, typename comm, typename map>
 void SparseTensor<datatype, dimension, comm, map>::read_csr(const int *row_ptr, const int *col_ind, const datatype *val, const size_t row_size,

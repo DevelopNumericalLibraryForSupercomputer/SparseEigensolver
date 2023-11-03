@@ -11,22 +11,22 @@
 
 namespace SE{
 //memory managament
-template<typename datatype, computEnv comput_env=computEnv::BASE>
+template<typename datatype, typename computEnv>
 datatype* malloc(const size_t size){
     return static_cast<datatype*>(std::malloc(size * sizeof(datatype)));
 };
 
-template<typename datatype, computEnv comput_env=computEnv::BASE>
+template<typename datatype, typename computeEnv>
 void free(datatype* ptr){
     std::free(ptr);
 }
 
-template<typename datatype, computEnv comput_env=computEnv::BASE>
+template<typename datatype, typename computeEnv>
 void memcpy(datatype* dest, const datatype* source, size_t size){
     std::memcpy(dest, source, size * sizeof(double));
 }
 
-template<typename datatype, computEnv comput_env>
+template<typename datatype, typename computeEnv>
 void memset(datatype* dest, int value, size_t size){
     std::memset(dest, value, size * sizeof(double));
 }
@@ -48,33 +48,33 @@ enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
 enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
  */ 
 //mkl - BLAS
-enum SE_transpose{
+enum class SE_transpose{
     NoTrans,
     Trans,
     ConjTrans
 };
 
-enum SE_layout{
+enum class SE_layout{
     RowMajor,
     ColMajor
 };
 
 //alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
 //output : C
-template <typename datatype, computEnv comput_env>
+template <typename datatype, typename computeEnv>
 void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
           const datatype alpha, const datatype *a, const size_t lda,
           const datatype *b, const size_t ldb, const datatype beta,
           datatype *c, const size_t ldc);
 
-template <typename datatype, computEnv comput_env>
+template <typename datatype, typename computeEnv>
 void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy);
 
-template <typename datatype, computEnv comput_env>
+template <typename datatype, typename computeEnv>
 void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx);
 
 //LAPACK
-template <typename datatype, computEnv comput_env>
+template <typename datatype, typename computeEnv>
 int geev(const SE_layout Layout, char jobvl, char jobvr, const size_t n, datatype* a, const size_t lda,
           datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr);
 
@@ -111,7 +111,7 @@ std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array
     return idx;
 }
 
-template <typename datatype, computEnv comput_env>
+template <typename datatype, typename computeEnv>
 void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
 {  static_assert(false,"This is not implemented yet");  }
 }

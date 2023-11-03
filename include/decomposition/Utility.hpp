@@ -5,13 +5,8 @@
 #include "../DenseTensor.hpp"
 #include "../Device.hpp"
 #include "../ContiguousMap.hpp"
+#include "DecomposeOption.hpp"
 namespace SE{
-
-typedef enum{
-    Davidson,
-    Direct,
-} DecomposeMethod;
-
 
 template <typename datatype, size_t dimension, typename comm, typename map>
 class DecomposeResult{

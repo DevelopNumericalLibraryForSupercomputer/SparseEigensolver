@@ -6,16 +6,21 @@
 namespace SE{
 
 
-typedef enum{
+enum class MAT_TYPE{
     Real,
     RealSym,
     Complex,
     Hermitian,
-} MAT_TYPE;
+};
 
-typedef enum{
+enum class DecomposeMethod{
+    Davidson,
+    Direct
+};
+
+enum class PRECOND_TYPE{
     Diagonal
-} PRECOND_TYPE;
+};
 
 class DecomposeOption{
 public:
@@ -23,14 +28,14 @@ public:
     //DecomposeOption(std::string filename);
     //void set_option(std::string filename);
     //void print();
-    DecomposeMethod algorithm_type = Davidson;
-    int max_iterations       = 100;
+    DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
+    size_t max_iterations       = 100;
     double tolerance         = 1E-10;
-    MAT_TYPE matrix_type     = RealSym;
-    int num_eigenvalues      = 3;
-    int eigenvalue_guesses   = 0;
+    MAT_TYPE matrix_type     = MAT_TYPE::RealSym;
+    size_t num_eigenvalues      = 3;
+    size_t eigenvalue_guesses   = 0;
     //bool use_preconditioner    = false;
-    PRECOND_TYPE preconditioner = Diagonal;
+    PRECOND_TYPE preconditioner = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-10;
     double preconditioner_max_iterations = 30;
 

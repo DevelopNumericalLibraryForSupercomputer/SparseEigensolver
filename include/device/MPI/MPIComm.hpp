@@ -36,18 +36,18 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 */
 
 template<>
-std::unique_ptr<Comm<computEnv::MPI> > createComm< computEnv::MPI >(int argc, char *argv[]){
+std::unique_ptr<Comm<MPI> > createComm<MPI>(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
     int myRank ,nRanks;
     MPI_Comm_rank(mpi_comm, &myRank);
     MPI_Comm_size(mpi_comm, &nRanks);
     assert(nRanks>0);
     assert(myRank>=0);
-    return std::make_unique< Comm<computEnv::MPI> >( (size_t) myRank, (size_t) nRanks );
+    return std::make_unique< Comm<MPI> >( (size_t) myRank, (size_t) nRanks );
 }
 
 template<>
-Comm<computEnv::MPI>::~Comm(){
+Comm<MPI>::~Comm(){
     if(MPI_Finalize() == MPI_SUCCESS){
         //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
     }
@@ -57,31 +57,31 @@ Comm<computEnv::MPI>::~Comm(){
 }
 
 template<>
-void Comm<computEnv::MPI>::barrier(){
-    MPI_Barrier(MPI_COMM_WORLD);
+void Comm<MPI>::barrier(){
+    MPI_Barrier(mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<computEnv::MPI>::allreduce(const double *src, size_t count, double *trg, SE_op op){
+void Comm<MPI>::allreduce(const double *src, size_t count, double *trg, SEop op){
     switch (op){
-        case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
-        case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
-        case MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
-        case MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
+        case SEop::SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  mpi_comm); break;
+        case SEop::PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, mpi_comm); break;
+        case SEop::MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  mpi_comm); break;
+        case SEop::MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  mpi_comm); break;
         default: std::cout << "WRONG OPERATION TYPE" << std::endl; exit(-1);
     }
 }
 template <> 
 template <> 
-void Comm<computEnv::MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
-    MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+void Comm<MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<computEnv::MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
-    MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 }
