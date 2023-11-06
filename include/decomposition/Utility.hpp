@@ -7,7 +7,7 @@
 #include "DecomposeOption.hpp"
 namespace SE{
 
-template <typename datatype>//, size_t dimension, typename computEnv, typename maptype>
+template <typename datatype>
 class DecomposeResult{
 public:
     DecomposeResult(const size_t num_eig, 
@@ -20,7 +20,6 @@ public:
     const size_t num_eig=0;
     std::unique_ptr<datatype[] > real_eigvals;
     std::unique_ptr<datatype[] > imag_eigvals;
-
 };
 
 

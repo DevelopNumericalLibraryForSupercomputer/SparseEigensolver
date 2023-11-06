@@ -21,9 +21,12 @@ public:
         cumprod<dimension>(this->shape, this->shape_mult);
         assert(this->shape_mult[dimension] != 0);
     };
+
+    virtual datatype& operator()(const std::array<size_t, dimension> index){std::cout<<"check tensor type?"<<std::endl; exit(1);};
+
     virtual void complete(){};
     virtual bool get_filled() {return true;};
-    virtual void insert_value(std::array<size_t, dimension> index, datatype value) = 0;
+    virtual void insert_value(std::array<size_t, dimension> index, datatype value){};
     virtual void print_tensor(){};
     //virtual Tensor<datatype, dimension, comm, map> clone() {};
 
