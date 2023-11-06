@@ -2,13 +2,12 @@
 #include <memory>
 #include <complex>
 
-#include "../DenseTensor.hpp"
 #include "../Device.hpp"
 #include "../ContiguousMap.hpp"
 #include "DecomposeOption.hpp"
 namespace SE{
 
-template <typename datatype, size_t dimension, typename comm, typename map>
+template <typename datatype>//, size_t dimension, typename computEnv, typename maptype>
 class DecomposeResult{
 public:
     DecomposeResult(const size_t num_eig, 
@@ -24,17 +23,6 @@ public:
 
 };
 
-
-//void print_matrix(const DenseTensor<double,2,Comm<PROTOCOL::SERIAL>,ContiguousMap<2> >& M){
-//    for(size_t i = 0; i < M.shape[0]; ++i){
-//        for(size_t j = 0; j < M.shape[1]; ++j){
-//            //std::cout << M({i,j}) << " ";
-//            std::cout << M.data[i+M.shape[0]*j] << " ";
-//        }
-//        std::cout << std::endl;
-//    }
-//    std::cout << std::endl;
-//}
 
 /* Auxiliary routine: printing eigenvalues */
 void print_eigenvalues( const std::string desc, size_t n, double* wr, double* wi ) {

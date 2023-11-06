@@ -7,7 +7,7 @@
 //#include "decomposition/Utility.hpp"
 //#include "decomposition/DecomposeOption.hpp"
 namespace SE{
-template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 class DenseTensor: public Tensor<datatype, dimension, computEnv, maptype>{
 public:
     datatype* data;

@@ -8,7 +8,7 @@
 #include "ContiguousMap.hpp"
 //#include <iomanip>
 #include "DenseTensor.hpp"
-//#include "decomposition/DirectSolver.hpp"
+#include "decomposition/DirectSolver.hpp"
 //#include "decomposition/IterativeSolver.hpp"
 #include "SparseTensor.hpp"
 #include <chrono>
@@ -79,11 +79,11 @@ int main(int argc, char* argv[]){
     
     SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, &test_data[0]);
     test_matrix.print_tensor();
-    /*
-    auto out = test_matrix.decompose("EVD");
+    
+    auto out = evd(test_matrix);
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
-    */
+    
    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
     size_t N = 10;
@@ -140,13 +140,13 @@ int main(int argc, char* argv[]){
     test_matrix2.print_tensor();
     test_sparse.print_tensor();
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    /*
+    
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    auto out1 = test_matrix2.decompose("EVD");
+    auto out1 = evd(test_matrix2);
     print_eigenvalues( "Eigenvalues", 10, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
-    */
+    
 /*
     SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix3(test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
