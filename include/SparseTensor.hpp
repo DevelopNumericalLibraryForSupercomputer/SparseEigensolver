@@ -21,7 +21,7 @@ public:
     SparseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size);
     SparseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
 
-    datatype& operator()(const std::array<size_t, dimension> index);
+    datatype& operator()(const std::array<size_t, dimension> index) override;
     SparseTensor<datatype, dimension, computEnv, maptype>& operator=(const SparseTensor<datatype, dimension, computEnv, maptype> &tensor);
 
     void complete();
@@ -70,8 +70,7 @@ SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computE
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index)
-{
+datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
     for (size_t i = 0; i < this->data.size(); i++){
         // array equal, c++20
         //std::cout << i << " " << data[i].first[0] << " " << data[i].first[1] << " " << data[i].first[2] << " " << data[i].second << std::endl;

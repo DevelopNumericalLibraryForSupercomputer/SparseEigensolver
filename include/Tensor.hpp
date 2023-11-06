@@ -22,7 +22,7 @@ public:
         assert(this->shape_mult[dimension] != 0);
     };
 
-    virtual datatype& operator()(const std::array<size_t, dimension> index){std::cout<<"check tensor type?"<<std::endl; exit(1);};
+    virtual datatype& operator()(const std::array<size_t, dimension> index){std::cout << "non-specified tensor." << std::endl; exit(1);};
 
     virtual void complete(){};
     virtual bool get_filled() {return true;};

@@ -80,7 +80,7 @@ int main(int argc, char* argv[]){
     SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, &test_data[0]);
     test_matrix.print_tensor();
     
-    auto out = evd(test_matrix);
+    auto out = evd(&test_matrix);
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
     
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]){
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    auto out1 = evd(test_matrix2);
+    auto out1 = evd(&test_matrix2);
     print_eigenvalues( "Eigenvalues", 10, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
@@ -150,21 +150,18 @@ int main(int argc, char* argv[]){
 
     SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix3(comm.get(), new_map2.get(), test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    auto out2 = davidson(test_matrix2);
+    auto out2 = davidson(&test_matrix2);
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
- /*
-    std::cout << "Sparsematrix Davidson" << std::endl;
+ 
+ 
+    std::cout << "\nSparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
-    auto out3 = test_sparse.decompose("Davidson");
+    auto out3 = davidson(&test_sparse);
     print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
-  */ 
-
-
-
 
     return 0;
 }

@@ -91,4 +91,21 @@ void eigenvec_sort<double, MKL>(double* eigvals, double* eigvecs, const size_t n
     memcpy<double, MKL>(eigvals, new_eigvals, number_of_eigvals);
     memcpy<double, MKL>(eigvecs, new_eigvecs, number_of_eigvals*vector_size);
 }
+
+template <>
+void orthonormalize<double, MKL>(double* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
+{
+    if(method == "qr"){
+        double* tau = malloc<double, MKL>(number_of_vectors);
+        LAPACKE_dgeqrf(LAPACK_COL_MAJOR, vector_size, number_of_vectors, eigvec, vector_size, tau);
+        LAPACKE_dorgqr(LAPACK_COL_MAJOR, vector_size, number_of_vectors, number_of_vectors, eigvec, vector_size, tau);
+    }
+    else{
+        std::cout << "not implemented" << std::endl;
+        exit(-1);
+    }
+}
+
+
+
 }

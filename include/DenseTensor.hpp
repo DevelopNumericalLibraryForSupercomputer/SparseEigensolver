@@ -16,7 +16,7 @@ public:
     DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
     DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* data);
 
-    datatype& operator()(const std::array<size_t, dimension> index);
+    datatype& operator()(const std::array<size_t, dimension> index) override;
     datatype& operator[](size_t index);
 
     DenseTensor<datatype, dimension, computEnv, maptype>& operator=(const DenseTensor<datatype, dimension, computEnv, maptype> &tensor);

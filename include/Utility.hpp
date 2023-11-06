@@ -114,4 +114,10 @@ std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array
 template <typename datatype, typename computeEnv>
 void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
 {  static_assert(false,"This is not implemented yet");  }
+
+
+template <typename datatype, typename computEnv>
+void orthonormalize(datatype* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
+{  static_assert(false,"This is not implemented yet");  }
+
 }
