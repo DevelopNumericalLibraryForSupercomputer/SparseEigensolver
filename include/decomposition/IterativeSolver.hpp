@@ -92,14 +92,10 @@ bool check_convergence<double, MKL>(double* residual, double* old_residual, size
             }
             std::cout <<std::endl;
         }
-
+    
         std::cout << "sum_of_norm_square : " << sum_of_norm_square << "::";
-        for(int index = 0;index<block_size;index++){
-            std::cout << rayleigh_eigval_0[index] << " ";
-        }
-        std::cout  << std::endl;
+        */
         std::cout << "sum_of_norm_square : " << sum_of_norm_square << std::endl;
-    */
     return sum_of_norm_square < tolerance*tolerance;
 }
 
@@ -175,7 +171,8 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, co
     datatype* old_residual = malloc<datatype, computEnv>(n*option.num_eigenvalues);
     memset<datatype, computEnv>(old_residual, 0.0, n*option.num_eigenvalues);
     
-    for(int iter=0;iter<option.max_iterations;iter++){
+    int iter = 0;
+    while(iter<option.max_iterations){
         orthonormalize<datatype, computEnv>(guess, n, block_size, "qr");
         // W_iterk = A V_k
         // W_iter should be updated everytime because of the numerical instability
@@ -207,26 +204,28 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, co
             exit( 1 );
         }
         preconditioner(tensor, option,rayleigh_eigval_0, residual, block_size, guess);
-
+        memcpy<datatype, computEnv>(old_residual, residual, n*option.num_eigenvalues);
         block_size += option.num_eigenvalues;
-        
+        iter++;
         free<datatype, computEnv>(rayleigh_eigval_0);
         free<datatype, computEnv>(rayleigh_eigvec_0);
         free<datatype, computEnv>(ritz_vec);
         free<datatype, computEnv>(residual);
     }
-
-    for(int i=0;i<option.num_eigenvalues;i++){
-        imag_eigvals.get()[i] = 0;
+    if(iter == option.max_iterations){
+        std::cout << "diagonalization did not converged!" << std::endl;
+        exit(-1);
     }
+    else{
+        for(int i=0;i<option.num_eigenvalues;i++){
+            imag_eigvals.get()[i] = 0;
+        }
     
-    std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
+        std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
 
-    return std::move(return_val);
+        return std::move(return_val);
+    }
 }
-
-
-
 template <typename datatype, typename computEnv, typename maptype>
 std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, computEnv, maptype>* tensor){
     DecomposeOption option;
@@ -244,7 +243,6 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, c
         option.max_iterations = n/block_size;
         std::cout << "max_iterateion is changed to " << option.max_iterations << std::endl;
     }
-
     // initialization of gusss vector(s), V
     // guess : unit vector
     datatype* guess = malloc<datatype, computEnv>(n*block_size*option.max_iterations);
@@ -252,11 +250,11 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, c
     for(int i=0;i<option.num_eigenvalues;i++){
         guess[i*n+i] = 1.0;
     }
-
     datatype* old_residual = malloc<datatype, computEnv>(n*option.num_eigenvalues);
     memset<datatype, computEnv>(old_residual, 0.0, n*option.num_eigenvalues);
 
-    for(int iter=0;iter<option.max_iterations;iter++){
+    int iter = 0;
+    while(iter < option.max_iterations){
         orthonormalize<datatype, computEnv>(guess, n, block_size, "qr");
         // W_iterk = A V_k
         // W_iter should be updated everytime because of the numerical instability
@@ -288,22 +286,28 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, c
             exit( 1 );
         }
         preconditioner(tensor, option,rayleigh_eigval_0, residual, block_size, guess);
-
+        memcpy<datatype, computEnv>(old_residual, residual, n*option.num_eigenvalues);
         block_size += option.num_eigenvalues;
-        
+        iter++;
+
         free<datatype, computEnv>(rayleigh_eigval_0);
         free<datatype, computEnv>(rayleigh_eigvec_0);
         free<datatype, computEnv>(ritz_vec);
         free<datatype, computEnv>(residual);
     }
-
-    for(int i=0;i<option.num_eigenvalues;i++){
-        imag_eigvals.get()[i] = 0;
+    if(iter == option.max_iterations){
+        std::cout << "diagonalization did not converged!" << std::endl;
+        exit(-1);
     }
+    else{
+        for(int i=0;i<option.num_eigenvalues;i++){
+            imag_eigvals.get()[i] = 0;
+        }
     
-    std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
+        std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
 
-    return std::move(return_val);
+        return std::move(return_val);
+    }
 }
 
 }

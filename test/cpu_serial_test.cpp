@@ -86,7 +86,7 @@ int main(int argc, char* argv[]){
     
    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 30;
+    size_t N = 5000;
     std::array<size_t, 2> test_shape2 = {N,N};
     std::unique_ptr<ContiguousMap<2> > new_map2(new ContiguousMap<2>(test_shape2) );
     double* test_data2 = malloc<double, MKL>(N*N);
@@ -95,11 +95,11 @@ int main(int argc, char* argv[]){
         for(size_t j=0;j<N;j++){
             test_data2[i+j*N] = 0;
             if(i == j)                  test_data2[i+j*N] += 2.0*((double)i+1.0-(double)N);
-            if(i == j +1 || i == j -1)  test_data2[i+j*N] += 3.0;
+            //if(i == j +1 || i == j -1)  test_data2[i+j*N] += 3.0;
             //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= 1.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
-            //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.03;
+            if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
         }
     }
     
@@ -109,11 +109,11 @@ int main(int argc, char* argv[]){
         for(size_t j=0;j<N;j++){
             std::array<size_t,2> index = {i,j};
             if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
+            //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
             //if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
-            //if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
             //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
-            //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
+            if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.01);
             //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
         }
     }
@@ -137,8 +137,8 @@ int main(int argc, char* argv[]){
     SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix2(comm.get(), new_map2.get(), test_shape2, test_data2);
 
     //auto out1 = evd(test_matrix2);
-    test_matrix2.print_tensor();
-    test_sparse.print_tensor();
+    //test_matrix2.print_tensor();
+    //test_sparse.print_tensor();
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
@@ -150,7 +150,7 @@ int main(int argc, char* argv[]){
 
     SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix3(comm.get(), new_map2.get(), test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    auto out2 = davidson(&test_matrix2);
+    auto out2 = davidson(&test_matrix3);
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
