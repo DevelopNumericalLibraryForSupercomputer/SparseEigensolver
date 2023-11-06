@@ -13,8 +13,8 @@ public:
     datatype* data;
 
     DenseTensor(){};
-    DenseTensor(Comm<computEnv>* _comm, Map<dimension>* _map, std::array<size_t, dimension> _shape);
-    DenseTensor(Comm<computEnv>* _comm, Map<dimension>* _map, std::array<size_t, dimension> _shape, datatype* data);
+    DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
+    DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* data);
 
     datatype& operator()(const std::array<size_t, dimension> index);
     datatype& operator[](size_t index);
@@ -37,16 +37,16 @@ public:
 };
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-DenseTensor<datatype, dimension, computEnv, maptype>::DenseTensor(
-    Comm<computEnv>* _comm, Map<dimension>* _map, std::array<size_t, dimension> _shape): Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
-    this->data = malloc<datatype, this->comm::SEenv>(this->shape_mult[dimension]);
+DenseTensor<datatype, dimension, computEnv, maptype>::DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape)
+:Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
+    this->data = malloc<datatype, computEnv>(this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-DenseTensor<datatype, dimension, computEnv, maptype>::DenseTensor(
-    Comm<computEnv>* _comm, Map<dimension>* _map, std::array<size_t, dimension> _shape, datatype* data): Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
-    this->data = malloc<datatype, this->comm::SEenv>(this->shape_mult[dimension]);
-    memcpy<datatype,this->comm::SEenv>( this->data, data, this->shape_mult[dimension]);
+DenseTensor<datatype, dimension, computEnv, maptype>::DenseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* data)
+:Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
+    this->data = malloc<datatype, computEnv>(this->shape_mult[dimension]);
+    memcpy<datatype, computEnv>( this->data, data, this->shape_mult[dimension]);
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -99,7 +99,6 @@ DenseTensor<datatype, dimension, computEnv, maptype>& DenseTensor<datatype, dime
     this->map = tensor.map;
     this->shape = tensor.shape;
     this->shape_mult = tensor.shape_mult;
-    // cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0 );
 
     //delete[] this->data;
@@ -118,22 +117,21 @@ void DenseTensor<datatype, dimension, computEnv, maptype>::insert_value(std::arr
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 void DenseTensor<datatype, dimension, computEnv, maptype>::print_tensor(){
-        std::cout << "print is not implemented yet." << std::endl;
-        exit(-1);
-    
+    std::cout << "print is not implemented yet." << std::endl;
+    exit(-1);
 }
 
-template <typename datatype, typename computEnv, typename maptype>
-void DenseTensor<datatype, 2, computEnv, maptype>::print_tensor(){
+template <>
+void DenseTensor<double, 2, MKL, ContiguousMap<2> >::print_tensor(){
     
-        std::cout << "=======================" << std::endl;
-        for(int i=0;i<this->shape[0];i++){
-            for(int j=0;j<this->shape[1];j++){
-                std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
-            }
-            std::cout << std::endl;
+    std::cout << "=======================" << std::endl;
+    for(int i=0;i<this->shape[0];i++){
+        for(int j=0;j<this->shape[1];j++){
+            std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
         }
-        std::cout << "=======================" << std::endl;
+        std::cout << std::endl;
+    }
+    std::cout << "=======================" << std::endl;
     
 }
 /*

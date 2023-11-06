@@ -8,10 +8,9 @@
 #include "ContiguousMap.hpp"
 //#include <iomanip>
 #include "DenseTensor.hpp"
-#include "device/MPI/MPIComm.hpp"
 //#include "decomposition/DirectSolver.hpp"
 //#include "decomposition/IterativeSolver.hpp"
-//#include "SparseTensor.hpp"
+#include "SparseTensor.hpp"
 #include <chrono>
 
 
@@ -28,9 +27,8 @@ using namespace SE;
 
 int main(int argc, char* argv[]){
     auto comm = createComm<MKL>(argc, argv);
-    auto comm2 = createComm<MPI>(argc, argv);
     std::cout << "SERIAL test" << std::endl;
-    std::cout << *comm2 <<std::endl;
+    std::cout << *comm <<std::endl;
     double x = 0.0, sum = 0.0;
     int myrank = comm->rank;
     int nprocs = comm->world_size;
@@ -77,20 +75,21 @@ int main(int argc, char* argv[]){
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     
 
-    ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
+    std::unique_ptr<ContiguousMap<2> > new_map (new ContiguousMap<2>(test_shape) );
     
-    SE::DenseTensor<double, 2, Comm<MKL>, ContiguousMap<2> > test_matrix(test_shape, &test_data[0]);
-    
-    comm->barrier();
+    SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, &test_data[0]);
+    test_matrix.print_tensor();
     /*
     auto out = test_matrix.decompose("EVD");
 
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
-    
+    */
+   
     std::cout << "========================\nDense matrix davidson test" << std::endl;
     size_t N = 10;
     std::array<size_t, 2> test_shape2 = {N,N};
-    double* test_data2 = malloc<double, computEnv::MKL>(N*N);
+    std::unique_ptr<ContiguousMap<2> > new_map2(new ContiguousMap<2>(test_shape2) );
+    double* test_data2 = malloc<double, MKL>(N*N);
     
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
@@ -103,21 +102,24 @@ int main(int argc, char* argv[]){
             if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.03;
         }
     }
-    SE::SparseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_sparse(test_shape2, N*9);
+    
+    
+    SE::SparseTensor<double, 2, MKL, ContiguousMap<2> > test_sparse(comm.get(), new_map2.get(), test_shape2, N*9);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
             std::array<size_t,2> index = {i,j};
             if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
             if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
             if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
-            //if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
-            //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
-            //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
+            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+            if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
             //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
         }
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
+    
     //test_sparse.print_tensor();
     /*
     std::cout << "matrix!" << std::endl;
@@ -130,11 +132,13 @@ int main(int argc, char* argv[]){
     std::cout << "matrix!" << std::endl;
     
     std::cout << "====================dense matrix construction complete" << std::endl;
-    ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
-    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix2(test_shape2, test_data2);
+    */
+    
+    SE::DenseTensor<double, 2, MKL, ContiguousMap<2> > test_matrix2(comm.get(), new_map2.get(), test_shape2, test_data2);
 
-    auto out1 = evd(test_matrix2);
-    //test_matrix2.print_tensor();
+    //auto out1 = evd(test_matrix2);
+    test_matrix2.print_tensor();
+    test_sparse.print_tensor();
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     /*
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  

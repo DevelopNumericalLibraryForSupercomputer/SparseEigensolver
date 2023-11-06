@@ -10,30 +10,30 @@
 namespace SE{
 
 //COO sparse matrix
-template<typename datatype, size_t dimension, typename comm, typename map>
-class SparseTensor: public Tensor<datatype, dimension, comm, map>{
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+class SparseTensor: public Tensor<datatype, dimension, computEnv, maptype>{
 public:
     //vector of (index array, data)
     std::vector<std::pair<std::array<size_t, dimension>, datatype> > data;
 
     SparseTensor(){filled = false;};
-    SparseTensor(std::array<size_t, dimension> shape);
-    SparseTensor(std::array<size_t, dimension> shape, size_t data_size);
-    SparseTensor(std::array<size_t, dimension> shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
+    SparseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
+    SparseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size);
+    SparseTensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
 
     datatype& operator()(const std::array<size_t, dimension> index);
-    SparseTensor<datatype, dimension, comm, map>& operator=(const SparseTensor<datatype, dimension, comm, map> &tensor);
+    SparseTensor<datatype, dimension, computEnv, maptype>& operator=(const SparseTensor<datatype, dimension, computEnv, maptype> &tensor);
 
     void complete();
     bool get_filled(){return filled;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
     void print_tensor();
 
-    SparseTensor<datatype, dimension, comm, map> clone() {return SparseTensor<datatype, dimension, comm, map> (this->shape, this->data); };
+    SparseTensor<datatype, dimension, computEnv, maptype> clone() {return SparseTensor<datatype, dimension, computEnv, maptype> (this->shape, this->data); };
     /*
-    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > decompose(const std::string method);
+    std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > decompose(const std::string method);
 
-    std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > davidson();
+    std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > davidson();
     void preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess);
     */
     void export_csr( const size_t dim, 
@@ -49,32 +49,29 @@ private:
     size_t calculate_column( std::array<size_t, dimension> index, size_t dim);
 };
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape){
-    this->shape = shape;
-    cumprod<dimension>(this->shape, this->shape_mult);
-    assert(this->shape_mult[dimension] != 0);
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape)
+: Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
     this->filled = false;
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape, size_t data_size): SparseTensor(shape){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape, size_t data_size)
+: SparseTensor(_comm, _map, _shape){
     this->data.reserve(data_size);
 }
 
-
-template <typename datatype, size_t dimension, typename comm, typename map>
-SparseTensor<datatype, dimension, comm, map>::SparseTensor(std::array<size_t, dimension> shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data){
-    this->shape = shape;
-    cumprod<dimension>(this->shape, this->shape_mult);
-    assert(this->shape_mult[dimension] != 0);
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype>> data)
+: Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
     this->data = data;
     this->filled = true;
     this->complete();
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-datatype &SparseTensor<datatype, dimension, comm, map>::operator()(const std::array<size_t, dimension> index){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index)
+{
     for (size_t i = 0; i < this->data.size(); i++){
         // array equal, c++20
         //std::cout << i << " " << data[i].first[0] << " " << data[i].first[1] << " " << data[i].first[2] << " " << data[i].second << std::endl;
@@ -86,25 +83,37 @@ datatype &SparseTensor<datatype, dimension, comm, map>::operator()(const std::ar
     return *null_data;
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-inline void SparseTensor<datatype, dimension, comm, map>::insert_value(std::array<size_t, dimension> index, datatype value){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+inline void SparseTensor<datatype, dimension, computEnv, maptype>::insert_value(std::array<size_t, dimension> index, datatype value){
     assert(this->filled == false);
     this->data.push_back(std::make_pair(index, value));
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-void SparseTensor<datatype, dimension, comm, map>::print_tensor(){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::print_tensor(){
+    std::cout << "print is not implemented yet." << std::endl;
+    exit(-1);
+}
+
+template <>
+void SparseTensor<double, 2, MKL, ContiguousMap<2> >::print_tensor(){
     std::cout << "=======================" << std::endl;
     for(auto const &i: this->data){
-        for(int j=0;j<dimension;j++) std::cout << i.first[j] << '\t';
+        for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
         std::cout << std::setw(6) << i.second << std::endl;
     }
     std::cout << "=======================" << std::endl;
     return;
 }
 
-template<typename datatype, size_t dimension, typename comm, typename map>
-void SparseTensor<datatype, dimension, comm, map>::complete()
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::complete(){
+    std::cout << "Sparse tensor for parallel environment is not implented" << std::endl;
+    exit(1);
+}
+
+template <>
+void SparseTensor<double, 2, MKL, ContiguousMap<2> >::complete()
 {
     if(!this->filled && this->data.size() !=0){
         std::sort(this->data.begin(), this->data.end());
@@ -121,8 +130,8 @@ void SparseTensor<datatype, dimension, comm, map>::complete()
     this->filled = true;
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-void SparseTensor<datatype, dimension, comm, map>::export_csr(const size_t dim, std::vector<size_t> &Bp, std::vector<size_t> &Bj, std::vector<datatype> &Bx){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::export_csr(const size_t dim, std::vector<size_t> &Bp, std::vector<size_t> &Bj, std::vector<datatype> &Bx){
     // n_row : number of the dim-st indicies
     // n_col : number of rest of index combinations
     const size_t n_row = this->shape[dim];
@@ -162,8 +171,8 @@ void SparseTensor<datatype, dimension, comm, map>::export_csr(const size_t dim, 
     //now Bp,Bj,Bx form a CSR representation (with possible duplicates)
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-size_t SparseTensor<datatype, dimension, comm, map>::calculate_column(std::array<size_t, dimension> index, size_t dim){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+size_t SparseTensor<datatype, dimension, computEnv, maptype>::calculate_column(std::array<size_t, dimension> index, size_t dim){
     size_t return_val = 0;
     size_t stride = 1;
     for (size_t i = 0; i < dimension; i++){
@@ -177,8 +186,8 @@ size_t SparseTensor<datatype, dimension, comm, map>::calculate_column(std::array
     return return_val;
 }
 /*
-template <typename datatype, size_t dimension, typename comm, typename map>
-std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::decompose(const std::string method){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > SparseTensor<datatype, dimension, computEnv, maptype>::decompose(const std::string method){
     if(method.compare("Davidson")==0){
         return davidson();
     }
@@ -189,22 +198,22 @@ std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<d
     
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-std::unique_ptr<DecomposeResult<datatype, dimension, comm, map> > SparseTensor<datatype, dimension, comm, map>::davidson(){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > SparseTensor<datatype, dimension, computEnv, maptype>::davidson(){
     std::cout << "davidson is not implemented yet." << std::endl;
     exit(-1);
 }
 
-template <typename datatype, size_t dimension, typename comm, typename map>
-void SparseTensor<datatype, dimension, comm, map>::preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
     std::cout << "invalid preconditioner." << std::endl;
     exit(-1);
 }
 */
 
 /*
-template <typename datatype, size_t dimension, typename comm, typename map>
-void SparseTensor<datatype, dimension, comm, map>::read_csr(const int *row_ptr, const int *col_ind, const datatype *val, const size_t row_size,
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::read_csr(const int *row_ptr, const int *col_ind, const datatype *val, const size_t row_size,
                                                             const size_t col_size, const size_t val_size, const std::string order, bool pass_complete)
 {
     /* clear all existing information and load value from csr matrix 
