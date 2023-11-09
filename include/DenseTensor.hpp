@@ -4,8 +4,7 @@
 #include <cassert>
 #include "Tensor.hpp"
 #include "Device.hpp"
-//#include "decomposition/Utility.hpp"
-//#include "decomposition/DecomposeOption.hpp"
+#include "device/MKL/LinearOp.hpp"
 namespace SE{
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 class DenseTensor: public Tensor<datatype, dimension, computEnv, maptype>{

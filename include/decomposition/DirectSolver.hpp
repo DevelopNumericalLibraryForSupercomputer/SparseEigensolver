@@ -1,4 +1,5 @@
 #pragma once
+#include "../device/MKL/TensorOp.hpp"
 #include "../DenseTensor.hpp"
 #include "../ContiguousMap.hpp"
 #include "../Device.hpp"

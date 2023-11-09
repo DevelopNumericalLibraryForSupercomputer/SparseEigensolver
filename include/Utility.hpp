@@ -6,79 +6,9 @@
 #include <iterator>
 #include <algorithm>
 #include <array>
-//#define MKL_Complex16 std::complex<double>
-//#define MKL_Complex8  std::complex<float>
+#include "device/MKL/LinearOp.hpp"
 
 namespace SE{
-//memory managament
-template<typename datatype, typename computEnv>
-datatype* malloc(const size_t size){
-    return static_cast<datatype*>(std::malloc(size * sizeof(datatype)));
-};
-
-template<typename datatype, typename computeEnv>
-void free(datatype* ptr){
-    std::free(ptr);
-}
-
-template<typename datatype, typename computeEnv>
-void memcpy(datatype* dest, const datatype* source, size_t size){
-    std::memcpy(dest, source, size * sizeof(double));
-}
-
-template<typename datatype, typename computeEnv>
-void memset(datatype* dest, int value, size_t size){
-    std::memset(dest, value, size * sizeof(double));
-}
-
-/* templated version of mkl wrapper.
- * Following functions and enum type variables are implemented
- * BLAS
- *  gemm
- *  daxpy
- *  SE_Transpose     // matrix transpose
- *  SE_layout        // matrix layout
- * 
- * LAPACK
- *  geev
- * 
- * FYI
-enum CBLAS_LAYOUT {CblasRowMajor=101, CblasColMajor=102};
-enum CBLAS_TRANSPOSE {CblasNoTrans=111, CblasTrans=112, CblasConjTrans=113};
-enum CBLAS_UPLO {CblasUpper=121, CblasLower=122};
- */ 
-//mkl - BLAS
-enum class SE_transpose{
-    NoTrans,
-    Trans,
-    ConjTrans
-};
-
-enum class SE_layout{
-    RowMajor,
-    ColMajor
-};
-
-//alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
-//output : C
-template <typename datatype, typename computeEnv>
-void gemm(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb, const size_t m, const size_t n, const size_t k,
-          const datatype alpha, const datatype *a, const size_t lda,
-          const datatype *b, const size_t ldb, const datatype beta,
-          datatype *c, const size_t ldc);
-
-template <typename datatype, typename computeEnv>
-void axpy(const size_t n, const datatype a, const datatype *x, const size_t incx, datatype *y, const size_t incy);
-
-template <typename datatype, typename computeEnv>
-void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx);
-
-//LAPACK
-template <typename datatype, typename computeEnv>
-int geev(const SE_layout Layout, char jobvl, char jobvr, const size_t n, datatype* a, const size_t lda,
-          datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr);
-
-//numerical recipies
 template <size_t dimension>
 void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing="F"){
     /* Ex1)
@@ -103,7 +33,6 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
 
 template<typename datatype>
 std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array_size){
-    //std::array<size_t, array_size> idx;
     std::vector<size_t> idx;
     idx.resize(array_size);
     std::iota(std::begin(idx), std::end(idx), 0);
@@ -111,13 +40,54 @@ std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array
     return idx;
 }
 
-template <typename datatype, typename computeEnv>
-void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
-{  static_assert(false,"This is not implemented yet");  }
-
-
 template <typename datatype, typename computEnv>
-void orthonormalize(datatype* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
-{  static_assert(false,"This is not implemented yet");  }
+void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t number_of_eigvals, const size_t vector_size){
+    datatype* new_eigvals = new datatype[number_of_eigvals];
+    datatype* new_eigvecs = new datatype[number_of_eigvals*vector_size];
+    std::vector<size_t> sorted_indicies = sort_indicies<datatype>(eigvals, number_of_eigvals);
+    for(int i=0;i<number_of_eigvals;i++){
+        new_eigvals[i] = eigvals[sorted_indicies[i]];
+        for(int j=0;j<vector_size;j++){
+            new_eigvecs[i*number_of_eigvals+j] = eigvecs[sorted_indicies[i]*number_of_eigvals+j];
+        }
+    }
+    
+    memcpy<datatype, computEnv>(eigvals, new_eigvals, number_of_eigvals);
+    memcpy<datatype, computEnv>(eigvecs, new_eigvecs, number_of_eigvals*vector_size);
+}
+
+
+/* Auxiliary routine: printing eigenvalues */
+void print_eigenvalues( const std::string desc, size_t n, double* wr, double* wi ) {
+   std::cout << "\n" << desc << std::endl;
+   for(size_t j = 0; j < n; j++ ) {
+      if( wi[j] == (double)0.0 ) {
+         printf( " %6.8f", wr[j] );
+      } else {
+         printf( " (%6.2f,%6.2f)", wr[j], wi[j] );
+      }
+   }
+   std::cout << std::endl;
+}
+
+/* Auxiliary routine: printing eigenvectors */
+void print_eigenvectors( const std::string desc, size_t n, double* wi, double* v, size_t ldv ) {
+   size_t i, j;
+   std::cout << "\n" << desc << std::endl;
+   for( i = 0; i < n; i++ ) {
+      j = 0;
+      while( j < n ) {
+         if( wi[j] == (double)0.0 ) {
+            printf( " %6.8f", v[i+j*ldv] );
+            j++;
+         } else {
+            printf( " (%6.2f,%6.2f)", v[i+j*ldv], v[i+(j+1)*ldv] );
+            printf( " (%6.2f,%6.2f)", v[i+j*ldv], -v[i+(j+1)*ldv] );
+            j += 2;
+         }
+      }
+      std::cout << std::endl;
+   }
+}
 
 }

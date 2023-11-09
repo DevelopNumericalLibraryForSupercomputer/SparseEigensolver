@@ -6,7 +6,6 @@
 #include <memory>
 
 #include "DecomposeOption.hpp"
-#include "../device/MKL/Utility.hpp"
 #include "SparseTensor.hpp"
 
 namespace SE{

@@ -5,7 +5,6 @@
 #include <algorithm>
 #include "Tensor.hpp"
 
-#include "decomposition/Utility.hpp"
 #include "decomposition/DecomposeOption.hpp"
 namespace SE{
 
