@@ -11,15 +11,15 @@
 
 namespace SE{
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, dimension, computEnv, maptype>* tensor){
+std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, dimension, computEnv, maptype>& tensor){
     std::cout << "EVD for the rank-" << dimension << " tensor is not implemented.";
     exit(1);
 }
 
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, 2, computEnv, maptype>* tensor){
-    assert(tensor->shape[0] == tensor->shape[1]);
-    const size_t n = tensor->shape[0];
+std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, 2, computEnv, maptype>& tensor){
+    assert(tensor.shape[0] == tensor.shape[1]);
+    const size_t n = tensor.shape[0];
 
     //datatype* real_eigvals_tmp = malloc<datatype, comm>(n);
     //datatype* imag_eigvals_tmp = malloc<datatype, comm>(n);
@@ -29,7 +29,7 @@ std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, 2, computE
     std::unique_ptr<datatype[]> eigvec_0(new datatype[n*n]);
     std::unique_ptr<datatype[]> eigvec_1(new datatype[n*n]);
     
-    int info = geev<datatype, computEnv>(SE_layout::ColMajor, 'V', 'V', n, tensor->data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0.get(), n, eigvec_1.get(), n);
+    int info = geev<datatype, computEnv>(SE_layout::ColMajor, 'V', 'V', n, tensor.data, n, real_eigvals.get(), imag_eigvals.get(), eigvec_0.get(), n, eigvec_1.get(), n);
     //Check for convergence
     if( info > 0 ) {
         printf( "The algorithm failed to compute eigenvalues.\n" );

@@ -1,35 +1,35 @@
 #pragma once
 #include "../DenseTensor.hpp"
+#include "../SparseTensor.hpp"
 #include "../ContiguousMap.hpp"
 #include "../Device.hpp"
 #include "Utility.hpp"
 #include <memory>
 
 #include "DecomposeOption.hpp"
-#include "SparseTensor.hpp"
 
 namespace SE{
 
 template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(Tensor<datatype, 2, computEnv, maptype>* tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+void calculate_Witer(Tensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
     //null
 }
 template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(SparseTensor<datatype, 2, computEnv, maptype>* tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+void calculate_Witer(SparseTensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
     for(size_t i=0;i<n;i++){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
             W_iter[i+vector_index*n] = 0;
         }
     }
-    for(auto entity : tensor->data){
+    for(auto entity : tensor.data){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
             W_iter[entity.first[0] + vector_index*n] += entity.second * guess[entity.first[1] + vector_index*n];
         }
     }
 }
 template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(DenseTensor<datatype, 2, computEnv, maptype>* tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
-    gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, n, 1.0, tensor->data, n, guess, n, 0.0, W_iter, n);
+void calculate_Witer(DenseTensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+    gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, n, 1.0, tensor.data, n, guess, n, 0.0, W_iter, n);
 }
 
 
@@ -99,17 +99,17 @@ bool check_convergence<double, MKL>(double* residual, double* old_residual, size
 }
 
 template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(Tensor<datatype, 2, computEnv, maptype>* tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+void preconditioner(Tensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     std::cout << "which Tensor?" << std::endl;
 }
 template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(DenseTensor<datatype, 2, computEnv, maptype>* tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+void preconditioner(DenseTensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
-        size_t n = tensor->shape[0];
+        size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
         for(size_t i=0; i<option.num_eigenvalues; i++){
             index = {i,i};
-            datatype coeff_i = sub_eigval[i] - tensor->data[i+n*i];
+            datatype coeff_i = sub_eigval[i] - tensor.data[i+n*i];
             if(coeff_i > option.preconditioner_tolerance){
                 for(int j=0;j<n;j++){
                     guess[n*(block_size+i) + j] = residual[n*i + j] / coeff_i;
@@ -123,13 +123,13 @@ void preconditioner(DenseTensor<datatype, 2, computEnv, maptype>* tensor, Decomp
     }
 }
 template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(SparseTensor<datatype, 2, computEnv, maptype>* tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+void preconditioner(SparseTensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
-        size_t n = tensor->shape[0];
+        size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
         for(size_t i=0; i<option.num_eigenvalues; i++){
             index = {i,i};
-            datatype coeff_i = sub_eigval[i] - tensor->operator()(index);
+            datatype coeff_i = sub_eigval[i] - tensor.operator()(index);
             if(coeff_i > option.preconditioner_tolerance){
                 for(int j=0;j<n;j++){
                     guess[n*(block_size+i) + j] = residual[n*i + j] / coeff_i;
@@ -144,13 +144,13 @@ void preconditioner(SparseTensor<datatype, 2, computEnv, maptype>* tensor, Decom
 }
 
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, computEnv, maptype>* tensor){
+std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, computEnv, maptype>& tensor){
     DecomposeOption option;
     std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
     std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
 
-    assert(tensor->shape[0] == tensor->shape[1]);
-    const size_t n = tensor->shape[0];
+    assert(tensor.shape[0] == tensor.shape[1]);
+    const size_t n = tensor.shape[0];
 
     std::unique_ptr<datatype[]> eigvec_0(new datatype[option.num_eigenvalues*n]);
 
@@ -226,13 +226,13 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, co
     }
 }
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, computEnv, maptype>* tensor){
+std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, computEnv, maptype>& tensor){
     DecomposeOption option;
     std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
     std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
 
-    assert(tensor->shape[0] == tensor->shape[1]);
-    const size_t n = tensor->shape[0];
+    assert(tensor.shape[0] == tensor.shape[1]);
+    const size_t n = tensor.shape[0];
 
     std::unique_ptr<datatype[]> eigvec_0(new datatype[option.num_eigenvalues*n]);
 
