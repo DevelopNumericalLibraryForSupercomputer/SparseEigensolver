@@ -9,6 +9,11 @@
 namespace SE{
 
 //COO sparse matrix
+// partition : row-wise
+// a00 a01 a02
+// a10 a11 a12
+// --> a00 a10 a01 a11 a02 a12
+// --> a00 a01 a02 / a10 a11 a12
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 class SparseTensor: public Tensor<datatype, dimension, computEnv, maptype>{
 public:
@@ -46,6 +51,7 @@ protected:
     bool filled = false;
 private:
     size_t calculate_column( std::array<size_t, dimension> index, size_t dim);
+    void complete_local();
 };
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -68,6 +74,22 @@ SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computE
     this->complete();
 }
 
+template <>
+SparseTensor<double, 2, MPI, ContiguousMap<2> >::SparseTensor(Comm<MPI> *_comm, ContiguousMap<2> *_map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
+: Tensor<double, 2, MPI, ContiguousMap<2> >(_comm, _map, _shape){
+
+    this->data.reserve(data.size());
+    for(auto iter = data.begin(); iter != data.end(); iter++){
+        int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0, _comm->world_size);
+        if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
+    }
+    this->filled = true;
+    this->complete();
+}
+
+
+
+
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
     for (size_t i = 0; i < this->data.size(); i++){
@@ -77,14 +99,70 @@ datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(cons
             return this->data[i].second;
         }
     }
-    datatype* null_data;
-    return *null_data;
+    std::cout << "no element!" << std::endl;
+    exit(-1);
+    this->data.push_back(std::make_pair(index, 0.0));
+    return this->data.back().second;
+}
+
+template <>
+double &SparseTensor<double, 2, MPI, ContiguousMap<2> >::operator()(const std::array<size_t, 2> index){
+    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, 1, this->comm->rank, this->comm->world_size); //assert that given index is in this thread.
+    for (size_t i = 0; i < this->data.size(); i++){
+        if(data[i].first == index){
+            return this->data[i].second;
+        }
+    }
+    this->data.push_back(std::make_pair(index, 0.0));
+    return this->data.back().second;
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 inline void SparseTensor<datatype, dimension, computEnv, maptype>::insert_value(std::array<size_t, dimension> index, datatype value){
+    //std::cout << "inside default insert_val" << std::endl;
     assert(this->filled == false);
-    this->data.push_back(std::make_pair(index, value));
+    //this->data.push_back(std::make_pair(index, value));
+    this->data.emplace_back(index, value);
+}
+
+
+template <>
+void SparseTensor<double, 2, MPI, ContiguousMap<2> >::insert_value(std::array<size_t, 2> index, double value){
+    //std::cout << "inside D2MC<2> insert_val" << std::endl;
+    //matrix는 col major로 저장됨
+    //공간상에서 자르는 index 는 row index로 자름.
+    // a00 a01 a02
+    // a10 a11 a12
+    // --> a00 a10 a01 a11 a02 a12
+    // --> a00 a01 a02 / a10 a11 a12
+    int my_rank = comm->rank;
+    size_t target_rank = map->get_my_rank_from_global_index(index[0], 0, comm->world_size);
+    //std::cout << "insertval, myrank : " << my_rank << " target_rank : " << target_rank << " val : " << index[0] << " " << index[1] << " " << value << std::endl;
+    if(my_rank == target_rank){
+        this->data.emplace_back(index, value);
+    }
+    else{
+        std::cout << "( " << index[0] << ", " << index[1] << " ) cannot be inserted in the process number " << my_rank << std::endl;
+    }
+    /*
+    size_t row, col;
+    double recv_value;
+    else{
+        row = index[0];
+        col = index[1];
+        if(comm->rank = my_rank){
+            send<int>(&row, 1, target_rank);
+            send<int>(&col, 1, target_rank);
+            send<double>(&value, 1, target_rank);
+        }
+        else if(comm->rank == target_rank){
+            recv<int>(&row, 1, my_rank);
+            recv<int>(&col, 1, my_rank);
+            recv<double>(&value, 1, my_rank);
+        }
+        comm->barrier();
+    }
+    */
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -104,18 +182,21 @@ void SparseTensor<double, 2, MKL, ContiguousMap<2> >::print_tensor(){
     return;
 }
 
-template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-void SparseTensor<datatype, dimension, computEnv, maptype>::complete(){
-    std::cout << "Sparse tensor for parallel environment is not implented" << std::endl;
-    exit(1);
+template <>
+void SparseTensor<double, 2, MPI, ContiguousMap<2> >::print_tensor(){
+    std::cout << "=======================" << std::endl;
+    for(auto const &i: this->data){
+        for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
+        std::cout << std::setw(6) << i.second << std::endl;
+    }
+    std::cout << "=======================" << std::endl;
+    return;
 }
 
-template <>
-void SparseTensor<double, 2, MKL, ContiguousMap<2> >::complete()
-{
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::complete_local(){
     if(!this->filled && this->data.size() !=0){
         std::sort(this->data.begin(), this->data.end());
-        
         for (size_t i = 0; i < data.size() - 1; i++){
             if(data[i].first == data[i+1].first){
                 data[i].second += data[i+1].second;
@@ -127,6 +208,49 @@ void SparseTensor<double, 2, MKL, ContiguousMap<2> >::complete()
     }
     this->filled = true;
 }
+
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+void SparseTensor<datatype, dimension, computEnv, maptype>::complete(){
+    complete_local();
+}
+/*
+template <>
+void SparseTensor<double, 2, MPI, ContiguousMap<2> >::complete()
+{
+    
+    //get total tensor size and store at rank==0
+    size_t local_size = this->size();
+    size_t total_size = 0.0;
+    comm->reduce<size_t>(&local_size, 1, &total_size, SEop::SUM, 0);
+
+    //std::pair<std::array<size_t, 2>, double>* whole_data;
+    size_t* rows, columns;
+    double* values;
+    if(this->comm->rank==0){
+        rows = malloc<size_t>(total_size);
+        columns = malloc<size_t>(total_size);
+        values = malloc<double>(total_size);
+    }
+    comm->gather(this->data(), local_size, )
+    // Gather elements from all processes
+    // MPI_Gather(...);
+
+    // Process 0 gathers all elements and performs sorting
+    if (this->comm->rank == 0) {
+        // Sort elements based on row indices
+        std::sort(this->data.begin(), this->data.end(), [](const auto& a, const auto& b) {
+            return a.first[0] < b.first[0];
+        });
+
+        // Distribute elements to the corresponding processes
+        // MPI_Scatter(...);
+    }
+
+    // Update local_elements with received_elements
+    
+    complete_local();
+}
+*/
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 void SparseTensor<datatype, dimension, computEnv, maptype>::export_csr(const size_t dim, std::vector<size_t> &Bp, std::vector<size_t> &Bj, std::vector<datatype> &Bx){

@@ -4,8 +4,8 @@
 #include "../ContiguousMap.hpp"
 #include "../Device.hpp"
 #include "Utility.hpp"
-//#include "../device/MKL/MKLComm.hpp"
-//#include "../device/MPI/MPIComm.hpp"
+#include "../device/MKL/MKLComm.hpp"
+#include "../device/MPI/MPIComm.hpp"
 //#include "../device/CUDA/CUDAComm.hpp"
 #include <memory>
 

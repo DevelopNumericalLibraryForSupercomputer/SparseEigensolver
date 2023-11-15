@@ -6,9 +6,10 @@
 #include <iomanip>
 #include "ContiguousMap.hpp"
 //#include <iomanip>
+
 #include "decomposition/Decompose.hpp"
 //#include "SparseTensor.hpp"
-#include "device/MKL/MKLComm.hpp"
+
 #include <chrono>
 
 
@@ -84,7 +85,7 @@ int main(int argc, char* argv[]){
     
    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 2000;
+    size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
     std::unique_ptr<ContiguousMap<2> > new_map2(new ContiguousMap<2>(test_shape2) );
     double* test_data2 = malloc<double, MKL>(N*N);
@@ -141,7 +142,7 @@ int main(int argc, char* argv[]){
     
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, "evd");
-    print_eigenvalues( "Eigenvalues", 10, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
+    print_eigenvalues( "Eigenvalues", 3, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
@@ -153,13 +154,13 @@ int main(int argc, char* argv[]){
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
  
-
+/*
     std::cout << "\nSparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
     auto out3 = decompose(test_sparse, "davidson");
     print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
-
+*/
     return 0;
 }

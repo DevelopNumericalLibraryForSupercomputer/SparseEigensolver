@@ -61,6 +61,21 @@ void Comm<MPI>::barrier(){
     MPI_Barrier(mpi_comm);
 }
 
+/*
+template <>
+template <>
+void Comm<MPI>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, int root)
+{
+    switch (op){
+        case SEop::SUM:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_SUM,  root, mpi_comm); break;
+        case SEop::PROD: MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_PROD, root, mpi_comm); break;
+        case SEop::MAX:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_MAX,  root, mpi_comm); break;
+        case SEop::MIN:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_MIN,  root, mpi_comm); break;
+        default: std::cout << "WRONG OPERATION TYPE" << std::endl; exit(-1);
+    }    
+}
+*/
+
 template <> 
 template <> 
 void Comm<MPI>::allreduce(const double *src, size_t count, double *trg, SEop op){
@@ -82,6 +97,65 @@ template <>
 template <> 
 void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
+}
+
+template <> 
+template <> 
+void Comm<MPI>::allgatherv(double *src, int sendcount, double *trg, int* recvcounts){ // displs are automatically generated using recvcount
+    int displs[world_size];
+    displs[0] = 0;
+    for(int i=1;i<world_size;i++){
+        displs[i] = displs[i-1] + (int)recvcounts[i-1];
+    }
+    /*
+    std::cout << "src : rank " << rank;
+    for(int i=0;i<sendcount;i++){
+        std::cout << " " <<src[i] << ' ';
+    }
+    std::cout << std::endl;
+    std::cout << "recvcounts : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << recvcounts[i] << ' ';
+    }
+    std::cout << std::endl;
+    
+    std::cout << "displ : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << displs[i] << ' ';
+    }
+    std::cout << std::endl;
+    */
+    MPI_Allgatherv(src, sendcount, MPI_DOUBLE, trg, recvcounts, displs, MPI_DOUBLE, mpi_comm);
+}
+
+template <> 
+template <> 
+void Comm<MPI>::scatterv(double *src, int* sendcounts, double *trg, int recvcount, size_t root){ // displs are automatically generated using recvcount
+    int displs[world_size];
+    displs[0] = 0;
+    for(int i=1;i<world_size;i++){
+        displs[i] = displs[i-1] + (int)sendcounts[i-1];
+    }
+    /*
+    std::cout << "src : rank " << rank;
+    for(int i=0;i<recvcount;i++){
+        std::cout << " " <<src[i] << ' ';
+    }
+    std::cout << std::endl;
+    std::cout << "sendcounts : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << sendcounts[i] << ' ';
+    }
+    std::cout << std::endl;
+    
+    std::cout << "displ : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << displs[i] << ' ';
+    }
+    std::cout << std::endl;
+    */
+
+    MPI_Scatterv(src, sendcounts, displs, MPI_DOUBLE, trg, recvcount, MPI_DOUBLE, root, mpi_comm);
 }
 
 }

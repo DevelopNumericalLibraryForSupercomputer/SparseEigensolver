@@ -26,6 +26,8 @@ public:
 	virtual size_t get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size) = 0;
 	virtual size_t get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size) = 0;
 
+	virtual size_t get_my_rank_from_global_index(const size_t global_index, size_t slice_dimension, size_t world_size) = 0;
+	virtual size_t calculate_chunk_size(size_t num_global_index, size_t world_size) = 0;
 	/*
 	const size_t get_num_global_elements(){return num_global_elements;};
 	const size_t get_num_my_elements(){return num_my_elements;};

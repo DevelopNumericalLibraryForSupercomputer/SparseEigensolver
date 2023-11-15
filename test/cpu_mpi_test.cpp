@@ -1,16 +1,11 @@
-//#include "Matrix.hpp"
-//#include "DenseTensor.hpp"
 #include <vector>
 #include <array>
 #include <iostream>
 #include <iomanip>
+
+#include "ContiguousMap.hpp"
 #include "device/MPI/MPIComm.hpp"
-//#include "ContiguousMap.hpp"
-//#include <iomanip>
-//#include "DenseTensor.hpp"
-#include "decomposition/DirectSolver.hpp"
-#include "SparseTensor.hpp"
-#include "decomposition/IterativeSolver.hpp"
+#include "decomposition/Decompose.hpp"
 #include <chrono>
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
@@ -24,16 +19,15 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<computEnv::MPI>(argc, argv);
+    auto comm = createComm<MPI>(argc, argv);
     std::cout << "MPI test" << std::endl;
-    //Comm<computEnv::MKL> comm;
     double x = 0.0, sum = 0.0;
     int myrank = comm->rank;
     int nprocs = comm->world_size;
-        
+    /*      
     int nn=100000;
     double step = 0.00001;
-    
+
     int myinit = myrank*(nn/nprocs);
     int myfin =  (myrank+1)*(nn/nprocs)-1;
     if(myfin > nn) myfin = nn;
@@ -46,7 +40,7 @@ int main(int argc, char* argv[]){
     }
     double tsum = 0.0;
     comm->barrier();
-    comm->allreduce<double>(&sum,1,&tsum,SE::SUM);
+    comm->allreduce<double>(&sum,1,&tsum,SEop::SUM);
     //MPI_Allreduce(&sum, &tsum, 1, MPI_DOUBLE, MPI_SUM, MPI_COMM_WORLD);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
@@ -57,7 +51,7 @@ int main(int argc, char* argv[]){
         x = ((double)i+0.5)*step;
         sum = sum + 4.0/(1.0+x*x);
     }
-    comm->allreduce(&sum,1,&tsum,SE::SUM);
+    comm->allreduce(&sum,1,&tsum,SEop::SUM);
     std::cout.precision(10);
     std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
 
@@ -83,7 +77,8 @@ int main(int argc, char* argv[]){
         }
     }
     comm->barrier();
-    
+    */
+    /*
     std::cout << "ContiguousMap test" << std::endl;
     
     std::array<size_t,3> shape3 = {8,7,17}; 
@@ -225,45 +220,65 @@ int main(int argc, char* argv[]){
         std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
     }
     comm->barrier();
-    
+    */
+    /*
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
-    SE::DenseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_matrix
-                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    SE::DenseTensor<double, 2, Comm<MPI>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<MPI>, ContiguousMap<2> > (test_shape, &test_data[0]);
     auto out = test_matrix.decompose("EVD");
     if (comm->rank == 0){
         print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
     }
     comm->barrier();
-
+    */
     std::cout << "Sparse Matrix test" << std::endl;
 
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
-    ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
-    SE::SparseTensor<double, 2, Comm<SE::computEnv::MPI>, ContiguousMap<2> > test_sparse(test_shape2);
-    for(size_t i=0;i<N;i++){
+    std::unique_ptr<ContiguousMap<2> > new_map2(new ContiguousMap<2>(test_shape2) );
+    SE::SparseTensor<double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2.get(), test_shape2);
+
+    std::cout << "<>>><>><><><><><><><><><><>initializa" << std::endl;
+    //int myrank = comm->rank;
+    //int nprocs = comm->world_size;
+    size_t chunk_size = test_sparse.map->calculate_chunk_size(N, nprocs);
+    size_t* local_matrix_size = malloc<size_t, MKL>(nprocs);
+    //int* idisp = malloc<int, MKL>(world_size);
+    //idisp[0] = 0;
+    for(int rank=0;rank<nprocs-1;rank++){
+        local_matrix_size[rank] = chunk_size;
+        //idisp[rank+1] = idisp[rank] + local_matrix_size[rank];
+    }
+    local_matrix_size[nprocs-1] = N - chunk_size* (nprocs-1);
+    std::cout << "before init insertval";
+    for(int rank = 0;rank<nprocs;rank++){
+        std::cout << " " << local_matrix_size[rank];
+    }
+    std::cout << std::endl;
+    //for(size_t i=0;i<N;i++){
+    for(size_t loc_i=0; loc_i<local_matrix_size[myrank]; loc_i++){
         for(size_t j=0;j<N;j++){
+            size_t i = loc_i + myrank*chunk_size;
             std::array<size_t,2> index = {i,j};
+            //std::cout << "before insertval" << std::endl;
             if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
+            //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
             if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
             if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
-            if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
             //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
             //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
         }
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    if (comm->rank == 0){
-        test_sparse.print_tensor();
-    }
+    //test_sparse.print_tensor();
     comm->barrier();
     if (comm->rank == 0) std::cout << "Sparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
-    auto out3 = test_sparse.decompose("Davidson");
+    auto out3 = decompose(test_sparse, "davidson");
     if (comm->rank == 0) print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
     comm->barrier();
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();

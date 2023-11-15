@@ -46,4 +46,11 @@ void Comm<MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t
     memcpy<datatype, MKL>(trg, src, sendcount);
 }
 
+template<>
+template<typename datatype>
+void Comm<MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+    assert(sendcount == recvcount);
+    memcpy<datatype, MKL>(trg, src, sendcount);
+}
+
 }

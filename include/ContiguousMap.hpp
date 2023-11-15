@@ -5,7 +5,7 @@ template<size_t dimension>
 class ContiguousMap: public Map<dimension>{
 public:
     ContiguousMap(std::array<size_t, dimension> total_size) : Map<dimension>(total_size) {};
-    // tensor will only be sliced alog the slice dimension
+    // tensor will only be sliced along the slice dimension
     // array -> array
     std::array<size_t, dimension> get_global_array_index(const std::array<size_t, dimension> local_index, size_t slice_dimension, size_t rank, size_t world_size);
     std::array<size_t, dimension> get_local_array_index (const std::array<size_t, dimension> global_index, size_t slice_dimension, size_t rank, size_t world_size);
@@ -18,17 +18,19 @@ public:
     // size_t -> size_t
     size_t get_global_index(const size_t local_index, size_t slice_dimension, size_t rank, size_t world_size);
     size_t get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size);
+
+    size_t get_my_rank_from_global_index(const size_t global_index, size_t slice_dimension, size_t world_size);
+    size_t calculate_chunk_size(size_t num_global_index, size_t world_size);
     
 private:
     /* contiguous map of the given index.
-    num_global_elements / comm.get_world_size() = 98/4 = 24
+    num_global_elements / comm.get_world_size() +1 = 98/4 = 24
     num_global_elements % comm.get_world_size() = 98%4 = 2
     rank = 0 : 0 ~ 23   
     rank = 1 : 24 ~ 47 
     rank = 2 : 48 ~ 72 
     rank = 3 : 73 ~ 97 (25+2)
     */
-    size_t calculate_chunk_size(size_t num_global_index, size_t world_size);
     size_t local_to_global(size_t num_global_index, size_t local_index, size_t rank, size_t world_size);
     size_t global_to_local(size_t num_global_index, size_t global_index, size_t rank, size_t world_size);
     /* vectorized tensor
@@ -106,6 +108,12 @@ size_t ContiguousMap<dimension>::get_global_index(const size_t local_index, size
 template <size_t dimension>
 size_t ContiguousMap<dimension>::get_local_index(const size_t global_index, size_t slice_dimension, size_t rank, size_t world_size){
     return get_local_index(array_to_whole_tensor_index(global_index),slice_dimension, rank, world_size);   
+}
+
+template <size_t dimension>
+size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const size_t global_index, size_t slice_dimension, size_t world_size){
+    size_t chunk_size = calculate_chunk_size(this->tensor_total_size[slice_dimension], world_size);
+    return global_index / chunk_size;
 }
 
 // Calculate the chunk size
