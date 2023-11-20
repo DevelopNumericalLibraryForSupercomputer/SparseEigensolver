@@ -55,19 +55,19 @@ private:
 };
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape)
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape)
 : Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
     this->filled = false;
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape, size_t data_size)
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size)
 : SparseTensor(_comm, _map, _shape){
     this->data.reserve(data_size);
 }
 
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype *_map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype>> data)
+SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype>> data)
 : Tensor<datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
     this->data = data;
     this->filled = true;
@@ -75,12 +75,12 @@ SparseTensor<datatype, dimension, computEnv, maptype>::SparseTensor(Comm<computE
 }
 
 template <>
-SparseTensor<double, 2, MPI, ContiguousMap<2> >::SparseTensor(Comm<MPI> *_comm, ContiguousMap<2> *_map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
+SparseTensor<double, 2, MPI, ContiguousMap<2> >::SparseTensor(Comm<MPI> *_comm, ContiguousMap<2>* _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
 : Tensor<double, 2, MPI, ContiguousMap<2> >(_comm, _map, _shape){
 
     this->data.reserve(data.size());
     for(auto iter = data.begin(); iter != data.end(); iter++){
-        int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0, _comm->world_size);
+        int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0);
         if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
     }
     this->filled = true;
@@ -107,7 +107,7 @@ datatype &SparseTensor<datatype, dimension, computEnv, maptype>::operator()(cons
 
 template <>
 double &SparseTensor<double, 2, MPI, ContiguousMap<2> >::operator()(const std::array<size_t, 2> index){
-    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, 1, this->comm->rank, this->comm->world_size); //assert that given index is in this thread.
+    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, 1, this->comm->rank); //assert that given index is in this thread.
     for (size_t i = 0; i < this->data.size(); i++){
         if(data[i].first == index){
             return this->data[i].second;
@@ -136,7 +136,7 @@ void SparseTensor<double, 2, MPI, ContiguousMap<2> >::insert_value(std::array<si
     // --> a00 a10 a01 a11 a02 a12
     // --> a00 a01 a02 / a10 a11 a12
     int my_rank = comm->rank;
-    size_t target_rank = map->get_my_rank_from_global_index(index[0], 0, comm->world_size);
+    size_t target_rank = map->get_my_rank_from_global_index(index[0], 0);
     //std::cout << "insertval, myrank : " << my_rank << " target_rank : " << target_rank << " val : " << index[0] << " " << index[1] << " " << value << std::endl;
     if(my_rank == target_rank){
         this->data.emplace_back(index, value);

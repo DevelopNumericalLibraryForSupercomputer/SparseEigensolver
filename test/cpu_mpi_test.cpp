@@ -237,13 +237,15 @@ int main(int argc, char* argv[]){
 
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
-    std::unique_ptr<ContiguousMap<2> > new_map2(new ContiguousMap<2>(test_shape2) );
-    SE::SparseTensor<double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2.get(), test_shape2);
+    ContiguousMap<2>* new_map2 = new ContiguousMap<2>(test_shape2, comm.get()->world_size, 0);
+    SE::SparseTensor<double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
 
     std::cout << "<>>><>><><><><><><><><><><>initializa" << std::endl;
     //int myrank = comm->rank;
     //int nprocs = comm->world_size;
-    size_t chunk_size = test_sparse.map->calculate_chunk_size(N, nprocs);
+    size_t chunk_size = test_sparse.shape[0] / test_sparse.comm->world_size;
+    size_t* local_matrix_size = test_sparse.map->get_partition_size_array(0);
+    /*
     size_t* local_matrix_size = malloc<size_t, MKL>(nprocs);
     //int* idisp = malloc<int, MKL>(world_size);
     //idisp[0] = 0;
@@ -252,6 +254,7 @@ int main(int argc, char* argv[]){
         //idisp[rank+1] = idisp[rank] + local_matrix_size[rank];
     }
     local_matrix_size[nprocs-1] = N - chunk_size* (nprocs-1);
+    */
     std::cout << "before init insertval";
     for(int rank = 0;rank<nprocs;rank++){
         std::cout << " " << local_matrix_size[rank];

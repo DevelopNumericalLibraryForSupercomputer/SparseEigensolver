@@ -101,11 +101,14 @@ void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t rec
 
 template <> 
 template <> 
-void Comm<MPI>::allgatherv(double *src, int sendcount, double *trg, int* recvcounts){ // displs are automatically generated using recvcount
+void Comm<MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts){ // displs are automatically generated using recvcount
     int displs[world_size];
+    int int_recvcounts[world_size];
     displs[0] = 0;
+    int_recvcounts[0] = (int)recvcounts[0];
     for(int i=1;i<world_size;i++){
         displs[i] = displs[i-1] + (int)recvcounts[i-1];
+        int_recvcounts[i] = (int)recvcounts[i];
     }
     /*
     std::cout << "src : rank " << rank;
@@ -125,16 +128,20 @@ void Comm<MPI>::allgatherv(double *src, int sendcount, double *trg, int* recvcou
     }
     std::cout << std::endl;
     */
-    MPI_Allgatherv(src, sendcount, MPI_DOUBLE, trg, recvcounts, displs, MPI_DOUBLE, mpi_comm);
+    
+    MPI_Allgatherv(src, (int)sendcount, MPI_DOUBLE, trg, int_recvcounts, displs, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<MPI>::scatterv(double *src, int* sendcounts, double *trg, int recvcount, size_t root){ // displs are automatically generated using recvcount
+void Comm<MPI>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root){ // displs are automatically generated using recvcount
     int displs[world_size];
+    int int_sendcounts[world_size];
     displs[0] = 0;
+    int_sendcounts[0] = (int)sendcounts[0];
     for(int i=1;i<world_size;i++){
         displs[i] = displs[i-1] + (int)sendcounts[i-1];
+        int_sendcounts[i] = (int)sendcounts[i];
     }
     /*
     std::cout << "src : rank " << rank;
@@ -155,7 +162,7 @@ void Comm<MPI>::scatterv(double *src, int* sendcounts, double *trg, int recvcoun
     std::cout << std::endl;
     */
 
-    MPI_Scatterv(src, sendcounts, displs, MPI_DOUBLE, trg, recvcount, MPI_DOUBLE, root, mpi_comm);
+    MPI_Scatterv(src, int_sendcounts, displs, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, root, mpi_comm);
 }
 
 }

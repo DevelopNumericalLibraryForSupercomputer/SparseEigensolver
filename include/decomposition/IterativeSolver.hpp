@@ -36,6 +36,7 @@ template<>
 void calculate_Witer(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, double* guess, size_t n, size_t block_size, double* W_iter){
     size_t my_rank = tensor.comm->rank;
     size_t world_size = tensor.comm->world_size;
+    /*
     size_t chunk_size = tensor.map->calculate_chunk_size(n, world_size);
     int* local_matrix_size = malloc<int, MKL>(world_size);
     //int* idisp = malloc<int, MKL>(world_size);
@@ -47,7 +48,8 @@ void calculate_Witer(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, do
     if(n % world_size != 0){
         local_matrix_size[world_size-1] = n - chunk_size * (world_size-1);
     }
-
+    */
+    size_t* local_matrix_size = tensor.map->get_partition_size_array(0);
     for(size_t i=0;i<local_matrix_size[my_rank];i++){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
             W_iter[i+vector_index*local_matrix_size[my_rank]] = 0;
@@ -55,13 +57,13 @@ void calculate_Witer(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, do
     }
     for(auto entity : tensor.data){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
-            std::array<size_t, 2> local_index = tensor.map->get_local_array_index(entity.first, 0, tensor.comm->rank, tensor.comm->world_size);
-            W_iter[local_index[0] + vector_index*local_matrix_size[my_rank]] += entity.second * guess[tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank, world_size)];
+            std::array<size_t, 2> local_index = tensor.map->get_local_array_index(entity.first, 0, tensor.comm->rank);
+            W_iter[local_index[0] + vector_index*local_matrix_size[my_rank]] += entity.second * guess[tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank)];
             
                 
             std::cout << tensor.comm->rank << " entity.first : " << entity.first[0] << " " << entity.first[1] << " -> " << local_index[0] << ", " << local_index[1] << ", " << entity.second << " --> ";
-            std::cout << entity.second << " * " << guess[tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank, world_size)] <<"(";
-            std::cout << tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank, world_size) << ") = " << W_iter[local_index[0] + vector_index*local_matrix_size[my_rank]] << std::endl;
+            std::cout << entity.second << " * " << guess[tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank)] <<"(";
+            std::cout << tensor.map->get_global_index(local_index[1] + vector_index*local_matrix_size[my_rank], 0, my_rank) << ") = " << W_iter[local_index[0] + vector_index*local_matrix_size[my_rank]] << std::endl;
             
         }
     }
@@ -229,7 +231,9 @@ void preconditioner<double, MPI, ContiguousMap<2> >(SparseTensor<double, 2, MPI,
     
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
-        size_t chunk_size = tensor.map->calculate_chunk_size(n, world_size);
+        
+        size_t chunk_size = tensor.shape[0] / world_size;// tensor.map->calculate_chunk_size(n, world_size);
+        /*
         int* local_matrix_size = malloc<int, MKL>(world_size);
         for(int rank=0;rank<world_size;rank++){
             local_matrix_size[rank] = chunk_size;
@@ -238,14 +242,16 @@ void preconditioner<double, MPI, ContiguousMap<2> >(SparseTensor<double, 2, MPI,
         if(n % world_size != 0){
             local_matrix_size[world_size-1] = n - chunk_size * (world_size-1);
         }
+        */
+        size_t* local_matrix_size = tensor.map->get_partition_size_array(0);
 
         size_t max_PID = (option.num_eigenvalues -1) / chunk_size;
         std::array<size_t, 2> index;
         double* local_coeff_i = malloc<double, MPI>(chunk_size);
 
-        int* number_of_coeff_i = malloc<int, MKL>(world_size);
+        size_t* number_of_coeff_i = malloc<size_t, MKL>(world_size);
         //size_t* idisp = malloc<size_t, MKL>(world_size);
-        memset<int, MKL>(number_of_coeff_i, 0, world_size);
+        memset<size_t, MKL>(number_of_coeff_i, 0, world_size);
         //memset<size_t, MKL>(idisp, 0, world_size);
 
 
@@ -542,6 +548,7 @@ std::unique_ptr<DecomposeResult<double> > davidson(SparseTensor<double, 2, MPI, 
     // row-wise partitioning
     size_t my_rank = tensor.comm->rank;
     size_t world_size = tensor.comm->world_size;
+    /*
     size_t chunk_size = tensor.map->calculate_chunk_size(n, world_size);
     int* local_matrix_size = malloc<int, MKL>(world_size);
     //int* idisp = malloc<int, MKL>(world_size);
@@ -553,13 +560,26 @@ std::unique_ptr<DecomposeResult<double> > davidson(SparseTensor<double, 2, MPI, 
     if(n % world_size != 0){
         local_matrix_size[world_size-1] = n - chunk_size * (world_size-1);
     }
+    */
+    size_t chunk_size = tensor.shape[0] / world_size;// tensor.map->calculate_chunk_size(n, world_size);
+    /*
+    int* local_matrix_size = malloc<int, MKL>(world_size);
+    for(int rank=0;rank<world_size;rank++){
+        local_matrix_size[rank] = chunk_size;
+        //idisp[rank+1] = idisp[rank] + local_matrix_size[rank];
+    }
+    if(n % world_size != 0){
+        local_matrix_size[world_size-1] = n - chunk_size * (world_size-1);
+    }
+    */
+    size_t* local_matrix_size = tensor.map->get_partition_size_array(0);
 
     double* guess = malloc<double, MPI>(local_matrix_size[my_rank]*block_size*option.max_iterations);
     memset<double, MPI>(guess, 0.0, local_matrix_size[my_rank]*block_size*option.max_iterations);
     for(int i=0;i<option.num_eigenvalues;i++){
         //std::cout << "i = " << i << " , rank = " << my_rank << " , bla = " << tensor.map->get_my_rank_from_global_index(i*n+i, 0, world_size) << std::endl;
-        if(tensor.map->get_my_rank_from_global_index(i, 0, world_size) == my_rank){
-            guess[tensor.map->get_local_index(i*n+i,0,my_rank,world_size)] = 1.0;
+        if(tensor.map->get_my_rank_from_global_index(i, 0) == my_rank){
+            guess[tensor.map->get_local_index(i*n+i,0,my_rank)] = 1.0;
             //std::cout << "i*n+i, i = " << i << ", " << my_rank << std::endl;
         }
     }

@@ -17,7 +17,8 @@ public:
     maptype* map;
 
     Tensor(){};
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape): comm(_comm), map(_map), shape(_shape){
+    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape): comm(_comm), shape(_shape){
+        this->map = _map;
         cumprod<dimension>(this->shape, this->shape_mult);
         assert(this->shape_mult[dimension] != 0);
     };

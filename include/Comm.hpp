@@ -38,8 +38,8 @@ public:
     template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
     template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 
-    template <typename datatype> void allgatherv(datatype* src, int sendcount, datatype* trg, int* recvcounts);
-    template <typename datatype> void scatterv(datatype* src, int* sendcounts, datatype* trg, int recvcount, size_t root);
+    template <typename datatype> void allgatherv(datatype* src, size_t sendcount, datatype* trg, size_t* recvcounts);
+    template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root);
 
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
