@@ -9,6 +9,16 @@ namespace SE{
 template<size_t dimension>
 class Map{
 public:
+	std::array<size_t, dimension> tensor_total_size;
+    std::array<size_t, dimension+1> tensor_total_size_mult;
+	size_t world_size;
+
+	bool is_sliced;
+	size_t sliced_dimension; // if is_sliced is false, sliced_dimension will become 0
+	size_t* partition_size;
+	size_t* start_global_index;
+
+
 	Map(){};
 
 	Map(std::array<size_t, dimension> total_size, size_t world_size);
@@ -48,15 +58,6 @@ public:
 	const size_t* get_element_size_list(){return element_size_list;};
 	*/
 protected:
-	std::array<size_t, dimension> tensor_total_size;
-    std::array<size_t, dimension+1> tensor_total_size_mult;
-	size_t world_size;
-
-	bool is_sliced;
-	size_t sliced_dimension; // if is_sliced is false, sliced_dimension will become 0
-	size_t* partition_size;
-	size_t* start_global_index;
-
 	/*
     size_t num_global_elements = -1;
     size_t num_my_elements = -1;

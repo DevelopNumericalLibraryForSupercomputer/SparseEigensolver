@@ -17,6 +17,7 @@ public:
 	size_t* get_start_global_index_array(size_t slice_dimension);
 
     size_t get_my_rank_from_global_index(const size_t global_index, size_t slice_dimension);
+    size_t get_my_rank_from_global_index(const std::array<size_t, dimension> global_index);
     //size_t calculate_chunk_size(size_t num_global_index);
 
 
@@ -183,6 +184,16 @@ size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const size_t glob
     else{
         std::cout << "ContiguousMap<dimension>::get_my_rank_from_global_index, wrong dimension" << std::endl;
         exit(-1);
+    }
+}
+
+template <size_t dimension>
+size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const std::array<size_t, dimension> global_index){
+    if(this->is_sliced){
+        return get_my_rank_from_global_index(global_index[this->sliced_dimension], this->sliced_dimension);
+    }
+    else{
+        return 0;
     }
 }
 

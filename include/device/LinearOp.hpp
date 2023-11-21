@@ -39,6 +39,7 @@ enum class SE_layout{
     RowMajor,
     ColMajor
 };
+
 //x = a * x
 template <typename datatype, typename computeEnv>
 void scal(const size_t n, const datatype alpha, datatype *x, const size_t incx);
@@ -98,4 +99,6 @@ int geev(const SE_layout layout, char jobvl, char jobvr, const size_t n, datatyp
           datatype* wr, datatype* wi, datatype* vl, const size_t ldvl, datatype* vr, const size_t ldvr);
 
 
+template <typename datatype, typename computeEnv>
+int syev(const SE_layout layout, char jobz, char uplo, const size_t n, double* a, const size_t lda, double* w);
 }

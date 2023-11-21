@@ -16,10 +16,8 @@ Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>* matmul(Tensor
 {  static_assert(false,"This is not implemented yet");  }    
 
 //QR
-
 template <typename datatype, typename computEnv>
 void orthonormalize(datatype* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
 {  static_assert(false,"This is not implemented yet");  }
-
 
 }

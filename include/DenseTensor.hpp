@@ -26,20 +26,11 @@ public:
 
     Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>& operator=(const Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> &tensor);
 
-    //void complete(){};
-    //bool get_filled() {return true;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
     void print_tensor();
     Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> clone() {
         return Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> (this->comm, this->map, this->shape, this->data);
     };
-    /*
-    std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > decompose(const std::string method);
-
-    std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > evd();
-    std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > davidson();
-    void preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess);
-    */
 };
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -129,7 +120,7 @@ void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print_te
 
 template <>
 void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print_tensor(){
-    
+
     std::cout << "=======================" << std::endl;
     for(int i=0;i<this->shape[0];i++){
         for(int j=0;j<this->shape[1];j++){
@@ -140,39 +131,19 @@ void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print_tensor()
     std::cout << "=======================" << std::endl;
     
 }
-/*
 
-template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > DenseTensor<datatype, dimension, computEnv, maptype>::decompose(const std::string method){
-    if(method.compare("EVD")==0){
-        return evd();
+template <>
+void Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >::print_tensor(){
+    if(this->comm->rank == 0){
+        std::cout << "=======================" << std::endl;
+        for(int i=0;i<this->shape[0];i++){
+            for(int j=0;j<this->shape[1];j++){
+                std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
+            }
+            std::cout << std::endl;
+        }
+        std::cout << "=======================" << std::endl;
     }
-    else if(method.compare("Davidson")==0){
-        return davidson();
-    }
-    else{
-        std::cout << method << " is not implemented yet." << std::endl;
-        exit(-1);
-    }
-    
 }
 
-template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > DenseTensor<datatype, dimension, computEnv, maptype>::evd(){
-    std::cout << "EVD is not implemented yet." << std::endl;
-    exit(-1);
-}
-
-template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > DenseTensor<datatype, dimension, computEnv, maptype>::davidson(){
-    std::cout << "davidson is not implemented yet." << std::endl;
-    exit(-1);
-}
-
-template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-void DenseTensor<datatype, dimension, computEnv, maptype>::preconditioner(DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
-    std::cout << "invalid preconditioner." << std::endl;
-    exit(-1);
-}
-*/
 };

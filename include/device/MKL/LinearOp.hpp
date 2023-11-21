@@ -1,6 +1,7 @@
 #pragma once
 #include "../../Device.hpp"
 #include "../LinearOp.hpp"
+#include "Utility.hpp"
 #include "mkl.h"
 
 namespace SE{
@@ -40,30 +41,6 @@ void memset<double, MKL>(double* dest, int value, size_t size){
     std::memset(dest, value, size * sizeof(double));
 }
 
-CBLAS_LAYOUT map_layout_blas(SE_layout layout){
-    switch (layout){
-        case SE_layout::RowMajor: return CblasRowMajor;
-        case SE_layout::ColMajor: return CblasColMajor;
-    }
-    exit(-1);
-}
-int map_layout_lapack(SE_layout layout){
-    switch (layout){
-        case SE_layout::RowMajor: return LAPACK_ROW_MAJOR;
-        case SE_layout::ColMajor: return LAPACK_COL_MAJOR;
-    }
-    exit(-1);
-}
-
-CBLAS_TRANSPOSE map_transpose(SE_transpose trans){
-    switch (trans){
-        case SE_transpose::NoTrans:   return CblasNoTrans;
-        case SE_transpose::Trans:     return CblasTrans;
-        case SE_transpose::ConjTrans: return CblasConjTrans;
-    }
-    exit(-1);
-}
-
 template <>
 void scal<double, MKL>(const size_t n, const double alpha, double *x, const size_t incx){
     return cblas_dscal(n, alpha, x, incx);
@@ -79,7 +56,7 @@ void gemv<double, MKL>(const SE_layout layout, const SE_transpose transa, const 
                        const double *a, const size_t lda, const double *x, const size_t incx,
                        const double beta, double *y, const size_t incy)
 {
-    return cblas_dgemv(map_layout_blas(layout), map_transpose(transa), m, n, alpha, a, lda, x, incx, beta, y, incy);
+    return cblas_dgemv(map_layout_blas_MKL(layout), map_transpose_blas_MKL(transa), m, n, alpha, a, lda, x, incx, beta, y, incy);
 }
 
 template<>
@@ -88,24 +65,30 @@ void gemm<double, MKL>(const SE_layout layout, const SE_transpose transa, const 
                        const double alpha, const double *a, const size_t lda,
                        const double *b, const size_t ldb, const double beta,
                        double *c, const size_t ldc){
-    return cblas_dgemm(map_layout_blas(layout), map_transpose(transa), map_transpose(transb), m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
+    return cblas_dgemm(map_layout_blas_MKL(layout), map_transpose_blas_MKL(transa), map_transpose_blas_MKL(transb), m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 }
 
 template<>
 int geqrf<double, MKL>(const SE_layout layout, size_t m, size_t n, double* a, size_t lda, double* tau){
-    return LAPACKE_dgeqrf(map_layout_lapack(layout), m, n, a, lda, tau);
+    return LAPACKE_dgeqrf(map_layout_lapack_MKL(layout), m, n, a, lda, tau);
 }
 
 template<>
 int orgqr<double, MKL>(const SE_layout layout, size_t m, size_t n, double* a, size_t lda, double* tau){
-    return LAPACKE_dorgqr(map_layout_lapack(layout), m, m, n, a, lda, tau);
+    return LAPACKE_dorgqr(map_layout_lapack_MKL(layout), m, m, n, a, lda, tau);
 }
 
 template <>
 int geev<double, MKL>(const SE_layout layout, char jobvl, char jobvr, const size_t n, double* a, const size_t lda,
           double* wr, double* wi, double* vl, const size_t ldvl, double* vr, const size_t ldvr){
-    return LAPACKE_dgeev(map_layout_lapack(layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);
+    return LAPACKE_dgeev(map_layout_lapack_MKL(layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);
 }
+
+template <>
+int syev<double, MKL>(const SE_layout layout, char jobz, char uplo, const size_t n, double* a, const size_t lda, double* w){
+    return LAPACKE_dsyev(map_layout_lapack_MKL(layout), jobz, uplo, n, a, lda, w);
+}
+
 
 
 }

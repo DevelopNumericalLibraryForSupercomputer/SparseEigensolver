@@ -7,7 +7,9 @@
 namespace SE{
 //spmv
 template <>
-DenseTensor<double, 1, MPI, ContiguousMap>* spmv(SparseTensor<double, 2, MPI, ContiguousMap>* a, DenseTensor<double, 1, MPI, ContiguousMap>* v, SE_transpose transa){
+Tensor<STORETYPE::Dense, double, 2, MPI, maptype>* spmv(Tensor<STORETYPE::COO, double, 2, MPI, maptype>* a, 
+                                                        Tensor<STORETYPE::Dense, double, 2, MPI, maptype>* v,
+                                                        SE_transpose transa){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
@@ -38,8 +40,10 @@ DenseTensor<double, 1, MPI, ContiguousMap>* spmv(SparseTensor<double, 2, MPI, Co
 //matmul
 //alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
 template <typename maptype>
-DenseTensor<double, 2, MPI, maptype>* matmul(DenseTensor<double, 2, MPI, maptype>* a, DenseTensor<double, 2, MPI, maptype>* b,
-                                             SE_transpose transa = SE_transpose::NoTrans, SE_transpose transb = SE_transpose::NoTrans){
+Tensor<STORETYPE::Dense, double, 2, MPI, maptype>* matmul(Tensor<STORETYPE::Dense, double, 2, MPI, maptype>* a,
+                                                          Tensor<STORETYPE::Dense, double, 2, MPI, maptype>* b,
+                                                          SE_transpose transa = SE_transpose::NoTrans,
+                                                          SE_transpose transb = SE_transpose::NoTrans){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
@@ -66,25 +70,25 @@ DenseTensor<double, 2, MPI, maptype>* matmul(DenseTensor<double, 2, MPI, maptype
 template <>
 void orthonormalize<double, MPI>(double* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
 {
-    //serial orthonormalization
-    //orthonormalize<double, MKL>(eigvec, vector_size, number_of_vectors, method);
-        if(method == "qr"){
-        double* tau = malloc<double, MPI>(number_of_vectors);
-        int info = geqrf<double, MPI>(SE_layout::ColMajor, vector_size, number_of_vectors, eigvec, vector_size, tau);
-        if(info != 0){
-            std::cout << "QR decomposition failed!" << std::endl;
-            exit(1);
-        }
-        info = orgqr<double, MPI>(SE_layout::ColMajor, number_of_vectors, number_of_vectors, eigvec, vector_size, tau);
-        if(info != 0){
-            std::cout << "QR decomposition failed!" << std::endl;
-            exit(1);
-        }
-    }
-    else{
-        std::cout << "not implemented" << std::endl;
+    if(method == "qr"){
+        std::cout << "qr decomposition for MPI parallelization is not available" << std::endl;
         exit(-1);
     }
+    else{
+        std::cout << "default orthonormalization" << std::endl;
+        double* submatrix = malloc<double, MPI>(number_of_vectors*number_of_vectors);
+        double* submatrix_eigvals = malloc<double, MPI>(number_of_vectors);
+        gemm<double, MPI>(SE_layout::ColMajor, SE_transpose::Trans, SE_transpose::NoTrans, number_of_vectors, number_of_vectors, vetor_size, 1.0, eigvec, number_of_vectors, eigvec, vector_size, 0.0, submatrix, number_of_vectors);
+        syev<double, MPI>(SE_layout::ColMajor, 'V', 'U', number_of_vectors, submatrix, number_of_vectors, submatrix_eigvals);
+        double* new_eigvec = malloc<double, MPI>(vector_size*number_of_vectors);
+        gemm<double, MPI>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans,vector_size, number_of_vectors, number_of_vectors, 1.0, eigvec, vector_size, submatrix, number_of_vectors, 0.0, new_eigvec, vector_size);
+        memcpy<double, MPI>(eigvec, new_eigvec, vector_size*number_of_vectors);
+        free<double, MPI>(submatrix);
+        free<double, MPI>(submatrix_eigvals);
+        free<double, MPI>(new_eigvec);
+    }
 }
+
+
 
 }

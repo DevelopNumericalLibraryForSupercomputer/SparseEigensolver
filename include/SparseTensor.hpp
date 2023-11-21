@@ -84,12 +84,18 @@ Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(Comm<com
 }
 
 template <>
-Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::Tensor(Comm<MPI> *_comm, ContiguousMap<2>* _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
+Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::Tensor(Comm<MPI> *_comm, ContiguousMap<2> * _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
 : Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >(_comm, _map, _shape){
     this->data.reserve(data.size());
     for(auto iter = data.begin(); iter != data.end(); iter++){
-        int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0);
-        if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
+        //int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0);
+        if(_map->is_sliced){
+            int this_rank = _map->get_my_rank_from_global_index(iter->first);
+            if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
+        }
+        else{
+            this->data.emplace_back(iter->first, iter->second);
+        }
     }
     this->filled = true;
     this->complete();
@@ -97,24 +103,11 @@ Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::Tensor(Comm<MPI> *_co
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 datatype &Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
-    for (size_t i = 0; i < this->data.size(); i++){
-        // array equal, c++20
-        //std::cout << i << " " << data[i].first[0] << " " << data[i].first[1] << " " << data[i].first[2] << " " << data[i].second << std::endl;
-        if(data[i].first == index){
-            return this->data[i].second;
-        }
-    }
-    std::cout << "no element!" << std::endl;
-    exit(-1);
-    this->data.push_back(std::make_pair(index, 0.0));
-    return this->data.back().second;
-}
-
-template <>
-double &Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::operator()(const std::array<size_t, 2> index){
     std::array<size_t, 2> local_index = this->map->get_local_array_index(index, 1, this->comm->rank); //assert that given index is in this thread.
     for (size_t i = 0; i < this->data.size(); i++){
         if(data[i].first == index){
+            // array equal, c++20
+            //std::cout << i << " " << data[i].first[0] << " " << data[i].first[1] << " " << data[i].first[2] << " " << data[i].second << std::endl;
             return this->data[i].second;
         }
     }
@@ -124,13 +117,25 @@ double &Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::operator()(co
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::insert_value(std::array<size_t, dimension> index, datatype value){
-    //std::cout << "inside default insert_val" << std::endl;
+    //matrix는 col major로 저장됨
+    //공간상에서 자르는 index 는 row index로 자름.
+    // a00 a01 a02
+    // a10 a11 a12
+    // --> a00 a10 a01 a11 a02 a12
+    // --> a00 a01 a02 / a10 a11 a12
+    int my_rank = comm->rank;
+    size_t target_rank = 0;
+    if(map->is_sliced){
+        target_rank = map->get_my_rank_from_global_index(index[0], map->sliced_dimension);
+    }
+
     assert(this->filled == false);
-    //this->data.push_back(std::make_pair(index, value));
-    this->data.emplace_back(index, value);
+    if(my_rank == target_rank){
+        this->data.emplace_back(index, value);
+    }
 }
 
-
+/*
 template <>
 void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::insert_value(std::array<size_t, 2> index, double value){
     //std::cout << "inside D2MC<2> insert_val" << std::endl;
@@ -149,27 +154,8 @@ void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::insert_value(std
     else{
         std::cout << "( " << index[0] << ", " << index[1] << " ) cannot be inserted in the process number " << my_rank << std::endl;
     }
-    /*
-    size_t row, col;
-    double recv_value;
-    else{
-        row = index[0];
-        col = index[1];
-        if(comm->rank = my_rank){
-            send<int>(&row, 1, target_rank);
-            send<int>(&col, 1, target_rank);
-            send<double>(&value, 1, target_rank);
-        }
-        else if(comm->rank == target_rank){
-            recv<int>(&row, 1, my_rank);
-            recv<int>(&col, 1, my_rank);
-            recv<double>(&value, 1, my_rank);
-        }
-        comm->barrier();
-    }
-    */
 }
-
+*/
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print_tensor(){
     std::cout << "print is not implemented yet." << std::endl;
@@ -185,9 +171,7 @@ void Tensor<STORETYPE::COO, double, 2, MKL, ContiguousMap<2> >::print_tensor(){
     }
     std::cout << "=======================" << std::endl;
     return;
-}
-
-template <>
+}template <>
 void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::print_tensor(){
     std::cout << "=======================" << std::endl;
     for(auto const &i: this->data){
