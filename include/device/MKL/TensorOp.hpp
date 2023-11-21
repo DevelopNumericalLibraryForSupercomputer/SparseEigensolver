@@ -7,7 +7,7 @@
 namespace SE{
 //spmv
 template <typename maptype>
-DenseTensor<double, 1, MKL, maptype>* spmv(SparseTensor<double, 2, MKL, maptype>* a, DenseTensor<double, 1, MKL, maptype>* v,
+Tensor<STORETYPE::Dense, double, 1, MKL, maptype>* spmv(Tensor<STORETYPE::COO, double, 2, MKL, maptype>* a, Tensor<STORETYPE::Dense, double, 1, MKL, maptype>* v,
                                            SE_transpose transa){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
@@ -31,7 +31,7 @@ DenseTensor<double, 1, MKL, maptype>* spmv(SparseTensor<double, 2, MKL, maptype>
         }
     }
 
-    DenseTensor<double, 1, MKL, maptype>* return_mat = new DenseTensor<double, 1, MKL, maptype>(return_size, return_data);
+    Tensor<STORETYPE::Dense, double, 1, MKL, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 1, MKL, maptype>(return_size, return_data);
     return return_mat;
 }   
 
@@ -39,7 +39,7 @@ DenseTensor<double, 1, MKL, maptype>* spmv(SparseTensor<double, 2, MKL, maptype>
 //matmul
 //alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
 template <typename maptype>
-DenseTensor<double, 2, MKL, maptype>* matmul(DenseTensor<double, 2, MKL, maptype>* a, DenseTensor<double, 2, MKL, maptype>* b,
+Tensor<STORETYPE::Dense, double, 2, MKL, maptype>* matmul(Tensor<STORETYPE::Dense, double, 2, MKL, maptype>* a, Tensor<STORETYPE::Dense, double, 2, MKL, maptype>* b,
                                              SE_transpose transa = SE_transpose::NoTrans, SE_transpose transb = SE_transpose::NoTrans){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
@@ -59,7 +59,7 @@ DenseTensor<double, 2, MKL, maptype>* matmul(DenseTensor<double, 2, MKL, maptype
 
     gemm<double, MKL>(SE_layout::ColMajor, transa, transb, m, n, k, 1.0, a->data, m, b->data, k, 0.0, return_data, m);
     
-    DenseTensor<double, 2, MKL, maptype>* return_mat = new DenseTensor<double, 2, MKL, maptype>(return_size, return_data);
+    Tensor<STORETYPE::Dense, double, 2, MKL, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, MKL, maptype>(return_size, return_data);
     return return_mat;
 }
 

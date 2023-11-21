@@ -15,12 +15,12 @@
 
 namespace SE{
 
-template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(Tensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
+void calculate_Witer(Tensor<storetype, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
     //null
 }
 template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(SparseTensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+void calculate_Witer(Tensor<STORETYPE::COO, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
     for(size_t i=0;i<n;i++){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
             W_iter[i+vector_index*n] = 0;
@@ -33,7 +33,7 @@ void calculate_Witer(SparseTensor<datatype, 2, computEnv, maptype>& tensor, data
     }
 }
 template<>
-void calculate_Witer(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, double* guess, size_t n, size_t block_size, double* W_iter){
+void calculate_Witer(Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >& tensor, double* guess, size_t n, size_t block_size, double* W_iter){
     size_t my_rank = tensor.comm->rank;
     size_t world_size = tensor.comm->world_size;
     /*
@@ -69,7 +69,7 @@ void calculate_Witer(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, do
     }
 }
 template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(DenseTensor<datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+void calculate_Witer(Tensor<STORETYPE::Dense, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
     gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, n, 1.0, tensor.data, n, guess, n, 0.0, W_iter, n);
 }
 
@@ -170,12 +170,13 @@ bool check_convergence<double, MPI>(Comm<MPI>* _comm, double* residual, double* 
     return total_sum_of_norm_square < tolerance*tolerance;
 }
 
-template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(Tensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
-    std::cout << "which Tensor?" << std::endl;
+template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
+void preconditioner(Tensor<storetype, datatype, dimension, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+    std::cout << "undefined Tensor?" << std::endl;
 }
-template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(DenseTensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+
+template <typename datatype, typename maptype>
+void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, MKL, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
@@ -196,8 +197,8 @@ void preconditioner(DenseTensor<datatype, 2, computEnv, maptype>& tensor, Decomp
         exit(1);
     }
 }
-template <typename datatype, typename computEnv, typename maptype>
-void preconditioner(SparseTensor<datatype, 2, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+template <typename datatype, typename maptype>
+void preconditioner(Tensor<STORETYPE::COO, datatype, 2, MKL, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
@@ -219,7 +220,7 @@ void preconditioner(SparseTensor<datatype, 2, computEnv, maptype>& tensor, Decom
     }
 }
 template <>
-void preconditioner<double, MPI, ContiguousMap<2> >(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor, DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
+void preconditioner(Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >& tensor, DecomposeOption option, double* sub_eigval, double* residual, size_t block_size, double* guess){
     // sparse tensor는 나눠서 저장
     // sub_eigval은 모두가 들고 있음
     // residual은 나눠서 저장
@@ -299,7 +300,7 @@ void preconditioner<double, MPI, ContiguousMap<2> >(SparseTensor<double, 2, MPI,
 }
 
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, computEnv, maptype>& tensor){
+std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, datatype, 2, computEnv, maptype>& tensor){
     DecomposeOption option;
     std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
     std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
@@ -439,7 +440,7 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(DenseTensor<datatype, 2, co
     }
 }
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, computEnv, maptype>& tensor){
+std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::COO, datatype, 2, computEnv, maptype>& tensor){
     DecomposeOption option;
     std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
     std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
@@ -527,8 +528,9 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(SparseTensor<datatype, 2, c
         return std::move(return_val);
     }
 }
+
 template <>
-std::unique_ptr<DecomposeResult<double> > davidson(SparseTensor<double, 2, MPI, ContiguousMap<2> >& tensor){
+std::unique_ptr<DecomposeResult<double> > davidson(Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >& tensor){
     DecomposeOption option;
     std::unique_ptr<double[]> real_eigvals(new double[option.num_eigenvalues]);
     std::unique_ptr<double[]> imag_eigvals(new double[option.num_eigenvalues]);

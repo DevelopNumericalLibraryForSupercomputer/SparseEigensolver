@@ -10,14 +10,14 @@
 #include <memory>
 
 namespace SE{
-template <typename datatype, size_t dimension, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, dimension, computEnv, maptype>& tensor){
+template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
+std::unique_ptr<DecomposeResult<datatype> > evd(Tensor<storetype, datatype, dimension, computEnv, maptype>& tensor){
     std::cout << "EVD for the rank-" << dimension << " tensor is not implemented.";
     exit(1);
 }
 
 template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > evd(DenseTensor<datatype, 2, computEnv, maptype>& tensor){
+std::unique_ptr<DecomposeResult<datatype> > evd(Tensor<STORETYPE::Dense, datatype, 2, computEnv, maptype>& tensor){
     assert(tensor.shape[0] == tensor.shape[1]);
     const size_t n = tensor.shape[0];
 
