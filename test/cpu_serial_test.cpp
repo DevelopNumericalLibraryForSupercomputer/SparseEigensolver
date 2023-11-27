@@ -4,15 +4,11 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
+#include <chrono>
 #include "ContiguousMap.hpp"
 #include "device/MKL/LinearOP.hpp"
 #include "device/MKL/TensorOP.hpp"
 #include "decomposition/Decompose.hpp"
-
-//#include "SparseTensor.hpp"
-
-#include <chrono>
-
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";

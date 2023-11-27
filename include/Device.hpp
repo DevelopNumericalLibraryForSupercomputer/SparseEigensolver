@@ -33,28 +33,28 @@ std::ostream& operator<< (std::ostream& os, computEnv comput_env)
 //std::ostream& operator<< (std::ostream& os, computEnv comput_env){ return os << comput_env.env_name;};
 
 struct ComputEnv{
-
-    const std::string env_name;
-    constexpr ComputEnv(): env_name("BASE"){};
+    public:
+    const char* env_name;
+    constexpr ComputEnv(const char* _env_name="BASE"): env_name(_env_name){};
+    
     //const computEnv env = SE::BASE;
     //constexpr ComputEnv(computEnv env_): env(env_)){};
 };
 
 struct MKL: public ComputEnv{
-    const std::string env_name = "MKL";
-    //constexpr MKL() : ComputEnv(SE::MKL){};
+    //this->env_name = "MKL";
+    constexpr MKL() {ComputEnv("MKL");};
 };
 struct MPI: public ComputEnv{
-    const std::string env_name = "MPI";
-    //constexpr MPI() : ComputEnv(SE::MPI){};
+    //this->env_name = "MPI";
+    constexpr MPI() {ComputEnv("MPI");};
 };
 struct CUDA: public ComputEnv{
-    const std::string env_name = "CUDA";
-    //constexpr CUDA() : ComputEnv(SE::NCCL){};
+    //this->env_name = "CUDA";
+    constexpr CUDA(){ComputEnv("CUDA"); };
 };
-struct ROCm: public ComputEnv{
-    const std::string env_name = "ROCm";
-    //constexpr ROCm() : ComputEnv(SE::ROCM){};
+struct ROCM: public ComputEnv{
+    constexpr ROCM(){ComputEnv("ROCM");};
 };
 
 }

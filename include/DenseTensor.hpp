@@ -2,8 +2,10 @@
 #include <iostream>
 #include <array>
 #include <cassert>
+#include <iomanip>
 #include "Tensor.hpp"
 #include "Device.hpp"
+#include "ContiguousMap.hpp"
 //#include "device/MKL/LinearOp.hpp"
 namespace SE{
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>

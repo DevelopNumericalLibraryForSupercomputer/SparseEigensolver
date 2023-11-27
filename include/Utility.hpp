@@ -6,7 +6,8 @@
 #include <iterator>
 #include <algorithm>
 #include <array>
-#include "device/LinearOp.hpp"
+#include <vector>
+#include "device/LinearOp.hpp"  //#include "device/MKL/LinearOp.hpp"
 
 namespace SE{
 template <size_t dimension>
