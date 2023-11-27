@@ -3,8 +3,8 @@
 #include <iostream>
 #include <iomanip>
 #include "ContiguousMap.hpp"
-#include "device\MKL\TensorOp.hpp"
-#include "device\MPI\TensorOp.hpp"
+#include "device/MKL/TensorOp.hpp"
+#include "device/MPI/TensorOp.hpp"
 
 using namespace SE;
 int serial(int argc, char* argv[]){
@@ -91,7 +91,7 @@ int serial(int argc, char* argv[]){
 int MPI_noslice(int argc, char* argv[]){
     std::cout << "TensorOp test, MPI" << std::endl;
     
-    auto comm = createComm<MPI>(argc, argv);
+    std::unique_ptr<Comm<MPI> > comm = createComm<MPI>(argc, argv);
     std::cout << "MPI test" << std::endl;
     std::cout << "myrank = " << comm.get()->rank << ", world_size : " << comm.get()->world_size << std::endl;
 
@@ -176,7 +176,7 @@ int MPI_noslice(int argc, char* argv[]){
 int MPI_colslice(int argc, char* argv[]){
     std::cout << "TensorOp test, MPI" << std::endl;
     
-    auto comm = createComm<MPI>(argc, argv);
+    std::unique_ptr<Comm<MPI> > comm = createComm<MPI>(argc, argv);
     std::cout << "MPI test" << std::endl;
     std::cout << "myrank = " << comm.get()->rank << ", world_size : " << comm.get()->world_size << std::endl;
 

@@ -1,8 +1,6 @@
 #pragma once
 #include "LinearOp.hpp"
 #include "../TensorOp.hpp"
-#include "../../DenseTensor.hpp"
-#include "../../SparseTensor.hpp"
 #include "MKLComm.hpp"
 
 namespace SE{

@@ -2,7 +2,7 @@
 #include <array>
 #include "Comm.hpp"
 #include "Map.hpp"
-#include "decomposition/DecomposeResult.hpp"
+//#include "decomposition/DecomposeResult.hpp"
 
 namespace SE{
 

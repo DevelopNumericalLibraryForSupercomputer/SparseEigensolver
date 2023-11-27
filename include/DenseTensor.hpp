@@ -4,8 +4,8 @@
 #include <cassert>
 #include <iomanip>
 #include "Tensor.hpp"
-#include "Device.hpp"
-#include "ContiguousMap.hpp"
+//#include "Device.hpp"
+//#include "ContiguousMap.hpp"
 namespace SE{
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 class Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>{

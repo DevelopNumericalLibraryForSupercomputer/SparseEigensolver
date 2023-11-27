@@ -5,7 +5,7 @@
 #include <algorithm>
 #include "Tensor.hpp"
 
-#include "decomposition/DecomposeOption.hpp"
+//#include "decomposition/DecomposeOption.hpp"
 namespace SE{
 
 //COO sparse matrix
