@@ -8,9 +8,6 @@
 #include "../device/LinearOp.hpp"
 #include "../device/TensorOp.hpp"
 #include "../Utility.hpp"
-//#include "../device/MKL/MKLComm.hpp"
-//#include "../device/MPI/MPIComm.hpp"
-//#include "../device/CUDA/CUDAComm.hpp"
 #include <memory>
 
 namespace SE{

@@ -3,9 +3,14 @@
 #include <iostream>
 #include <iomanip>
 
-#include "ContiguousMap.hpp"
+
+#include "device/MPI/LinearOp.hpp"
+#include "device/MPI/TensorOp.hpp"
 #include "device/MPI/MPIComm.hpp"
+#include "ContiguousMap.hpp"
+#include "decomposition/IterativeSolver_MPI.hpp"
 #include "decomposition/Decompose.hpp"
+
 #include <chrono>
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
@@ -243,7 +248,7 @@ int main(int argc, char* argv[]){
     
     std::cout << "Matrix construction" << std::endl;
     size_t chunk_size = test_sparse.shape[0] / test_sparse.comm->world_size;
-    size_t* local_matrix_size = new_map2->get_partition_size_array(0);
+    size_t* local_matrix_size = new_map2->get_partition_size_array();
 
     for(size_t i=0;i<N;i++){
     //for(size_t loc_i=0; loc_i<local_matrix_size[myrank]; loc_i++){
@@ -263,7 +268,8 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    test_sparse.print_tensor();
+    test_sparse.print();
+    /*
     comm->barrier();
     if (comm->rank == 0) std::cout << "Sparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
@@ -272,7 +278,7 @@ int main(int argc, char* argv[]){
     comm->barrier();
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
     if (comm->rank == 0) std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
-   
+   */
 
 
 

@@ -2,16 +2,13 @@
 #include <memory>
 #include "DecomposeOption.hpp"
 
+#include "Utility.hpp"
 #include "../DenseTensor.hpp"
 #include "../SparseTensor.hpp"
 #include "../ContiguousMap.hpp"
 #include "../Device.hpp"
-#include "Utility.hpp"
-#include "../device/TensorOp.hpp"
 
-// To be removed 
-#include "../device/MKL/MKLComm.hpp"
-#include "DecomposeOption.hpp"
+#include "../device/TensorOp.hpp"
 
 namespace SE{
 

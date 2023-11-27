@@ -2,7 +2,6 @@
 #include <iostream>
 #include <array>
 #include <cassert>
-//#include "Comm_include.hpp"
 #include "Comm.hpp"
 #include "Utility.hpp"
 namespace SE{

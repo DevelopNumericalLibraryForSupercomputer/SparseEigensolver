@@ -6,7 +6,6 @@
 #include "Tensor.hpp"
 #include "Device.hpp"
 #include "ContiguousMap.hpp"
-//#include "device/MKL/LinearOp.hpp"
 namespace SE{
 template <typename datatype, size_t dimension, typename computEnv, typename maptype>
 class Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>{

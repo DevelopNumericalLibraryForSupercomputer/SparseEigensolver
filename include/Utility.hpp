@@ -7,7 +7,7 @@
 #include <algorithm>
 #include <array>
 #include <vector>
-#include "device/LinearOp.hpp"  //#include "device/MKL/LinearOp.hpp"
+#include "device/LinearOp.hpp"
 
 namespace SE{
 template <size_t dimension>
