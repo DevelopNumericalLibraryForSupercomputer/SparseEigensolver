@@ -101,9 +101,6 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
     }
 }
 
-<<<<<<< HEAD
-}
-=======
 
 
 template<typename datatype>
@@ -117,7 +114,5 @@ std::vector<size_t> sort_indicies(const datatype* data_array, const size_t array
 }
 
 template <typename datatype, computEnv comput_env>
-void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda)
-{  static_assert(false,"This is not implemented yet");  }
+void eigenvec_sort(datatype* eigvals, datatype* eigvecs, const size_t n, const size_t lda);
 }
->>>>>>> 5dd70f5596567c4aeda710dbf77472bedf58000a
