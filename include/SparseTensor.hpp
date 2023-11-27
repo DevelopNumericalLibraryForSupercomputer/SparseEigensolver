@@ -42,7 +42,8 @@ public:
     void complete();
     bool get_filled(){return filled;};
     void insert_value(std::array<size_t, dimension> index, datatype value);
-    void print_tensor();
+    void print() const;
+    void print(const std::string& name) const;
 
     Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype> clone() {
         return Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(this->comm, this->map, this->shape, this->data);
@@ -126,7 +127,7 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::insert_val
     int my_rank = comm->rank;
     size_t target_rank = 0;
     if(map->is_sliced){
-        target_rank = map->get_my_rank_from_global_index(index[0], map->sliced_dimension);
+        target_rank = map->get_my_rank_from_global_index(index[map->sliced_dimension]);
     }
 
     assert(this->filled == false);
@@ -157,30 +158,44 @@ void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::insert_value(std
 }
 */
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print_tensor(){
+void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print() const{
     std::cout << "print is not implemented yet." << std::endl;
     exit(-1);
 }
 
 template <>
-void Tensor<STORETYPE::COO, double, 2, MKL, ContiguousMap<2> >::print_tensor(){
-    std::cout << "=======================" << std::endl;
+void Tensor<STORETYPE::COO, double, 2, MKL, ContiguousMap<2> >::print() const{
     for(auto const &i: this->data){
         for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
         std::cout << std::setw(6) << i.second << std::endl;
     }
-    std::cout << "=======================" << std::endl;
     return;
 }template <>
-void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::print_tensor(){
-    std::cout << "=======================" << std::endl;
+void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::print() const{
     for(auto const &i: this->data){
         for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
         std::cout << std::setw(6) << i.second << std::endl;
     }
-    std::cout << "=======================" << std::endl;
+
     return;
 }
+
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
+    
+    if(!map->is_sliced){
+        if(this->comm->rank == 0){
+            std::cout << name << " : " << std::endl;
+            print();
+            std::cout << "=======================" << std::endl;
+        }
+    }
+    else{
+        std::cout << name << " : (rank " << this->comm->rank << ")" << std::endl;
+        print();
+    }
+}
+
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::complete_local(){

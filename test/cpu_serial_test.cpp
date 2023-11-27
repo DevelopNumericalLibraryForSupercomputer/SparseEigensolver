@@ -27,58 +27,16 @@ using namespace SE;
 int main(int argc, char* argv[]){
     auto comm = createComm<MKL>(argc, argv);
     std::cout << "SERIAL test" << std::endl;
-    std::cout << *comm <<std::endl;
-    double x = 0.0, sum = 0.0;
-    int myrank = comm->rank;
-    int nprocs = comm->world_size;
-        
-    int nn=100000;
-    double step = 0.00001;
-    
-    int myinit = myrank*(nn/nprocs);
-    int myfin =  (myrank+1)*(nn/nprocs)-1;
-    if(myfin > nn) myfin = nn;
-        
-    std::cout << "ContiguousMap test" << std::endl;
-    
-    std::array<size_t,3> shape3 = {8,7,17}; 
-    
-    ContiguousMap<3> cont_map = ContiguousMap<3>(shape3, 1);
-    //nproc = 3
-    std::array<size_t,3> test_index1 = {1,3,14}; // 1+ 3*8 + 14*8*7 = 809
-    size_t test_index1_ = 809;
-    if(comm->rank == 0){
-        int slice_dimension = comm->rank;
-        //array G -> array L
-        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank);
-        //array G -> size_t L
-        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank); // 1+ 3*2 + 14*2*7 = 203
-        //size_t G -> array L
-        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank);
-        //size_t G -> size_t L
-        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank); // 1+ 3*2 + 14*2*7 = 203
-        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 0 : (1 3 14 ) = 203std::endl; // rank 0 : (1 3 14 ) = 203
-        
-        //array L -> array G
-        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank);
-        //size_t L -> array G
-        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank);
-        //array L -> size_t G
-        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank);
-        //size_t L -> size_t G
-        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank);
-        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
-    }
+    std::cout << *comm <<std::endl;    
     
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     ContiguousMap<2>* new_map = new ContiguousMap(test_shape, 1);
     SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map, test_shape, &test_data[0]);
-    test_matrix.print_tensor();
+    //test_matrix.print_tensor();
     auto out = decompose(test_matrix, "evd");
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
     
-   
     std::cout << "========================\nDense matrix davidson test" << std::endl;
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
@@ -120,28 +78,7 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    
-    //test_sparse.print_tensor();
-    /*
-    std::cout << "matrix!" << std::endl;
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-            std::cout << std::setw(6) << test_data2[i+j*N] << " ";
-        }
-        std::cout << std::endl;
-    }
-    std::cout << "matrix!" << std::endl;
-    
-    std::cout << "====================dense matrix construction complete" << std::endl;
-    */
-    
-
-    //auto out1 = evd(test_matrix2);
-    //test_matrix2.print_tensor();
-    //test_sparse.print_tensor();
-//                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    
-
+    test_sparse.print_tensor();
 
     SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix3(comm.get(), new_map2, test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  

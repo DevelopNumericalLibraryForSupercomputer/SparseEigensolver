@@ -40,6 +40,7 @@ public:
 
     template <typename datatype> void allgatherv(datatype* src, size_t sendcount, datatype* trg, size_t* recvcounts);
     template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root);
+    template <typename datatype> void alltoallv (datatype* src, size_t* sendcounts, datatype* trg, size_t* recvcounts);
 
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
@@ -54,7 +55,10 @@ std::ostream &operator<<(std::ostream &os, Comm<computEnv> const &comm) {
 }
 
 template<typename computEnv>
-std::unique_ptr<Comm<computEnv> > createComm(int argc, char *argv[]);
+std::unique_ptr<Comm<computEnv> > createComm(int argc, char *argv[]){
+    std::cout << "empty comm" << std::endl;
+    return std::make_unique< Comm<computEnv> >();
+};
 
 
 

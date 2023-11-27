@@ -12,7 +12,7 @@ namespace SE{
 cudaStream_t stream;
 
 template<>
-std::unique_ptr<Comm<CUDA> > createComm<CUDA >(int argc, char *argv[]){
+std::unique_ptr<Comm<CUDA> > createComm(int argc, char *argv[]){
 
     return std::make_unique< Comm<CUDA> >( 0, 1);
 }

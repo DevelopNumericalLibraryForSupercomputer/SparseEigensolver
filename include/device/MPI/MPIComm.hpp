@@ -36,7 +36,8 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 */
 
 template<>
-std::unique_ptr<Comm<MPI> > createComm<MPI>(int argc, char *argv[]){
+std::unique_ptr<Comm<MPI> > createComm(int argc, char *argv[]){
+    std::cout << "MPIcomm" << std::endl;
     MPI_Init(&argc, &argv);
     int myRank ,nRanks;
     MPI_Comm_rank(mpi_comm, &myRank);
@@ -95,6 +96,27 @@ void Comm<MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recv
 
 template <> 
 template <> 
+void Comm<MPI>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts){ // displs are automatically generated
+    int sdispls[world_size];
+    int int_sendcounts[world_size];
+    int rdispls[world_size];
+    int int_recvcounts[world_size*world_size];
+
+    sdispls[0] = 0;
+    rdispls[0] = 0;
+    int_sendcounts[0] = (int)sendcounts[0];
+    int_recvcounts[0] = (int)recvcounts[0];
+    for(int i=1;i<world_size;i++){
+        sdispls[i] = sdispls[i-1] + (int)sendcounts[i-1];
+        int_sendcounts[i] = (int)sendcounts[i];
+        rdispls[i] = rdispls[i-1] + (int)recvcounts[i-1];
+        int_recvcounts[i] = (int)recvcounts[i];
+    }
+    MPI_Alltoallv(src, int_sendcounts, sdispls, MPI_DOUBLE, trg, int_recvcounts, rdispls, MPI_DOUBLE, mpi_comm );
+}
+
+template <> 
+template <> 
 void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
@@ -110,25 +132,6 @@ void Comm<MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* r
         displs[i] = displs[i-1] + (int)recvcounts[i-1];
         int_recvcounts[i] = (int)recvcounts[i];
     }
-    /*
-    std::cout << "src : rank " << rank;
-    for(int i=0;i<sendcount;i++){
-        std::cout << " " <<src[i] << ' ';
-    }
-    std::cout << std::endl;
-    std::cout << "recvcounts : ";
-    for(int i=0;i<world_size;i++){
-        std::cout << recvcounts[i] << ' ';
-    }
-    std::cout << std::endl;
-    
-    std::cout << "displ : ";
-    for(int i=0;i<world_size;i++){
-        std::cout << displs[i] << ' ';
-    }
-    std::cout << std::endl;
-    */
-    
     MPI_Allgatherv(src, (int)sendcount, MPI_DOUBLE, trg, int_recvcounts, displs, MPI_DOUBLE, mpi_comm);
 }
 
@@ -143,26 +146,10 @@ void Comm<MPI>::scatterv(double *src, size_t* sendcounts, double *trg, size_t re
         displs[i] = displs[i-1] + (int)sendcounts[i-1];
         int_sendcounts[i] = (int)sendcounts[i];
     }
-    /*
-    std::cout << "src : rank " << rank;
-    for(int i=0;i<recvcount;i++){
-        std::cout << " " <<src[i] << ' ';
-    }
-    std::cout << std::endl;
-    std::cout << "sendcounts : ";
-    for(int i=0;i<world_size;i++){
-        std::cout << sendcounts[i] << ' ';
-    }
-    std::cout << std::endl;
-    
-    std::cout << "displ : ";
-    for(int i=0;i<world_size;i++){
-        std::cout << displs[i] << ' ';
-    }
-    std::cout << std::endl;
-    */
-
     MPI_Scatterv(src, int_sendcounts, displs, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, root, mpi_comm);
 }
+
+
+
 
 }

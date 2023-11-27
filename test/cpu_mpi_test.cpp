@@ -238,46 +238,32 @@ int main(int argc, char* argv[]){
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
     ContiguousMap<2>* new_map2 = new ContiguousMap<2>(test_shape2, comm.get()->world_size, 0);
-    SE::SparseTensor<double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
+    SE::Tensor<SE::STORETYPE::COO, double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
 
-    std::cout << "<>>><>><><><><><><><><><><>initializa" << std::endl;
-    //int myrank = comm->rank;
-    //int nprocs = comm->world_size;
+    
+    std::cout << "Matrix construction" << std::endl;
     size_t chunk_size = test_sparse.shape[0] / test_sparse.comm->world_size;
-    size_t* local_matrix_size = test_sparse.map->get_partition_size_array(0);
-    /*
-    size_t* local_matrix_size = malloc<size_t, MKL>(nprocs);
-    //int* idisp = malloc<int, MKL>(world_size);
-    //idisp[0] = 0;
-    for(int rank=0;rank<nprocs-1;rank++){
-        local_matrix_size[rank] = chunk_size;
-        //idisp[rank+1] = idisp[rank] + local_matrix_size[rank];
-    }
-    local_matrix_size[nprocs-1] = N - chunk_size* (nprocs-1);
-    */
-    std::cout << "before init insertval";
-    for(int rank = 0;rank<nprocs;rank++){
-        std::cout << " " << local_matrix_size[rank];
-    }
-    std::cout << std::endl;
-    //for(size_t i=0;i<N;i++){
-    for(size_t loc_i=0; loc_i<local_matrix_size[myrank]; loc_i++){
+    size_t* local_matrix_size = new_map2->get_partition_size_array(0);
+
+    for(size_t i=0;i<N;i++){
+    //for(size_t loc_i=0; loc_i<local_matrix_size[myrank]; loc_i++){
         for(size_t j=0;j<N;j++){
-            size_t i = loc_i + myrank*chunk_size;
             std::array<size_t,2> index = {i,j};
-            //std::cout << "before insertval" << std::endl;
-            if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
-            if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
-            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
-            //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
-            //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.03);
-            //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
+            if(new_map2->get_my_rank_from_global_index(index)==myrank){
+                if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N));
+                //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
+                if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
+                if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+                //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            }
+            else{
+                continue;
+            }
         }
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    //test_sparse.print_tensor();
+    test_sparse.print_tensor();
     comm->barrier();
     if (comm->rank == 0) std::cout << "Sparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  

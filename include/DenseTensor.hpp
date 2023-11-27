@@ -19,7 +19,7 @@ public:
 
     Tensor(){};
     Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* data);
+    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* _data);
 
     datatype& operator()(const std::array<size_t, dimension> index);
     datatype& operator[](size_t index);
@@ -27,10 +27,12 @@ public:
     Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>& operator=(const Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> &tensor);
 
     void insert_value(std::array<size_t, dimension> index, datatype value);
-    void print_tensor();
-    Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> clone() {
-        return Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> (this->comm, this->map, this->shape, this->data);
+    void print() const;
+    void print(const std::string& name) const;
+    Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>* clone() {
+        return new Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype> (this->comm, this->map, this->shape, this->data);
     };
+    void redistribute(bool slice, size_t slice_dimension);
 };
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -38,13 +40,25 @@ Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::Tensor(Comm<c
     this->map = _map;
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
-    this->data = malloc<datatype, computEnv>(this->shape_mult[dimension]);
+    size_t datasize = this->shape_mult[dimension];
+    if(map->is_sliced){
+    
+         datasize = map->get_my_partitioned_data_size(comm->rank);//= datasize * map->get_my_partition_size(comm->rank) / shape[map->sliced_dimension];
+    }
+    
+    this->data = malloc<datatype, computEnv>(datasize);
+    memset<datatype, computEnv>(this->data, 0.0, datasize);
 }
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* data)
+Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* _data)
 :Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
-    memcpy<datatype, computEnv>( this->data, data, this->shape_mult[dimension]);
+    if(map->is_sliced){
+        memcpy<datatype, computEnv>( this->data, _data, map->get_my_partitioned_data_size(comm->rank));
+    }
+    else{
+        memcpy<datatype, computEnv>( this->data, _data, this->shape_mult[dimension]);
+    }
 }
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
@@ -108,41 +122,101 @@ Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>& Tensor<STORET
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::insert_value(std::array<size_t, dimension> index, datatype value){
-    this->operator()(index) = value;
+    int my_rank = comm->rank;
+    size_t target_rank = 0;
+    if(map->is_sliced){
+        target_rank = map->get_my_rank_from_global_index(index[map->sliced_dimension]);
+    }
+    if(my_rank == target_rank){
+        //std::cout << my_rank << " : (" << index[0] << " , " << index[1] << ") " << map->get_local_index(index, target_rank) << " " << value << std::endl;
+        this->data[map->get_local_index(index, target_rank)] = value;
+    }
     return;
 }
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print_tensor(){
+void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print() const{
     std::cout << "print is not implemented yet." << std::endl;
     exit(-1);
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print_tensor(){
-
-    std::cout << "=======================" << std::endl;
+void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print() const{
     for(int i=0;i<this->shape[0];i++){
         for(int j=0;j<this->shape[1];j++){
-            std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
+            std::cout << std::setw(6) << this->data[i+j*this->shape[0]] << " ";
         }
         std::cout << std::endl;
     }
-    std::cout << "=======================" << std::endl;
-    
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >::print_tensor(){
-    if(this->comm->rank == 0){
-        std::cout << "=======================" << std::endl;
-        for(int i=0;i<this->shape[0];i++){
-            for(int j=0;j<this->shape[1];j++){
-                std::cout << std::setw(6) << this->data[i+j*this->shape[1]] << " ";
-            }
-            std::cout << std::endl;
+void Tensor<STORETYPE::Dense, double, 1, MKL, ContiguousMap<1> >::print() const{
+    for(int i=0;i<this->shape[0];i++){
+        std::cout << std::setw(6) << this->data[i] << std::endl;
+    }
+}
+
+template <>
+void Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >::print() const{
+    size_t datasize = this->shape_mult[2];
+     //std::cout << "datasize " << datasize << " rank = " << comm->rank << std::endl;
+    if(map->is_sliced){
+        //std::cout << "sliced, " << map->get_my_partition_size(comm->rank) << " / " << shape[map->sliced_dimension] << " rank = " << comm->rank << std::endl;
+        //datasize = datasize * map->get_my_partition_size(comm->rank) / shape[map->sliced_dimension];
+        datasize = map->get_my_partitioned_data_size(comm->rank);
+    }
+    //std::cout << "datasize " << datasize << " rank = " << comm->rank << std::endl;
+    std::cout << "rank\ti\tj\tvalue" << std::endl;
+    for(size_t i=0;i<datasize;i++){
+        //std::cout <<  "i : " << i << " rank : " << comm->rank << ", global array : (";
+        std::cout <<comm->rank << '\t';
+        for(int j=0;j<2;j++){
+            //std::cout << comm->rank << ' ' <<  map->get_global_array_index(i,comm->rank)[j] << '\t';
+            //std::cout << i << '\t' <<  map->get_global_array_index(i,comm->rank)[j] << '\t';
+            std::cout << map->get_global_array_index(i,comm->rank)[j] << '\t';
         }
-        std::cout << "=======================" << std::endl;
+        //std::cout << ") = " << std::setw(6) << this->data[i] << std::endl;
+        std::cout << this->data[i] << std::endl;
+    }
+}
+
+template <>
+void Tensor<STORETYPE::Dense, double, 1, MPI, ContiguousMap<1> >::print() const{
+    size_t datasize = this->shape_mult[1];
+    if(map->is_sliced){
+        datasize = map->get_my_partitioned_data_size(comm->rank);
+    }
+    std::cout << "rank\ti\tvalue" << std::endl;
+    for(size_t i=0;i<datasize;i++){
+        std::cout << comm->rank << '\t' << map->get_global_array_index(i,comm->rank)[0] << '\t' << std::setw(6) << this->data[i] << std::endl;
+    }
+}
+
+template<typename datatype, size_t dimension, typename computEnv, typename maptype>
+void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
+    if(!map->is_sliced){
+        if(this->comm->rank == 0){
+            std::cout << name << " : " << std::endl;
+            print();
+            std::cout << "=======================" << std::endl;
+        }
+    }
+    else{
+        std::cout << name << " : (rank " << this->comm->rank << ")" << std::endl;
+        print();
+    }
+}
+
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::redistribute(bool slice, size_t slice_dimension){
+    if(this->map->sliced_dimension == slice_dimension && (int)slice == (int) this->map->is_sliced){
+        return;
+    }
+    else{
+        //old map info
+        this->map->redistribute(slice, slice_dimension);
+        //alltoall
     }
 }
 

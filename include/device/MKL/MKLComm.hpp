@@ -6,7 +6,8 @@
 
 namespace SE{
 template<>
-std::unique_ptr<Comm<MKL> > createComm<MKL>(int argc, char *argv[]){
+std::unique_ptr<Comm<MKL> > createComm(int argc, char *argv[]){
+    std::cout << "SERIALcomm" << std::endl;
     return std::make_unique< Comm<MKL> >( 0, 1 );
 }
 
@@ -43,6 +44,13 @@ void Comm<MKL>::scatterv(datatype *src, size_t* sendcounts, datatype *trg, size_
     assert(sendcounts[0] == recvcount);
     assert(root == 0);
     memcpy<datatype, MKL>(trg, src, recvcount);
+}
+
+template<>
+template<typename datatype>
+void Comm<MKL>::alltoallv(datatype *src, size_t* sendcounts, datatype *trg, size_t* recvcounts){
+    assert(sendcounts[0] == recvcounts[0]);
+    memcpy<datatype, MKL>(trg, src, recvcounts[0]);
 }
 
 }
