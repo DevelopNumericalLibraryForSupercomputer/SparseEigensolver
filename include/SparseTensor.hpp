@@ -104,7 +104,7 @@ Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::Tensor(Comm<MPI> *_co
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 datatype &Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
-    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, 1, this->comm->rank); //assert that given index is in this thread.
+    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, this->comm->rank); //assert that given index is in this thread.
     for (size_t i = 0; i < this->data.size(); i++){
         if(data[i].first == index){
             // array equal, c++20

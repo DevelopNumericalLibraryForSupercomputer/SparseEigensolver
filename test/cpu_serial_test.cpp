@@ -5,9 +5,10 @@
 #include <iostream>
 #include <iomanip>
 #include "ContiguousMap.hpp"
-//#include <iomanip>
-
+#include "device/MKL/LinearOP.hpp"
+#include "device/MKL/TensorOP.hpp"
 #include "decomposition/Decompose.hpp"
+
 //#include "SparseTensor.hpp"
 
 #include <chrono>
@@ -78,7 +79,7 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    test_sparse.print_tensor();
+    test_sparse.print();
 
     SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix3(comm.get(), new_map2, test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  

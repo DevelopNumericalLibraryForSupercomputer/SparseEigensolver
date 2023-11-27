@@ -6,7 +6,6 @@
 #include "Utility.hpp"
 #include <memory>
 #include "../device/MKL/MKLComm.hpp"
-
 #include "DecomposeOption.hpp"
 
 namespace SE{
