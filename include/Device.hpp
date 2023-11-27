@@ -1,19 +1,19 @@
-// Device information
-// Read https://www.cppstories.com/2018/08/init-string-member/
+// Comput Environment information
 #pragma once
 #include <string>
 //#include <iostream>
 namespace SE{
-
-enum class computEnv: int {
-    BASE=0,
-    MKL =1, 
-    CUDA=2,
-    MPI =3, 
-    NCCL=4,
+/*
+enum class computEnv{
+    BASE,
+    MKL, 
+    CUDA,
+    MPI, 
+    NCCL,
     //ROCM
 };
-
+*/
+/*
 std::ostream& operator<< (std::ostream& os, computEnv comput_env)
 {
     switch (comput_env)
@@ -28,26 +28,35 @@ std::ostream& operator<< (std::ostream& os, computEnv comput_env)
     return os;
     //return os << static_cast<std::uint16_t>(ethertype);
 }
-
-/*
-struct Device{
-    const PROTOCOL protocol;
-    constexpr Device(PROTOCOL info): protocol(info){};
-};
-
-struct Serial: public Device{
-    constexpr Serial() : Device(SERIAL){};
-};
-struct MPI: public Device{
-    constexpr MPI() : Device(MPI){};
-};
-struct CUDA: public Device{
-    constexpr CUDA() : Device(NCCL){};
-};
-struct ROCm: public Device{
-    constexpr ROCm() : Device(ROCM){};
-};
 */
+
+//std::ostream& operator<< (std::ostream& os, computEnv comput_env){ return os << comput_env.env_name;};
+
+struct ComputEnv{
+    public:
+    const char* env_name;
+    constexpr ComputEnv(const char* _env_name="BASE"): env_name(_env_name){};
+    
+    //const computEnv env = SE::BASE;
+    //constexpr ComputEnv(computEnv env_): env(env_)){};
+};
+
+struct MKL: public ComputEnv{
+    //this->env_name = "MKL";
+    constexpr MKL() {ComputEnv("MKL");};
+};
+struct MPI: public ComputEnv{
+    //this->env_name = "MPI";
+    constexpr MPI() {ComputEnv("MPI");};
+};
+struct CUDA: public ComputEnv{
+    //this->env_name = "CUDA";
+    constexpr CUDA(){ComputEnv("CUDA"); };
+};
+struct ROCM: public ComputEnv{
+    constexpr ROCM(){ComputEnv("ROCM");};
+};
+
 }
 
 

@@ -12,13 +12,13 @@ namespace SE{
 cudaStream_t stream;
 
 template<>
-std::unique_ptr<Comm<computEnv::CUDA> > createComm< computEnv::CUDA >(int argc, char *argv[]){
+std::unique_ptr<Comm<CUDA> > createComm<CUDA >(int argc, char *argv[]){
 
-    return std::make_unique< Comm<computEnv::CUDA> >( 0, 1);
+    return std::make_unique< Comm<CUDA> >( 0, 1);
 }
 
 template<>
-Comm<computEnv::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
+Comm<CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
 {
     auto status =cublasCreate(&SE::cublasHandle);
     assert (CUBLAS_STATUS_SUCCESS==status);
@@ -28,7 +28,7 @@ Comm<computEnv::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_s
 }
 
 template<>
-Comm<computEnv::CUDA>::~Comm(){
+Comm<CUDA>::~Comm(){
     //Finalize cublas 
     auto status = cublasDestroy(SE::cublasHandle);
     assert (CUBLAS_STATUS_SUCCESS==status);
@@ -38,25 +38,24 @@ Comm<computEnv::CUDA>::~Comm(){
 
 template<>
 template <typename datatype>
-void Comm<computEnv::CUDA>::allreduce(const datatype *src, size_t count, datatype *trg, SE_op op){
-
-    memcpy<datatype, computEnv::CUDA> (trg,src,count);
+void Comm<CUDA>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op){
+    memcpy<datatype, CUDA> (trg,src,count);
     return;
 }
 
 template<>
 template <typename datatype>
-void Comm<computEnv::CUDA>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<CUDA>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, computEnv::CUDA> (trg,src,sendcount);
+    memcpy<datatype, CUDA> (trg,src,sendcount);
     return ;
 }
 
 template<>
 template <typename datatype>
-void Comm<computEnv::CUDA>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<CUDA>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, computEnv::CUDA> (trg,src,sendcount);
+    memcpy<datatype, CUDA> (trg,src,sendcount);
   
 }
 

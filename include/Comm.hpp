@@ -4,46 +4,58 @@
 #include <utility>
 #include <memory>
 #include "Device.hpp"
+#include <typeinfo>
 
 namespace SE{
-typedef enum{//opertor for allreduce
+enum class SEop{//opertor for allreduce
     MAX,
     MIN,
     SUM,
     PROD
-} SE_op;
+};
 
-
-
-template<computEnv comput_env = computEnv::BASE>
+template<typename computEnv>
 class Comm{
-    public:
-        static constexpr computEnv env = comput_env;
+public:
+    using SEenv = ComputEnv;
+    Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
+    Comm(){ };
+    ~Comm(){};
 
-        Comm(size_t rank=0, size_t world_size=1): rank(rank), world_size(world_size) {};
-        Comm(){ };
-        ~Comm(){};
-    
-        //const size_t get_rank(){ return rank; };
-        //const size_t get_world_size(){ return world_size; };
-    
-        void barrier() {};
-        template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, SE_op op);
-        template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-        template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    //const size_t get_rank(){ return rank; };
+    //const size_t get_world_size(){ return world_size; };
 
-        size_t rank = 0;           // Process rank
-        //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
-        size_t world_size = 1;     // Total number of processes in the job
+    void barrier() {};
+
+    //template <typename datatype> void send(datatype* src, size_t sendcount, size_t recv_rank);
+    //template <typename datatype> void recv(datatype* src, size_t sendcount, size_t recv_rank);
     
+
+    //template <typename datatype> void reduce(const datatype *src, size_t count, datatype *trg, SEop op, int root);
+    //template <typename datatype> void gather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, SEop op);
+    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+
+    template <typename datatype> void allgatherv(datatype* src, size_t sendcount, datatype* trg, size_t* recvcounts);
+    template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root);
+
+    size_t rank = 0;           // Process rank
+    //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
+    size_t world_size = 1;     // Total number of processes in the job
+
 };
 
 // helper function 
-template<computEnv comput_env>
-std::ostream &operator<<(std::ostream &os, Comm<comput_env> const &comm) { 
-    return os << "Comm<" << comm.env  << ">"<<std::endl ;
-}
-template<computEnv comput_env>
-std::unique_ptr<Comm<comput_env> > createComm(int argc, char *argv[]);
+template<typename computEnv>
+std::ostream &operator<<(std::ostream &os, Comm<computEnv> const &comm) { 
+    return os << "Comm<" << typeid(computEnv).name() << ">"<<std::endl ;
 }
 
+template<typename computEnv>
+std::unique_ptr<Comm<computEnv> > createComm(int argc, char *argv[]);
+
+
+
+}

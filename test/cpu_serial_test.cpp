@@ -1,6 +1,5 @@
 //#include "Matrix.hpp"
 //#include "DenseTensor.hpp"
-using namespace std;
 #include <vector>
 #include <array>
 #include <iostream>
@@ -8,10 +7,12 @@ using namespace std;
 #include "device/MKL/MKLComm.hpp"
 //#include "ContiguousMap.hpp"
 //#include <iomanip>
-//#include "DenseTensor.hpp"
-#include "decomposition/DirectSolver.hpp"
 
-#include "decomposition/IterativeSolver.hpp"
+#include "decomposition/Decompose.hpp"
+//#include "SparseTensor.hpp"
+
+#include <chrono>
+
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << "(";
@@ -21,10 +22,11 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
     os << ")";
     return os;
 }
+
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<computEnv::MKL >(argc, argv);
+    auto comm = createComm<MKL>(argc, argv);
     std::cout << "SERIAL test" << std::endl;
     std::cout << *comm <<std::endl;
     double x = 0.0, sum = 0.0;
@@ -37,115 +39,91 @@ int main(int argc, char* argv[]){
     int myinit = myrank*(nn/nprocs);
     int myfin =  (myrank+1)*(nn/nprocs)-1;
     if(myfin > nn) myfin = nn;
-    if(myrank == 0) { std::cout << "allreduce test" << std::endl;}
-    comm->barrier();
-    std::cout << "myrank : " << myrank << ", myinit : " << myinit << ", myfin : " << myfin << std::endl;
-    for(int i = myinit ; i<=myfin ; i++){
-        x = ((double)i+0.5)*step;
-        sum = sum + 4.0/(1.0+x*x);
-    }
-    double tsum = 0.0;
-    comm->allreduce<double>(&sum,1,&tsum,SE::SUM);
-    std::cout.precision(10);
-    std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
-    sum = tsum = 0;
-    
-    comm->barrier();
-    for(int i = myrank ; i<nn ;i=i+nprocs){
-        x = ((double)i+0.5)*step;
-        sum = sum + 4.0/(1.0+x*x);
-    }
-    comm->allreduce(&sum,1,&tsum,SE::SUM);
-    std::cout.precision(10);
-    std::cout << "myrank : " << myrank << ", sum = " << sum << ", tsum*step = " << tsum*step << std::endl;
-
-    if(myrank == 0) { std::cout << "alltoall test" << std::endl;}
-    double* irecv = (double *)malloc(sizeof(double)*100);
-    double* test_array = (double *)malloc(sizeof(double)*100);
-    for(int i=0;i<100;i++){
-        test_array[i] = (double)i*(myrank+1);
-    }
-    comm->alltoall(test_array,100/nprocs,irecv,100/nprocs);    
-    if(myrank == 1) {
-        for(int i=0;i<100;i++){
-            std::cout << i << " : " << test_array[i] << " " <<  irecv[i] << std::endl;
-        }
-    }
-    if(myrank == 1) { std::cout << "allgather test" << std::endl;}
-
-    comm->allgather(test_array,100/nprocs,irecv,100/nprocs);
-    if(myrank == 1) {
-        for(int i=0;i<100;i++){
-            std::cout << i << " : " << test_array[i] << " " <<  irecv[i] << std::endl;
-        }
-    }
         
     std::cout << "ContiguousMap test" << std::endl;
     
     std::array<size_t,3> shape3 = {8,7,17}; 
     
-    ContiguousMap<3> cont_map = ContiguousMap<3>(shape3);
+    ContiguousMap<3> cont_map = ContiguousMap<3>(shape3, 1);
     //nproc = 3
     std::array<size_t,3> test_index1 = {1,3,14}; // 1+ 3*8 + 14*8*7 = 809
     size_t test_index1_ = 809;
     if(comm->rank == 0){
         int slice_dimension = comm->rank;
         //array G -> array L
-        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
+        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank);
         //array G -> size_t L
-        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
+        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank); // 1+ 3*2 + 14*2*7 = 203
         //size_t G -> array L
-        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
+        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank);
         //size_t G -> size_t L
-        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
+        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank); // 1+ 3*2 + 14*2*7 = 203
         std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 0 : (1 3 14 ) = 203std::endl; // rank 0 : (1 3 14 ) = 203
         
         //array L -> array G
-        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
+        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank);
         //size_t L -> array G
-        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
+        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank);
         //array L -> size_t G
-        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
+        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank);
         //size_t L -> size_t G
-        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
+        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank);
         std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
     }
     
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    
-
-    ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
-
-    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix(test_shape, &test_data[0]);
-//                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    comm->barrier();
-
-    auto out = test_matrix.decompose("EVD");
-
+    ContiguousMap<2>* new_map = new ContiguousMap(test_shape, 1);
+    SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map, test_shape, &test_data[0]);
+    test_matrix.print_tensor();
+    auto out = decompose(test_matrix, "evd");
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
-
-    size_t N = 99;
+    
+   
+    std::cout << "========================\nDense matrix davidson test" << std::endl;
+    size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
-    double* test_data2 = malloc<double, computEnv::MKL>(N*N);
-    for(int i=0;i<N*N;i++){
-        test_data2[i] = 0;
-        if(i%(N+1)==0){
-            test_data2[i] = (i/(N+1) + 1);
-            if (i-1 >0) test_data2[i-1] += 0.4;
-            if (i-2 >0) test_data2[i-2] += -0.1;
-            if (i-3 >0) test_data2[i-3] += 0.04;
-        }
-        else if(i%13==0){
-            test_data2[i] += 0.03; //(i%N, i/N) i%N + i/N * N 
-        }
-    }
-    for(int i=0;i<N;i++){
-        for(int j=i;j<N;j++){
-            test_data2[j*N+i] = test_data2[j*N+i] + test_data2[i+j*N];
-            test_data2[i*N+j] = test_data2[j*N+i];
+    ContiguousMap<2>* new_map2 = new ContiguousMap(test_shape2, 1);
+    double* test_data2 = malloc<double, MKL>(N*N);
+    for(size_t i=0;i<N;i++){
+        for(size_t j=0;j<N;j++){
+            test_data2[i+j*N] = 0;
+            if(i == j)                  test_data2[i+j*N] += 2.0*((double)i+1.0-(double)N);
+            //if(i == j +1 || i == j -1)  test_data2[i+j*N] += 3.0;
+            if(i == j +2 || i == j -2)  test_data2[i+j*N] -= 1.0;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
+            //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
         }
     }
+    SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix2(comm.get(), new_map2, test_shape2, test_data2);
+    std::cout << "========================\nDense matrix davidson diag start" << std::endl;
+    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
+    auto out1 = decompose(test_matrix2, "evd");
+    print_eigenvalues( "Eigenvalues", 3, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
+    std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
+    
+    
+    ContiguousMap<2>* new_map3 = new ContiguousMap(test_shape2, 1);
+    SE::Tensor<STORETYPE::COO, double, 2, MKL, ContiguousMap<2> > test_sparse(comm.get(), new_map3, test_shape2, N*9);
+    for(size_t i=0;i<N;i++){
+        for(size_t j=0;j<N;j++){
+            std::array<size_t,2> index = {i,j};
+            if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N) );
+            //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
+            if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
+            if(i == j +3 || i == j -3)   test_sparse.insert_value(index, 0.3);
+            //if(i == j +4 || i == j -4)   test_sparse.insert_value(index, -0.1);
+            //if( i%13 == 0 && j%13 == 0)  test_sparse.insert_value(index, 0.01);
+            //if( (j*N+i)%53 == 0) test_sparse.insert_value(index, 0.01);
+        }
+    }
+    test_sparse.complete();
+    std::cout << "matrix construction complete" << std::endl;
+    
+    //test_sparse.print_tensor();
+    /*
     std::cout << "matrix!" << std::endl;
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
@@ -154,16 +132,32 @@ int main(int argc, char* argv[]){
         std::cout << std::endl;
     }
     std::cout << "matrix!" << std::endl;
-    ContiguousMap<2> new_map2 = ContiguousMap<2>(test_shape2);
-    SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > test_matrix2(test_shape2, test_data2);
+    
+    std::cout << "====================dense matrix construction complete" << std::endl;
+    */
+    
+
+    //auto out1 = evd(test_matrix2);
+    //test_matrix2.print_tensor();
+    //test_sparse.print_tensor();
 //                = SE::DenseTensor<double, 2, Comm<SE::computEnv::MKL>, ContiguousMap<2> > (test_shape, &test_data[0]);
-    auto out1 = test_matrix2.decompose("EVD");
-    print_eigenvalues( "Eigenvalues", out1.get()->num_eig, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
-    auto out2 = test_matrix2.davidson("Davidson");
+    
+
+
+    SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix3(comm.get(), new_map2, test_shape2, test_data2);
+    std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
+    auto out2 = decompose(test_matrix3, "davidson");
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
-   
-    
-    
-    std::cout<<std::endl;
+    std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
+    std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
+ 
+
+    std::cout << "\nSparsematrix Davidson" << std::endl;
+    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
+    auto out3 = decompose(test_sparse, "davidson");
+    print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
+    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+    std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
+
     return 0;
 }

@@ -6,12 +6,21 @@
 namespace SE{
 
 
-typedef enum{
+enum class MAT_TYPE{
     Real,
     RealSym,
     Complex,
     Hermitian,
-} MAT_TYPE;
+};
+
+enum class DecomposeMethod{
+    Davidson,
+    Direct
+};
+
+enum class PRECOND_TYPE{
+    Diagonal
+};
 
 class DecomposeOption{
 public:
@@ -19,13 +28,14 @@ public:
     //DecomposeOption(std::string filename);
     //void set_option(std::string filename);
     //void print();
-    DecomposeMethod algorithm_type = Davidson;
-    int max_iterations       = 100;
-    double tolerance         = 1E-8;
-    MAT_TYPE matrix_type     = RealSym;
-    int num_eigenvalues      = 3;
-    int eigenvalue_guesses   = 0;
-    bool use_preconditioner              = false;
+    DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
+    size_t max_iterations       = 100;
+    double tolerance         = 1E-10;
+    MAT_TYPE matrix_type     = MAT_TYPE::RealSym;
+    size_t num_eigenvalues      = 3;
+    size_t eigenvalue_guesses   = 0;
+    //bool use_preconditioner    = false;
+    PRECOND_TYPE preconditioner = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-10;
     double preconditioner_max_iterations = 30;
 
@@ -38,7 +48,8 @@ private:
         { {"Direct", DecomposeMethod::Direct}, {"Davidson", DecomposeMethod::Davidson}};//, {"LOBPCG", DecomposeMethod::LOBPCG} };
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
-
+    std::map<std::string, PRECOND_TYPE> const precond_table =
+        { {"Diagonal", PRECOND_TYPE::Diagonal}};
     //YAML::Node config;
 };
 /*

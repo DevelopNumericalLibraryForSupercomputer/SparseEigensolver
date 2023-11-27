@@ -1,13 +1,11 @@
 #pragma once
 #include <mpi.h>
+#include <cassert>
 #include "../../Comm.hpp"
-
+#include "Utility.hpp"
 namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_WORLD;
-//template<>
-//class Comm<computEnv::MPI>{
-//    void initialize(int argc, char *argv[]);
 //public:
 //    MPI_Comm mpi_comm;
 //    size_t rank = 0;           // Process rank
@@ -38,21 +36,18 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 */
 
 template<>
-static std::pair<size_t,size_t> Comm<computEnv::MPI>::initialize(int argc, char *argv[]){
+std::unique_ptr<Comm<MPI> > createComm<MPI>(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
     int myRank ,nRanks;
     MPI_Comm_rank(mpi_comm, &myRank);
     MPI_Comm_size(mpi_comm, &nRanks);
-    assert nRanks>0;
-    assert myRank>=0;
-
-    //rank = tmp_rank;
-    //world_size = tmp_world_size;
-    return std::make_pair( (size_t) myRank, (size_t) nRanks);
+    assert(nRanks>0);
+    assert(myRank>=0);
+    return std::make_unique< Comm<MPI> >( (size_t) myRank, (size_t) nRanks );
 }
 
 template<>
-Comm<computEnv::MPI>::~Comm(){
+Comm<MPI>::~Comm(){
     if(MPI_Finalize() == MPI_SUCCESS){
         //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
     }
@@ -62,28 +57,112 @@ Comm<computEnv::MPI>::~Comm(){
 }
 
 template<>
-void Comm<computEnv::MPI>::barrier(){
-    MPI_Barrier(MPI_COMM_WORLD);
+void Comm<MPI>::barrier(){
+    MPI_Barrier(mpi_comm);
 }
 
-template <> template<>
-void Comm<computEnv::MPI>::allreduce<double>(const double *src, size_t count, double *trg, SE_op op){
+/*
+template <>
+template <>
+void Comm<MPI>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, int root)
+{
     switch (op){
-        case SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  MPI_COMM_WORLD); break;
-        case PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, MPI_COMM_WORLD); break;
-        case MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  MPI_COMM_WORLD); break;
-        case MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  MPI_COMM_WORLD); break;
+        case SEop::SUM:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_SUM,  root, mpi_comm); break;
+        case SEop::PROD: MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_PROD, root, mpi_comm); break;
+        case SEop::MAX:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_MAX,  root, mpi_comm); break;
+        case SEop::MIN:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_MIN,  root, mpi_comm); break;
+        default: std::cout << "WRONG OPERATION TYPE" << std::endl; exit(-1);
+    }    
+}
+*/
+
+template <> 
+template <> 
+void Comm<MPI>::allreduce(const double *src, size_t count, double *trg, SEop op){
+    switch (op){
+        case SEop::SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  mpi_comm); break;
+        case SEop::PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, mpi_comm); break;
+        case SEop::MAX:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MAX,  mpi_comm); break;
+        case SEop::MIN:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_MIN,  mpi_comm); break;
         default: std::cout << "WRONG OPERATION TYPE" << std::endl; exit(-1);
     }
 }
-template <> template<>
-void Comm<computEnv::MPI>::alltoall<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
-    MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+template <> 
+template <> 
+void Comm<MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
-template <> template<>
-void Comm<computEnv::MPI>::allgather<double>(double *src, size_t sendcount, double *trg, size_t recvcount){
-    MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, MPI_COMM_WORLD);
+template <> 
+template <> 
+void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+    MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
+}
+
+template <> 
+template <> 
+void Comm<MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts){ // displs are automatically generated using recvcount
+    int displs[world_size];
+    int int_recvcounts[world_size];
+    displs[0] = 0;
+    int_recvcounts[0] = (int)recvcounts[0];
+    for(int i=1;i<world_size;i++){
+        displs[i] = displs[i-1] + (int)recvcounts[i-1];
+        int_recvcounts[i] = (int)recvcounts[i];
+    }
+    /*
+    std::cout << "src : rank " << rank;
+    for(int i=0;i<sendcount;i++){
+        std::cout << " " <<src[i] << ' ';
+    }
+    std::cout << std::endl;
+    std::cout << "recvcounts : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << recvcounts[i] << ' ';
+    }
+    std::cout << std::endl;
+    
+    std::cout << "displ : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << displs[i] << ' ';
+    }
+    std::cout << std::endl;
+    */
+    
+    MPI_Allgatherv(src, (int)sendcount, MPI_DOUBLE, trg, int_recvcounts, displs, MPI_DOUBLE, mpi_comm);
+}
+
+template <> 
+template <> 
+void Comm<MPI>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root){ // displs are automatically generated using recvcount
+    int displs[world_size];
+    int int_sendcounts[world_size];
+    displs[0] = 0;
+    int_sendcounts[0] = (int)sendcounts[0];
+    for(int i=1;i<world_size;i++){
+        displs[i] = displs[i-1] + (int)sendcounts[i-1];
+        int_sendcounts[i] = (int)sendcounts[i];
+    }
+    /*
+    std::cout << "src : rank " << rank;
+    for(int i=0;i<recvcount;i++){
+        std::cout << " " <<src[i] << ' ';
+    }
+    std::cout << std::endl;
+    std::cout << "sendcounts : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << sendcounts[i] << ' ';
+    }
+    std::cout << std::endl;
+    
+    std::cout << "displ : ";
+    for(int i=0;i<world_size;i++){
+        std::cout << displs[i] << ' ';
+    }
+    std::cout << std::endl;
+    */
+
+    MPI_Scatterv(src, int_sendcounts, displs, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, root, mpi_comm);
 }
 
 }
