@@ -1,30 +1,32 @@
 #pragma once
-#include <iostream>
-#include <cstdlib>
+//#include <iostream>
+//#include <cstdlib>
 #include <cstring>
-#include <numeric>
-#include <iterator>
-#include <algorithm>
-#include <array>
+//#include <numeric>
+//#include <iterator>
+//#include <algorithm>
+//#include <array>
+
+#include "../Device.hpp"
 
 namespace SE{
 //memory managament
-template<typename datatype, typename computEnv>
+template<typename datatype, typename computEnv=ComputEnv>
 datatype* malloc(const size_t size){
     return static_cast<datatype*>(std::malloc(size * sizeof(datatype)));
 }
 
-template<typename datatype, typename computeEnv>
+template<typename datatype, typename computeEnv=ComputEnv>
 void free(datatype* ptr){
     std::free(ptr);
 }
 
-template<typename datatype, typename computeEnv>
+template<typename datatype, typename computeEnv=ComputEnv>
 void memcpy(datatype* dest, const datatype* source, size_t size){
     std::memcpy(dest, source, size * sizeof(double));
 }
 
-template<typename datatype, typename computeEnv>
+template<typename datatype, typename computeEnv=ComputEnv>
 void memset(datatype* dest, int value, size_t size){
     std::memset(dest, value, size * sizeof(double));
 }

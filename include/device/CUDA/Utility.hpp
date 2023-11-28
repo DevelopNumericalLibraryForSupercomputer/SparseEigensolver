@@ -1,5 +1,6 @@
 #pragma once
-#include "../../Utility.hpp"
+#include "../LinearOp.hpp"
+//#include "../../Utility.hpp"
 #include <cublas_v2.h>
 /*
 cublas matrix multiplication에 대한 설명은 
@@ -19,9 +20,9 @@ typedef enum {
 
 cublasOperation_t map_transpose(SE::SE_transpose trans){
     switch (trans){
-        case SE::NoTrans:   return CUBLAS_OP_N;
-        case SE::Trans:     return CUBLAS_OP_T;
-        case SE::ConjTrans: return CUBLAS_OP_C;
+        case SE::SE_transpose::NoTrans:   return CUBLAS_OP_N;
+        case SE::SE_transpose::Trans:     return CUBLAS_OP_T;
+        case SE::SE_transpose::ConjTrans: return CUBLAS_OP_C;
         default: throw std::runtime_error("map_transpose in device/CUDA/Utility.hpp");
     }
 

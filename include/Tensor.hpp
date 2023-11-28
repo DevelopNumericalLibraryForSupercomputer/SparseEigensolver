@@ -21,17 +21,17 @@ public:
     //std::vector<std::array<size_t, dimenion> > index;
     datatype* data;
 
-    Comm<computEnv>* comm;
-    maptype* map;
+    const Comm<computEnv>* comm;
+    const maptype* map;
 
     Tensor(){};
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape): comm(_comm), shape(_shape){
+    Tensor(const Comm<computEnv>* _comm, const maptype* _map, const std::array<size_t, dimension> _shape): comm(_comm), shape(_shape){
         this->map = _map;
         cumprod<dimension>(this->shape, this->shape_mult);
         assert(this->shape_mult[dimension] != 0);
     };
     
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, datatype* _data): comm(_comm), shape(_shape), data(_data){
+    Tensor(const Comm<computEnv>* _comm, const maptype* _map, const std::array<size_t, dimension>& _shape, const datatype* _data): comm(_comm), shape(_shape), data(_data){
         this->map = _map;
         cumprod<dimension>(this->shape, this->shape_mult);
         assert(this->shape_mult[dimension] != 0);
