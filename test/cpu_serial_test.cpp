@@ -29,7 +29,7 @@ int main(int argc, char* argv[]){
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     ContiguousMap<2>* new_map = new ContiguousMap(test_shape, 1);
-    SE::Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> > test_matrix(comm.get(), new_map, test_shape, &test_data[0]);
+    SE::Tensor<STORETYPE::Dense, double, 2, MKL  > test_matrix(comm.get(), new_map, test_shape, &test_data[0]);
     //test_matrix.print_tensor();
     auto out = decompose(test_matrix, "evd");
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());

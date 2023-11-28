@@ -2,6 +2,7 @@
 #include <array>
 #include "Comm.hpp"
 #include "Map.hpp"
+#include "ContiguousMap.hpp"
 //#include "decomposition/DecomposeResult.hpp"
 
 namespace SE{
@@ -11,7 +12,7 @@ enum class STORETYPE{//data store type
     COO,
 };
 
-template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
+template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype=ContiguousMap<dimension> >
 class Tensor{
 public:
     const STORETYPE store_type = storetype;
