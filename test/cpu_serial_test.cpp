@@ -6,8 +6,8 @@
 #include <iomanip>
 #include <chrono>
 #include "ContiguousMap.hpp"
-#include "device/MKL/LinearOP.hpp"
-#include "device/MKL/TensorOP.hpp"
+#include "device/MKL/LinearOp.hpp"
+#include "device/MKL/TensorOp.hpp"
 #include "decomposition/Decompose.hpp"
 
 std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
