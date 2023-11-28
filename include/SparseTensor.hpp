@@ -85,8 +85,8 @@ Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(Comm<com
 }
 
 template <>
-Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::Tensor(Comm<MPI> *_comm, ContiguousMap<2> * _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
-: Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >(_comm, _map, _shape){
+Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(Comm<SEMpi> *_comm, ContiguousMap<2> * _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
+: Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >(_comm, _map, _shape){
     this->data.reserve(data.size());
     for(auto iter = data.begin(); iter != data.end(); iter++){
         //int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0);
@@ -138,7 +138,7 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::insert_val
 
 /*
 template <>
-void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::insert_value(std::array<size_t, 2> index, double value){
+void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::insert_value(std::array<size_t, 2> index, double value){
     //std::cout << "inside D2MC<2> insert_val" << std::endl;
     //matrix는 col major로 저장됨
     //공간상에서 자르는 index 는 row index로 자름.
@@ -164,25 +164,23 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print() co
 }
 
 template <>
-void Tensor<STORETYPE::COO, double, 2, MKL, ContiguousMap<2> >::print() const{
+void Tensor<STORETYPE::COO, double, 2, SEMkl, ContiguousMap<2> >::print() const{
     for(auto const &i: this->data){
         for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
         std::cout << std::setw(6) << i.second << std::endl;
     }
     return;
 }template <>
-void Tensor<STORETYPE::COO, double, 2, MPI, ContiguousMap<2> >::print() const{
+void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::print() const{
     for(auto const &i: this->data){
         for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
         std::cout << std::setw(6) << i.second << std::endl;
     }
-
     return;
 }
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
-    
     if(!map->is_sliced){
         if(this->comm->rank == 0){
             std::cout << name << " : " << std::endl;
@@ -219,7 +217,7 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::complete()
 }
 /*
 template <>
-void SparseTensor<double, 2, MPI, ContiguousMap<2> >::complete()
+void SparseTensor<double, 2, SEMpi, ContiguousMap<2> >::complete()
 {
     
     //get total tensor size and store at rank==0

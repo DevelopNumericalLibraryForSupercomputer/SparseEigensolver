@@ -25,7 +25,7 @@ MPI_Comm mpi_comm = MPI_COMM_WORLD;
 //
 /*
 template<>
-Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
+Comm<SEMpi>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
     // Initialize MPI (assuming MPI_Init has been called before this)
     int tmp_rank, tmp_world_size;
     MPI_Comm_rank(mpi_comm, &tmp_rank);
@@ -36,19 +36,19 @@ Comm<MPI>::Comm(MPI_Comm new_communicator) : mpi_comm(new_communicator){
 */
 
 template<>
-std::unique_ptr<Comm<MPI> > createComm(int argc, char *argv[]){
-    std::cout << "MPIcomm" << std::endl;
+std::unique_ptr<Comm<SEMpi> > createComm(int argc, char *argv[]){
+    std::cout << "MPI Comm" << std::endl;
     MPI_Init(&argc, &argv);
     int myRank ,nRanks;
     MPI_Comm_rank(mpi_comm, &myRank);
     MPI_Comm_size(mpi_comm, &nRanks);
     assert(nRanks>0);
     assert(myRank>=0);
-    return std::make_unique< Comm<MPI> >( (size_t) myRank, (size_t) nRanks );
+    return std::make_unique< Comm<SEMpi> >( (size_t) myRank, (size_t) nRanks );
 }
 
 template<>
-Comm<MPI>::~Comm(){
+Comm<SEMpi>::~Comm(){
     if(MPI_Finalize() == MPI_SUCCESS){
         //std::cout << "The MPI routine MPI_Finalize succeeded." << std::endl;
     }
@@ -58,14 +58,14 @@ Comm<MPI>::~Comm(){
 }
 
 template<>
-void Comm<MPI>::barrier(){
+void Comm<SEMpi>::barrier(){
     MPI_Barrier(mpi_comm);
 }
 
 /*
 template <>
 template <>
-void Comm<MPI>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, int root)
+void Comm<SEMpi>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, int root)
 {
     switch (op){
         case SEop::SUM:  MPI_Reduce(src, trg, count, MPI_UNSIGNED_LONG_LONG, MPI_SUM,  root, mpi_comm); break;
@@ -79,7 +79,7 @@ void Comm<MPI>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, in
 
 template <> 
 template <> 
-void Comm<MPI>::allreduce(const double *src, size_t count, double *trg, SEop op){
+void Comm<SEMpi>::allreduce(const double *src, size_t count, double *trg, SEop op){
     switch (op){
         case SEop::SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  mpi_comm); break;
         case SEop::PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, mpi_comm); break;
@@ -90,13 +90,13 @@ void Comm<MPI>::allreduce(const double *src, size_t count, double *trg, SEop op)
 }
 template <> 
 template <> 
-void Comm<MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<SEMpi>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<MPI>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts){ // displs are automatically generated
+void Comm<SEMpi>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts){ // displs are automatically generated
     int sdispls[world_size];
     int int_sendcounts[world_size];
     int rdispls[world_size];
@@ -117,13 +117,13 @@ void Comm<MPI>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* 
 
 template <> 
 template <> 
-void Comm<MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<SEMpi>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts){ // displs are automatically generated using recvcount
+void Comm<SEMpi>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts){ // displs are automatically generated using recvcount
     int displs[world_size];
     int int_recvcounts[world_size];
     displs[0] = 0;
@@ -137,7 +137,7 @@ void Comm<MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* r
 
 template <> 
 template <> 
-void Comm<MPI>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root){ // displs are automatically generated using recvcount
+void Comm<SEMpi>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root){ // displs are automatically generated using recvcount
     int displs[world_size];
     int int_sendcounts[world_size];
     displs[0] = 0;

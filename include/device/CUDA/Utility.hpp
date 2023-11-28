@@ -35,30 +35,30 @@ namespace SE
 cublasHandle_t cublasHandle;
 
 template<>
-double* malloc<double, CUDA>(const size_t size){
+double* malloc<double, SECuda>(const size_t size){
     double* ptr;
     cudaMalloc( &ptr, size*sizeof(double) );
     return static_cast<double*> (ptr);
 }
 template<>
-void free<double, CUDA>(double* ptr ){
+void free<double, SECuda>(double* ptr ){
     cudaFree(ptr);
     return;
 }
 template<>
-void memcpy<double, CUDA>(double* dest, const double* source, size_t size ){
+void memcpy<double, SECuda>(double* dest, const double* source, size_t size ){
     cudaMemcpyKind kind = cudaMemcpyDeviceToDevice ;
     cudaMemcpy(dest, source, sizeof(double)*size, kind );
     return;
 }
 template<>
-void memset<double, CUDA>(double* dest, int value, size_t size){
+void memset<double, SECuda>(double* dest, int value, size_t size){
     cudaMemset((void*)dest, value, size * sizeof(double) );
     return;
 }
 
 template<>
-void gemm<double, CUDA>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
+void gemm<double, SECuda>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
                        const size_t m, const size_t n, const size_t k,
                        const double alpha, const double *a, const size_t lda,
                        const double *b, const size_t ldb, const double beta,
@@ -68,13 +68,13 @@ void gemm<double, CUDA>(const SE_layout Layout, const SE_transpose transa, const
 }
 
 template <>
-void axpy<double, CUDA>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
+void axpy<double, SECuda>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
     cublasDaxpy(cublasHandle, n, &a, x, incx, y, incy);
     return;
 }
 
 template <>
-int geev<double, CUDA>(const SE_layout Layout, char jobvl, char jobvr, const size_t n, double* a, const size_t lda,
+int geev<double, SECuda>(const SE_layout Layout, char jobvl, char jobvr, const size_t n, double* a, const size_t lda,
           double* wr, double* wi, double* vl, const size_t ldvl, double* vr, const size_t ldvr){
     return 0;
 //    return LAPACKE_dgeev(map_layout_lapack(Layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);

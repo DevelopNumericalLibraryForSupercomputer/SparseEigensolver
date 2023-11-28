@@ -58,14 +58,14 @@ void calculate_residual(datatype* W_iter, datatype* sub_eigval, datatype* sub_ei
     std::cout << "not implemented" << std::endl;
 }
 template<>
-void calculate_residual<double, MKL>(double* W_iter, double* sub_eigval, double* sub_eigvec, double* ritz_vec, size_t n, size_t block_size, double* residual){
+void calculate_residual<double, SEMkl>(double* W_iter, double* sub_eigval, double* sub_eigvec, double* ritz_vec, size_t n, size_t block_size, double* residual){
     //residual, r_ki =  W_iterk y_ki - lambda_ki x_ki
     //lambda_ki x_ki
     for(int index = 0; index < n*block_size; index++){
         residual[index] = ritz_vec[index] * sub_eigval[index/n];
     }
     //W_iterk y_ki - lambda_ki x_ki
-    gemm<double, MKL>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, block_size, 1.0, W_iter, n, sub_eigvec, block_size, -1.0, residual, n);
+    gemm<double, SEMkl>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, block_size, 1.0, W_iter, n, sub_eigvec, block_size, -1.0, residual, n);
 }
 
 template<typename datatype, typename computEnv>
@@ -74,7 +74,7 @@ bool check_convergence(Comm<computEnv>* _comm, datatype* residual, datatype* old
     exit(1);
 }
 template<>
-bool check_convergence<double, MKL>(Comm<MKL>* _comm, double* residual, double* old_residual, size_t n, size_t num_eigenvalues, double tolerance){
+bool check_convergence<double, SEMkl>(Comm<SEMkl>* _comm, double* residual, double* old_residual, size_t n, size_t num_eigenvalues, double tolerance){
     //convergence check
     double sum_of_norm_square = 0.0;
     for(int index = 0; index < n*num_eigenvalues; index++){
@@ -108,7 +108,7 @@ void preconditioner(Tensor<storetype, datatype, dimension, computEnv, maptype>& 
 }
 
 template <typename datatype, typename maptype>
-void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, MKL, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, SEMkl, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
@@ -130,7 +130,7 @@ void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, MKL, maptype>& tensor,
     }
 }
 template <typename datatype, typename maptype>
-void preconditioner(Tensor<STORETYPE::COO, datatype, 2, MKL, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+void preconditioner(Tensor<STORETYPE::COO, datatype, 2, SEMkl, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;

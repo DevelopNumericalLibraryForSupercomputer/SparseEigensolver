@@ -12,13 +12,13 @@ namespace SE{
 cudaStream_t stream;
 
 template<>
-std::unique_ptr<Comm<CUDA> > createComm(int argc, char *argv[]){
+std::unique_ptr<Comm<SECuda> > createComm(int argc, char *argv[]){
 
-    return std::make_unique< Comm<CUDA> >( 0, 1);
+    return std::make_unique< Comm<SECuda> >( 0, 1);
 }
 
 template<>
-Comm<CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
+Comm<SECuda>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
 {
     auto status =cublasCreate(&SE::cublasHandle);
     assert (CUBLAS_STATUS_SUCCESS==status);
@@ -28,7 +28,7 @@ Comm<CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_s
 }
 
 template<>
-Comm<CUDA>::~Comm(){
+Comm<SECuda>::~Comm(){
     //Finalize cublas 
     auto status = cublasDestroy(SE::cublasHandle);
     assert (CUBLAS_STATUS_SUCCESS==status);
@@ -38,24 +38,24 @@ Comm<CUDA>::~Comm(){
 
 template<>
 template <typename datatype>
-void Comm<CUDA>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op){
-    memcpy<datatype, CUDA> (trg,src,count);
+void Comm<SECuda>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op){
+    memcpy<datatype, SECuda> (trg,src,count);
     return;
 }
 
 template<>
 template <typename datatype>
-void Comm<CUDA>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<SECuda>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, CUDA> (trg,src,sendcount);
+    memcpy<datatype, SECuda> (trg,src,sendcount);
     return ;
 }
 
 template<>
 template <typename datatype>
-void Comm<CUDA>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<SECuda>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
     assert(sendcount == recvcount);
-    memcpy<datatype, CUDA> (trg,src,sendcount);
+    memcpy<datatype, SECuda> (trg,src,sendcount);
   
 }
 

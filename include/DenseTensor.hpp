@@ -142,7 +142,7 @@ void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print() 
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print() const{
+void Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> >::print() const{
     for(int i=0;i<this->shape[0];i++){
         for(int j=0;j<this->shape[1];j++){
             std::cout << std::setw(6) << this->data[i+j*this->shape[0]] << " ";
@@ -152,14 +152,14 @@ void Tensor<STORETYPE::Dense, double, 2, MKL, ContiguousMap<2> >::print() const{
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 1, MKL, ContiguousMap<1> >::print() const{
+void Tensor<STORETYPE::Dense, double, 1, SEMkl, ContiguousMap<1> >::print() const{
     for(int i=0;i<this->shape[0];i++){
         std::cout << std::setw(6) << this->data[i] << std::endl;
     }
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >::print() const{
+void Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >::print() const{
     size_t datasize = this->shape_mult[2];
      //std::cout << "datasize " << datasize << " rank = " << comm->rank << std::endl;
     if(map->is_sliced){
@@ -183,7 +183,7 @@ void Tensor<STORETYPE::Dense, double, 2, MPI, ContiguousMap<2> >::print() const{
 }
 
 template <>
-void Tensor<STORETYPE::Dense, double, 1, MPI, ContiguousMap<1> >::print() const{
+void Tensor<STORETYPE::Dense, double, 1, SEMpi, ContiguousMap<1> >::print() const{
     size_t datasize = this->shape_mult[1];
     if(map->is_sliced){
         datasize = map->get_my_partitioned_data_size(comm->rank);

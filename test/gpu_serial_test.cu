@@ -23,7 +23,7 @@ __global__ void kernel_sum2(int myinit, int myfin, double step, double* sum){
 }
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<CUDA>(argc, argv);
+    auto comm = createComm<SECuda>(argc, argv);
 
     
     auto host_sum  = malloc<double> (1);
@@ -31,10 +31,10 @@ int main(int argc, char* argv[]){
 
     std::cout << "gpu SERIAL test" << std::endl;
     std::cout << *comm <<std::endl;
-    double* sum  = malloc<double, CUDA>(1);
-    memset<double, CUDA>(sum, 0, 1);
-    double* tsum = malloc<double, CUDA>(1);
-    memset<double, CUDA>(tsum, 0, 1);
+    double* sum  = malloc<double, SECuda>(1);
+    memset<double, SECuda>(sum, 0, 1);
+    double* tsum = malloc<double, SECuda>(1);
+    memset<double, SECuda>(tsum, 0, 1);
     int myrank = comm->rank;
     int nprocs = comm->world_size;
         
@@ -55,8 +55,8 @@ int main(int argc, char* argv[]){
     cudaMemcpy(host_sum,   sum, 1*sizeof(double), cudaMemcpyDeviceToHost);
     cudaMemcpy(host_tsum, tsum, 1*sizeof(double), cudaMemcpyDeviceToHost);
     std::cout << "myrank : " << myrank << ", sum = " << *host_sum << ", tsum*step = " << (*host_tsum)*step << std::endl;
-    memset<double, CUDA>(sum, 0, 1);
-    memset<double, CUDA>(tsum, 0, 1);
+    memset<double, SECuda>(sum, 0, 1);
+    memset<double, SECuda>(tsum, 0, 1);
     
     comm->barrier();
     kernel_sum2<<< 128, 16 >>>(myinit, myfin, step, sum);
@@ -70,12 +70,12 @@ int main(int argc, char* argv[]){
     // need to edit!!
 
     if(myrank == 0) { std::cout << "alltoall test" << std::endl;}
-    auto irecv      = malloc<double,CUDA >(sizeof(double)*100);
+    auto irecv      = malloc<double, SECuda >(sizeof(double)*100);
     auto test_array_ = malloc<double>(100);
     for(int i=0;i<100;i++){
         test_array_[i] = (double)i*(myrank+1);
     }
-    auto test_array = malloc<double,CUDA>(100);
+    auto test_array = malloc<double,SECuda>(100);
     cudaMemcpy(test_array, test_array_, 1*sizeof(double), cudaMemcpyHostToDevice);
     comm->alltoall(test_array,100/nprocs,irecv,100/nprocs);   
     cudaMemcpy(test_array_, test_array, 1*sizeof(double), cudaMemcpyDeviceToHost);
@@ -242,8 +242,8 @@ int main(int argc, char* argv[]){
     
 
     auto  new_map = std::make_unique< ContiguousMap<2> >(test_shape, comm.get()->world_size, 0);
-    //Tensor<STORETYPE::Dense,double, 2, Comm<CUDA>, ContiguousMap<2> > test_matrix();
-    Tensor<STORETYPE::Dense,double, 2, CUDA, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, test_data.data());
+    //Tensor<STORETYPE::Dense,double, 2, Comm<SECuda>, ContiguousMap<2> > test_matrix();
+    Tensor<STORETYPE::Dense,double, 2, SECuda, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, test_data.data());
 //                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
     comm->barrier();
 

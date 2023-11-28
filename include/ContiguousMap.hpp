@@ -12,8 +12,8 @@ public:
  
 	size_t get_start_my_global_index(size_t rank);
 	size_t get_end_my_global_index(size_t rank);
-	size_t get_my_partition_size(size_t rank);
-    size_t get_my_partitioned_data_size(size_t rank);
+	size_t get_my_partition_size(size_t rank);        //partition size of sliced dimension
+    size_t get_my_partitioned_data_size(size_t rank); //partition size of total data
 	size_t* get_partition_size_array();
 	size_t* get_start_global_index_array();
 
