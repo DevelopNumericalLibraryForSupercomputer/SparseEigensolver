@@ -25,7 +25,7 @@ public:
     //const size_t get_rank(){ return rank; };
     //const size_t get_world_size(){ return world_size; };
 
-    void barrier() {};
+    void barrier() const{};
 
     //template <typename datatype> void send(datatype* src, size_t sendcount, size_t recv_rank);
     //template <typename datatype> void recv(datatype* src, size_t sendcount, size_t recv_rank);
@@ -34,13 +34,13 @@ public:
     //template <typename datatype> void reduce(const datatype *src, size_t count, datatype *trg, SEop op, int root);
     //template <typename datatype> void gather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
 
-    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, SEop op);
-    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, SEop op) const;
+    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount) const;
+    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount) const;
 
-    template <typename datatype> void allgatherv(datatype* src, size_t sendcount, datatype* trg, size_t* recvcounts);
-    template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root);
-    template <typename datatype> void alltoallv (datatype* src, size_t* sendcounts, datatype* trg, size_t* recvcounts);
+    template <typename datatype> void allgatherv(datatype* src, size_t sendcount, datatype* trg, size_t* recvcounts) const;
+    template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root) const;
+    template <typename datatype> void alltoallv (datatype* src, size_t* sendcounts, datatype* trg, size_t* recvcounts) const;
 
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)

@@ -19,8 +19,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* spmv(Tensor<STORETYPE::Den
     double* return_data = malloc<double, SEMkl>(m);
 
     gemm<double, SEMkl>(SE_layout::ColMajor, transa, SE_transpose::NoTrans, m, 1, k, 1.0, a->data, m, v->data, k, 0.0, return_data, m);
-    maptype2* return_map = new maptype2(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>(v->comm, return_map, return_size, return_data);
+    //maptype2* return_map = new maptype2(return_size, 1);
+    Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>(v->comm, return_size, return_data);
     return return_mat;
 }   
 
@@ -55,8 +55,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* spmv(Tensor<STORETYPE::COO
             return_data[ entity.first[1] ] += entity.second * v->data[ entity.first[0] ];
         }
     }
-    maptype2* return_map = new maptype2(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>(a->comm, return_map, return_size, return_data);
+    //maptype2* return_map = new maptype2(return_size, 1);
+    Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMkl, maptype2>(a->comm, return_size, return_data);
     return return_mat;
 }   
 template <typename maptype>
@@ -88,8 +88,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* spmv(Tensor<STORETYPE::COO,
             }
         }
     }
-    maptype* return_map = new maptype(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>(a->comm, return_map, return_size, return_data);
+    //maptype* return_map = new maptype(return_size, 1);
+    Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>(a->comm, return_size, return_data);
     return return_mat;
 }   
 
@@ -117,8 +117,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* matmul(Tensor<STORETYPE::De
     double* return_data = malloc<double, SEMkl>(m*n);
 
     gemm<double, SEMkl>(SE_layout::ColMajor, transa, transb, m, n, k, 1.0, a->data, m, b->data, k, 0.0, return_data, m);
-    maptype* return_map = new maptype(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>(a->comm, return_map, return_size, return_data);
+    //maptype* return_map = new maptype(return_size, 1);
+    Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMkl, maptype>(a->comm, return_size, return_data);
     return return_mat;
 }
 //QR

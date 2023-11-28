@@ -58,7 +58,7 @@ Comm<SEMpi>::~Comm(){
 }
 
 template<>
-void Comm<SEMpi>::barrier(){
+void Comm<SEMpi>::barrier() const{
     MPI_Barrier(mpi_comm);
 }
 
@@ -79,7 +79,7 @@ void Comm<SEMpi>::reduce(const size_t *src, size_t count, size_t *trg, SEop op, 
 
 template <> 
 template <> 
-void Comm<SEMpi>::allreduce(const double *src, size_t count, double *trg, SEop op){
+void Comm<SEMpi>::allreduce(const double *src, size_t count, double *trg, SEop op) const{
     switch (op){
         case SEop::SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  mpi_comm); break;
         case SEop::PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, mpi_comm); break;
@@ -90,13 +90,14 @@ void Comm<SEMpi>::allreduce(const double *src, size_t count, double *trg, SEop o
 }
 template <> 
 template <> 
-void Comm<SEMpi>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<SEMpi>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount) const{
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<SEMpi>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts){ // displs are automatically generated
+void Comm<SEMpi>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts) const{
+    // displs are automatically generated
     int sdispls[world_size];
     int int_sendcounts[world_size];
     int rdispls[world_size];
@@ -117,13 +118,14 @@ void Comm<SEMpi>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t
 
 template <> 
 template <> 
-void Comm<SEMpi>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount){
+void Comm<SEMpi>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount) const{
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<SEMpi>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts){ // displs are automatically generated using recvcount
+void Comm<SEMpi>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts) const{
+    // displs are automatically generated using recvcount
     int displs[world_size];
     int int_recvcounts[world_size];
     displs[0] = 0;
@@ -137,7 +139,8 @@ void Comm<SEMpi>::allgatherv(double *src, size_t sendcount, double *trg, size_t*
 
 template <> 
 template <> 
-void Comm<SEMpi>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root){ // displs are automatically generated using recvcount
+void Comm<SEMpi>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root) const{
+    // displs are automatically generated using recvcount
     int displs[world_size];
     int int_sendcounts[world_size];
     displs[0] = 0;

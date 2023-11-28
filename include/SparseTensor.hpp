@@ -26,15 +26,21 @@ public:
     std::array<size_t, dimension> shape;
     std::array<size_t, dimension+1> shape_mult;
 
-    Comm<computEnv>* comm;
-    maptype* map;
+    const Comm<computEnv>* comm;
+    const maptype map;
     //vector of (index array, data)
     std::vector<std::pair<std::array<size_t, dimension>, datatype> > data;
 
     Tensor(){filled = false;};
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size);
-    Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
+    //Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape);
+    //Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size);
+    //Tensor(Comm<computEnv>* _comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype> > data);
+
+
+    Tensor(const Comm<computEnv>* _comm, const std::array<size_t, dimension> _shape, const bool is_sliced = false, const size_t sliced_dimension = 0);
+    Tensor(const Comm<computEnv>* _comm, const std::array<size_t, dimension> _shape, const size_t data_size, const bool is_sliced = false, const size_t sliced_dimension = 0);
+    Tensor(const Comm<computEnv>* _comm, const std::array<size_t, dimension> _shape, const std::vector<std::pair<std::array<size_t, dimension>, datatype> > data, const bool is_sliced = false, const size_t sliced_dimension = 0);
+
 
     datatype& operator()(const std::array<size_t, dimension> index);
     Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>& operator=(const Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype> &tensor);
@@ -45,8 +51,8 @@ public:
     void print() const;
     void print(const std::string& name) const;
 
-    Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype> clone() {
-        return Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(this->comm, this->map, this->shape, this->data);
+    Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>* clone() {
+        return new Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(this->comm, this->shape, this->data, this->map->is_sliced, this->map->sliced_dimension);
     };
     /*
     std::unique_ptr<DecomposeResult<datatype, dimension, computEnv, maptype> > decompose(const std::string method);
@@ -63,35 +69,37 @@ public:
 };
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape): comm(_comm), shape(_shape){
-    this->map = _map;
+Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(const Comm<computEnv>* _comm,
+                                                                        const std::array<size_t, dimension> _shape,
+                                                                        const bool is_sliced,
+                                                                        const size_t sliced_dimension)
+: comm(_comm), shape(_shape), map( is_sliced ? maptype(_shape, _comm->world_size, sliced_dimension) : maptype(_shape, _comm->world_size) ){
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     this->filled = false;
-}
+};
 
-template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape, size_t data_size)
-: Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
+template <typename datatype, size_t dimension, typename computEnv, typename maptype>
+Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(const Comm<computEnv> *_comm, const std::array<size_t, dimension> _shape, const size_t data_size, const bool is_sliced, const size_t sliced_dimension)
+            : Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(_comm, _shape, is_sliced, sliced_dimension){
     this->data.reserve(data_size);
-}
+};
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
-Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(Comm<computEnv> *_comm, maptype* _map, std::array<size_t, dimension> _shape, std::vector<std::pair<std::array<size_t, dimension>, datatype>> data)
-: Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(_comm, _map, _shape){
+Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(const Comm<computEnv>* _comm, const std::array<size_t, dimension> _shape, const std::vector<std::pair<std::array<size_t, dimension>, datatype>> data, const bool is_sliced, const size_t sliced_dimension)
+            : Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>(_comm, _shape, is_sliced, sliced_dimension){
     this->data = data;
     this->filled = true;
     this->complete();
 }
 
 template <>
-Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(Comm<SEMpi> *_comm, ContiguousMap<2> * _map, std::array<size_t, 2> _shape, std::vector<std::pair<std::array<size_t, 2>, double>> data)
-: Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >(_comm, _map, _shape){
+Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(const Comm<SEMpi>* _comm, const std::array<size_t, 2> _shape, const std::vector<std::pair<std::array<size_t, 2>, double>> data, const bool is_sliced, const size_t sliced_dimension)
+: Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >(_comm, _shape, is_sliced, sliced_dimension){
     this->data.reserve(data.size());
     for(auto iter = data.begin(); iter != data.end(); iter++){
-        //int this_rank = _map->get_my_rank_from_global_index(iter->first[0], 0);
-        if(_map->is_sliced){
-            int this_rank = _map->get_my_rank_from_global_index(iter->first);
+        if(this->map.is_sliced){
+            int this_rank = this->map.get_my_rank_from_global_index(iter->first);
             if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
         }
         else{
@@ -104,7 +112,7 @@ Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(Comm<SEMpi> 
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 datatype &Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
-    std::array<size_t, 2> local_index = this->map->get_local_array_index(index, this->comm->rank); //assert that given index is in this thread.
+    std::array<size_t, 2> local_index = this->map.get_local_array_index(index, this->comm->rank); //assert that given index is in this thread.
     for (size_t i = 0; i < this->data.size(); i++){
         if(data[i].first == index){
             // array equal, c++20
@@ -126,8 +134,8 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::insert_val
     // --> a00 a01 a02 / a10 a11 a12
     int my_rank = comm->rank;
     size_t target_rank = 0;
-    if(map->is_sliced){
-        target_rank = map->get_my_rank_from_global_index(index[map->sliced_dimension]);
+    if(this->map.is_sliced){
+        target_rank = this->map.get_my_rank_from_global_index(index);
     }
 
     assert(this->filled == false);
@@ -147,7 +155,7 @@ void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::insert_value(s
     // --> a00 a10 a01 a11 a02 a12
     // --> a00 a01 a02 / a10 a11 a12
     int my_rank = comm->rank;
-    size_t target_rank = map->get_my_rank_from_global_index(index[0], 0);
+    size_t target_rank = this->map.get_my_rank_from_global_index(index[0], 0);
     //std::cout << "insertval, myrank : " << my_rank << " target_rank : " << target_rank << " val : " << index[0] << " " << index[1] << " " << value << std::endl;
     if(my_rank == target_rank){
         this->data.emplace_back(index, value);
@@ -181,7 +189,7 @@ void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::print() const{
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
-    if(!map->is_sliced){
+    if(!this->map.is_sliced){
         if(this->comm->rank == 0){
             std::cout << name << " : " << std::endl;
             print();
