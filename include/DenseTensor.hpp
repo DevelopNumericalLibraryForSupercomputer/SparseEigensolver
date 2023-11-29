@@ -40,15 +40,15 @@ public:
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::Tensor(const Comm<computEnv>* _comm, const std::array<size_t, dimension> _shape, const bool is_sliced, const size_t sliced_dimension)
-: comm(_comm), shape(_shape), map( is_sliced ? maptype(_shape, _comm->world_size, sliced_dimension) : maptype(_shape, _comm->world_size) ){
+: comm(_comm), shape(_shape), map( is_sliced ? maptype(_shape, _comm->get_world_size(), sliced_dimension) : maptype(_shape, _comm->get_world_size()) ){
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     size_t datasize = this->shape_mult[dimension];
     if(is_sliced){
-        datasize = this->map.get_my_partitioned_data_size(comm->rank);
+        datasize = this->map.get_my_partitioned_data_size(comm->get_rank());
         
     }
-    //std::cout << comm->rank << " :  datasize = " << datasize << std::endl;
+    //std::cout << comm->get_rank() << " :  datasize = " << datasize << std::endl;
     this->data = malloc<datatype, computEnv>(datasize);
     memset<datatype, computEnv>(this->data, 0.0, datasize);
 };
@@ -57,7 +57,7 @@ template<typename datatype, size_t dimension, typename computEnv, typename mapty
 Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::Tensor(const Comm<computEnv> *_comm, const std::array<size_t, dimension> _shape, const datatype *_data, const bool is_sliced, const size_t sliced_dimension)
 :Tensor(_comm, _shape, is_sliced, sliced_dimension){
     if(this->map.is_sliced){
-        memcpy<datatype, computEnv>( this->data, _data, this->map.get_my_partitioned_data_size(comm->rank));
+        memcpy<datatype, computEnv>( this->data, _data, this->map.get_my_partitioned_data_size(comm->get_rank()));
     }
     else{
         memcpy<datatype, computEnv>( this->data, _data, this->shape_mult[dimension]);
@@ -126,7 +126,7 @@ Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>& Tensor<STORET
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::insert_value(std::array<size_t, dimension> index, datatype value){
-    int my_rank = comm->rank;
+    int my_rank = comm->get_rank();
     size_t target_rank = 0;
     if(this->map.is_sliced){
         //target_rank = this->map.get_my_rank_from_global_index(index[this->map.sliced_dimension]);
@@ -165,21 +165,21 @@ void Tensor<STORETYPE::Dense, double, 1, SEMkl, ContiguousMap<1> >::print() cons
 template <>
 void Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >::print() const{
     size_t datasize = this->shape_mult[2];
-     //std::cout << "datasize " << datasize << " rank = " << comm->rank << std::endl;
+     //std::cout << "datasize " << datasize << " rank = " << comm->get_rank() << std::endl;
     if(this->map.is_sliced){
-        //std::cout << "sliced, " << this->map.get_my_partition_size(comm->rank) << " / " << shape[this->map.sliced_dimension] << " rank = " << comm->rank << std::endl;
-        //datasize = datasize * this->map.get_my_partition_size(comm->rank) / shape[this->map.sliced_dimension];
-        datasize = this->map.get_my_partitioned_data_size(comm->rank);
+        //std::cout << "sliced, " << this->map.get_my_partition_size(comm->get_rank()) << " / " << shape[this->map.sliced_dimension] << " rank = " << comm->get_rank() << std::endl;
+        //datasize = datasize * this->map.get_my_partition_size(comm->get_rank()) / shape[this->map.sliced_dimension];
+        datasize = this->map.get_my_partitioned_data_size(comm->get_rank());
     }
-    //std::cout << "datasize " << datasize << " rank = " << comm->rank << std::endl;
+    //std::cout << "datasize " << datasize << " rank = " << comm->get_rank() << std::endl;
     std::cout << "rank\ti\tj\tvalue" << std::endl;
     for(size_t i=0;i<datasize;i++){
-        //std::cout <<  "i : " << i << " rank : " << comm->rank << ", global array : (";
-        std::cout <<comm->rank << '\t';
+        //std::cout <<  "i : " << i << " rank : " << comm->get_rank() << ", global array : (";
+        std::cout <<comm->get_rank() << '\t';
         for(int j=0;j<2;j++){
-            //std::cout << comm->rank << ' ' <<  this->map.get_global_array_index(i,comm->rank)[j] << '\t';
-            //std::cout << i << '\t' <<  this->map.get_global_array_index(i,comm->rank)[j] << '\t';
-            std::cout << this->map.get_global_array_index(i,comm->rank)[j] << '\t';
+            //std::cout << comm->get_rank() << ' ' <<  this->map.get_global_array_index(i,comm->get_rank())[j] << '\t';
+            //std::cout << i << '\t' <<  this->map.get_global_array_index(i,comm->get_rank())[j] << '\t';
+            std::cout << this->map.get_global_array_index(i,comm->get_rank())[j] << '\t';
         }
         //std::cout << ") = " << std::setw(6) << this->data[i] << std::endl;
         std::cout << this->data[i] << std::endl;
@@ -190,25 +190,25 @@ template <>
 void Tensor<STORETYPE::Dense, double, 1, SEMpi, ContiguousMap<1> >::print() const{
     size_t datasize = this->shape_mult[1];
     if(this->map.is_sliced){
-        datasize = this->map.get_my_partitioned_data_size(comm->rank);
+        datasize = this->map.get_my_partitioned_data_size(comm->get_rank());
     }
     std::cout << "rank\ti\tvalue" << std::endl;
     for(size_t i=0;i<datasize;i++){
-        std::cout << comm->rank << '\t' << this->map.get_global_array_index(i,comm->rank)[0] << '\t' << std::setw(6) << this->data[i] << std::endl;
+        std::cout << comm->get_rank() << '\t' << this->map.get_global_array_index(i,comm->get_rank())[0] << '\t' << std::setw(6) << this->data[i] << std::endl;
     }
 }
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::Dense, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
     if(!this->map.is_sliced){
-        if(this->comm->rank == 0){
+        if(this->comm->get_rank() == 0){
             std::cout << name << " : " << std::endl;
             print();
             std::cout << "=======================" << std::endl;
         }
     }
     else{
-        std::cout << name << " : (rank " << this->comm->rank << ")" << std::endl;
+        std::cout << name << " : (rank " << this->comm->get_rank() << ")" << std::endl;
         print();
     }
 }

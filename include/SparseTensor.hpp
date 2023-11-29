@@ -73,7 +73,7 @@ Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::Tensor(const Co
                                                                         const std::array<size_t, dimension> _shape,
                                                                         const bool is_sliced,
                                                                         const size_t sliced_dimension)
-: comm(_comm), shape(_shape), map( is_sliced ? maptype(_shape, _comm->world_size, sliced_dimension) : maptype(_shape, _comm->world_size) ){
+: comm(_comm), shape(_shape), map( is_sliced ? maptype(_shape, _comm->get_world_size(), sliced_dimension) : maptype(_shape, _comm->get_world_size()) ){
     cumprod<dimension>(this->shape, this->shape_mult);
     assert(this->shape_mult[dimension] != 0);
     this->filled = false;
@@ -100,7 +100,7 @@ Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(const Comm<S
     for(auto iter = data.begin(); iter != data.end(); iter++){
         if(this->map.is_sliced){
             int this_rank = this->map.get_my_rank_from_global_index(iter->first);
-            if(_comm->rank == this_rank) this->data.emplace_back(iter->first, iter->second);
+            if(_comm->get_rank() == this_rank) this->data.emplace_back(iter->first, iter->second);
         }
         else{
             this->data.emplace_back(iter->first, iter->second);
@@ -112,7 +112,7 @@ Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::Tensor(const Comm<S
 
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 datatype &Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::operator()(const std::array<size_t, dimension> index){
-    std::array<size_t, 2> local_index = this->map.get_local_array_index(index, this->comm->rank); //assert that given index is in this thread.
+    std::array<size_t, 2> local_index = this->map.get_local_array_index(index, this->comm->get_rank()); //assert that given index is in this thread.
     for (size_t i = 0; i < this->data.size(); i++){
         if(data[i].first == index){
             // array equal, c++20
@@ -132,7 +132,7 @@ void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::insert_val
     // a10 a11 a12
     // --> a00 a10 a01 a11 a02 a12
     // --> a00 a01 a02 / a10 a11 a12
-    int my_rank = comm->rank;
+    int my_rank = comm->get_rank();
     size_t target_rank = 0;
     if(this->map.is_sliced){
         target_rank = this->map.get_my_rank_from_global_index(index);
@@ -154,7 +154,7 @@ void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::insert_value(s
     // a10 a11 a12
     // --> a00 a10 a01 a11 a02 a12
     // --> a00 a01 a02 / a10 a11 a12
-    int my_rank = comm->rank;
+    int my_rank = comm->get_rank();
     size_t target_rank = this->map.get_my_rank_from_global_index(index[0], 0);
     //std::cout << "insertval, myrank : " << my_rank << " target_rank : " << target_rank << " val : " << index[0] << " " << index[1] << " " << value << std::endl;
     if(my_rank == target_rank){
@@ -190,14 +190,14 @@ void Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >::print() const{
 template<typename datatype, size_t dimension, typename computEnv, typename maptype>
 void Tensor<STORETYPE::COO, datatype, dimension, computEnv, maptype>::print(const std::string& name) const{
     if(!this->map.is_sliced){
-        if(this->comm->rank == 0){
+        if(this->comm->get_rank() == 0){
             std::cout << name << " : " << std::endl;
             print();
             std::cout << "=======================" << std::endl;
         }
     }
     else{
-        std::cout << name << " : (rank " << this->comm->rank << ")" << std::endl;
+        std::cout << name << " : (rank " << this->comm->get_rank() << ")" << std::endl;
         print();
     }
 }
@@ -236,7 +236,7 @@ void SparseTensor<double, 2, SEMpi, ContiguousMap<2> >::complete()
     //std::pair<std::array<size_t, 2>, double>* whole_data;
     size_t* rows, columns;
     double* values;
-    if(this->comm->rank==0){
+    if(this->comm->get_rank()==0){
         rows = malloc<size_t>(total_size);
         columns = malloc<size_t>(total_size);
         values = malloc<double>(total_size);
@@ -246,7 +246,7 @@ void SparseTensor<double, 2, SEMpi, ContiguousMap<2> >::complete()
     // MPI_Gather(...);
 
     // Process 0 gathers all elements and performs sorting
-    if (this->comm->rank == 0) {
+    if (this->comm->get_rank() == 0) {
         // Sort elements based on row indices
         std::sort(this->data.begin(), this->data.end(), [](const auto& a, const auto& b) {
             return a.first[0] < b.first[0];

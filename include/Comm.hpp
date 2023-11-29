@@ -42,6 +42,9 @@ public:
     template <typename datatype> void scatterv(datatype* src, size_t* sendcounts, datatype* trg, size_t recvcount, size_t root) const;
     template <typename datatype> void alltoallv (datatype* src, size_t* sendcounts, datatype* trg, size_t* recvcounts) const;
 
+    size_t get_rank() const {return rank;};
+    size_t get_world_size() const {return world_size;};
+    private:
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     size_t world_size = 1;     // Total number of processes in the job
