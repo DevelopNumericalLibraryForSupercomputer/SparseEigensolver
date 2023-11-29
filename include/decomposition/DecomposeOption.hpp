@@ -1,7 +1,7 @@
 #pragma once
 #include <iostream>
 #include <map>
-//#include <yaml-cpp/yaml.h>
+#include <yaml-cpp/yaml.h>
 #include "Utility.hpp"
 namespace SE{
 
@@ -24,23 +24,23 @@ enum class PRECOND_TYPE{
 
 class DecomposeOption{
 public:
-    DecomposeOption() {};
-    //DecomposeOption(std::string filename);
-    //void set_option(std::string filename);
-    //void print();
+    DecomposeOption();
+    DecomposeOption(std::string filename);
+    void set_option(std::string filename);
+    void print();
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
     size_t max_iterations       = 100;
     double tolerance         = 1E-10;
     MAT_TYPE matrix_type     = MAT_TYPE::RealSym;
     size_t num_eigenvalues      = 3;
     size_t eigenvalue_guesses   = 0;
-    //bool use_preconditioner    = false;
+    bool use_preconditioner    = false;
     PRECOND_TYPE preconditioner = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-10;
     double preconditioner_max_iterations = 30;
 
 private:
-    //void set_option_worker();
+    void set_option_worker();
 
     template<typename enum_type> enum_type table_match(std::map<std::string, enum_type> table, std::string str);
 
@@ -50,9 +50,8 @@ private:
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
     std::map<std::string, PRECOND_TYPE> const precond_table =
         { {"Diagonal", PRECOND_TYPE::Diagonal}};
-    //YAML::Node config;
+    YAML::Node config;
 };
-/*
 DecomposeOption::DecomposeOption(){
     config = YAML::LoadFile("Default.yaml");
     set_option_worker();
@@ -100,7 +99,7 @@ void DecomposeOption::set_option_worker(){
     this->preconditioner_tolerance = config["preconditioner_options"]["preconditioner_tolerance"].as<double>();
     this->preconditioner_max_iterations = config["preconditioner_options"]["preconditioner_max_iterations"].as<double>();
 }
-*/
+
 template <typename enum_type>
 enum_type DecomposeOption::table_match(std::map<std::string, enum_type> table, std::string str){
     if(table.find(str) != table.end()){
