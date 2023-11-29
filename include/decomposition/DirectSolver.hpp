@@ -22,7 +22,7 @@ std::unique_ptr<DecomposeResult<datatype> > evd(Tensor<STORETYPE::Dense, datatyp
     assert(tensor.shape[0] == tensor.shape[1]);
     const size_t n = tensor.shape[0];
 
-    if(tensor.map->is_sliced){
+    if(tensor.map.is_sliced){
         std::cout << "impossible, evd" << std::endl;
         exit(-1);
     }

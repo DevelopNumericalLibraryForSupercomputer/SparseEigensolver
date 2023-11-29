@@ -24,7 +24,7 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<MPI>(argc, argv);
+    auto comm = createComm<SEMpi>(argc, argv);
     std::cout << "MPI test" << std::endl;
     double x = 0.0, sum = 0.0;
     int myrank = comm->rank;
@@ -230,8 +230,8 @@ int main(int argc, char* argv[]){
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
-    SE::DenseTensor<double, 2, Comm<MPI>, ContiguousMap<2> > test_matrix
-                = SE::DenseTensor<double, 2, Comm<MPI>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    SE::DenseTensor<double, 2, Comm<SEMpi>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<SEMpi>, ContiguousMap<2> > (test_shape, &test_data[0]);
     auto out = test_matrix.decompose("EVD");
     if (comm->rank == 0){
         print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
@@ -243,7 +243,7 @@ int main(int argc, char* argv[]){
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
     ContiguousMap<2>* new_map2 = new ContiguousMap<2>(test_shape2, comm.get()->world_size, 0);
-    SE::Tensor<SE::STORETYPE::COO, double, 2, MPI, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
+    SE::Tensor<SE::STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
 
     
     std::cout << "Matrix construction" << std::endl;

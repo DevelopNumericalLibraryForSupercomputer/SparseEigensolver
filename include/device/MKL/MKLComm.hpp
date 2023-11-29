@@ -6,51 +6,51 @@
 
 namespace SE{
 template<>
-std::unique_ptr<Comm<MKL> > createComm(int argc, char *argv[]){
-    std::cout << "SERIALcomm" << std::endl;
-    return std::make_unique< Comm<MKL> >( 0, 1 );
+std::unique_ptr<Comm<SEMkl> > createComm(int argc, char *argv[]){
+    std::cout << "MKL Comm" << std::endl;
+    return std::make_unique< Comm<SEMkl> >( 0, 1 );
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op){
-    memcpy<datatype, MKL>(trg, src, count);
+void Comm<SEMkl>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op) const{
+    memcpy<datatype, SEMkl>(trg, src, count);
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<SEMkl>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<datatype, MKL>(trg, src, sendcount);
+    memcpy<datatype, SEMkl>(trg, src, sendcount);
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount){
+void Comm<SEMkl>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<datatype, MKL>(trg, src, sendcount);
+    memcpy<datatype, SEMkl>(trg, src, sendcount);
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::allgatherv(datatype *src, size_t sendcount, datatype *trg, size_t* recvcount){
+void Comm<SEMkl>::allgatherv(datatype *src, size_t sendcount, datatype *trg, size_t* recvcount) const{
     assert(sendcount == recvcount[0]);
-    memcpy<datatype, MKL>(trg, src, sendcount);
+    memcpy<datatype, SEMkl>(trg, src, sendcount);
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::scatterv(datatype *src, size_t* sendcounts, datatype *trg, size_t recvcount, size_t root){
+void Comm<SEMkl>::scatterv(datatype *src, size_t* sendcounts, datatype *trg, size_t recvcount, size_t root) const{
     assert(sendcounts[0] == recvcount);
     assert(root == 0);
-    memcpy<datatype, MKL>(trg, src, recvcount);
+    memcpy<datatype, SEMkl>(trg, src, recvcount);
 }
 
 template<>
 template<typename datatype>
-void Comm<MKL>::alltoallv(datatype *src, size_t* sendcounts, datatype *trg, size_t* recvcounts){
+void Comm<SEMkl>::alltoallv(datatype *src, size_t* sendcounts, datatype *trg, size_t* recvcounts) const{
     assert(sendcounts[0] == recvcounts[0]);
-    memcpy<datatype, MKL>(trg, src, recvcounts[0]);
+    memcpy<datatype, SEMkl>(trg, src, recvcounts[0]);
 }
 
 }

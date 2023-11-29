@@ -4,37 +4,37 @@ namespace SE{
 template<size_t dimension>
 class ContiguousMap: public Map<dimension>{
 public:
-    ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size) : Map<dimension>(total_size, world_size) {};
-    ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size, size_t slice_dimension);// : Map<dimension>(total_size, world_size, slice_dimension) {};
+    ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size);
+    ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size, size_t slice_dimension);
     // tensor will only be sliced along the slice dimension
 
-	void redistribute(bool slice, size_t slice_dimension); // slice == true : partition , false : merge
+	void redistribute(bool slice, size_t slice_dimension) override; // slice == true : partition , false : merge
  
-	size_t get_start_my_global_index(size_t rank);
-	size_t get_end_my_global_index(size_t rank);
-	size_t get_my_partition_size(size_t rank);
-    size_t get_my_partitioned_data_size(size_t rank);
-	size_t* get_partition_size_array();
-	size_t* get_start_global_index_array();
+	size_t get_start_my_global_index(size_t rank) const;
+	size_t get_end_my_global_index(size_t rank) const;
+	size_t get_my_partition_size(size_t rank) const;        //partition size of sliced dimension
+    size_t get_my_partitioned_data_size(size_t rank) const; //partition size of total data
+	size_t* get_partition_size_array() const;
+	size_t* get_start_global_index_array() const;
 
-    size_t get_my_rank_from_global_index(const size_t global_index);
-    size_t get_my_rank_from_global_index(const std::array<size_t, dimension> global_index);
+    size_t get_my_rank_from_global_index(const size_t global_index) const;
+    size_t get_my_rank_from_global_index(const std::array<size_t, dimension> global_index) const;
     //size_t calculate_chunk_size(size_t num_global_index);
 
 
 
     // array -> array
-    std::array<size_t, dimension> get_global_array_index(const std::array<size_t, dimension> local_index, size_t rank);
-    std::array<size_t, dimension> get_local_array_index (const std::array<size_t, dimension> global_index, size_t rank);
+    std::array<size_t, dimension> get_global_array_index(const std::array<size_t, dimension> local_index, size_t rank) const;
+    std::array<size_t, dimension> get_local_array_index (const std::array<size_t, dimension> global_index, size_t rank) const;
     // size_t -> array
-    std::array<size_t, dimension> get_global_array_index(const size_t local_index, size_t rank);
-    std::array<size_t, dimension> get_local_array_index (const size_t global_index, size_t rank);
+    std::array<size_t, dimension> get_global_array_index(const size_t local_index, size_t rank) const;
+    std::array<size_t, dimension> get_local_array_index (const size_t global_index, size_t rank) const;
     // array -> size_t
-    size_t get_global_index(const std::array<size_t, dimension> local_index, size_t rank);
-    size_t get_local_index(const std::array<size_t, dimension> global_index, size_t rank);
+    size_t get_global_index(const std::array<size_t, dimension> local_index, size_t rank) const;
+    size_t get_local_index(const std::array<size_t, dimension> global_index, size_t rank) const;
     // size_t -> size_t
-    size_t get_global_index(const size_t local_index, size_t rank);
-    size_t get_local_index(const size_t global_index, size_t rank);
+    size_t get_global_index(const size_t local_index, size_t rank) const;
+    size_t get_local_index(const size_t global_index, size_t rank) const;
 
     
 private:
@@ -76,33 +76,36 @@ private:
     std::array<size_t, dimension> array_to_whole_tensor_index(size_t array_index);
     std::array<size_t, dimension> array_to_sliced_tensor_index(size_t array_index, size_t slice_dimension, size_t rank);
     */
-    size_t global_tensor_index_flatten(std::array<size_t, dimension> tensor_index);
-    size_t sliced_tensor_index_flatten(std::array<size_t, dimension> tensor_index, size_t slice_dimension, size_t rank);
-    std::array<size_t, dimension> global_index_unflatten(size_t array_index);
-    std::array<size_t, dimension> sliced_index_unflatten(size_t array_index, size_t slice_dimension, size_t rank);
+    size_t global_tensor_index_flatten(std::array<size_t, dimension> tensor_index) const;
+    size_t sliced_tensor_index_flatten(std::array<size_t, dimension> tensor_index, size_t slice_dimension, size_t rank) const;
+    std::array<size_t, dimension> global_index_unflatten(size_t array_index) const;
+    std::array<size_t, dimension> sliced_index_unflatten(size_t array_index, size_t slice_dimension, size_t rank) const;
 
 };
 
 
 template <size_t dimension>
-ContiguousMap<dimension>::ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size, size_t slice_dimension){
-	assert(slice_dimension < total_size.size());
+ContiguousMap<dimension>::ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size){
 	this->tensor_total_size = total_size;
     cumprod(total_size, this->tensor_total_size_mult);
 	this->world_size = world_size;
-    //std::cout << "constructor : " << world_size <<  ", slice dim " << slice_dimension << std::endl;
-    if(this->world_size >1){
+	this->is_sliced = false;
+	this->sliced_dimension = 0;
+}
+
+template <size_t dimension>
+ContiguousMap<dimension>::ContiguousMap(std::array<size_t, dimension> total_size, size_t world_size, size_t slice_dimension)
+{
+    assert(slice_dimension < total_size.size());
+	this->tensor_total_size = total_size;
+    cumprod(total_size, this->tensor_total_size_mult);
+	this->world_size = world_size;
+	if(this->world_size >1){
         redistribute(true, slice_dimension);
     }
     else{
         this->is_sliced = false;
         this->sliced_dimension = 0;
-        /*
-	    this->partition_size = new size_t[1];
-	    this->start_global_index = new size_t[1];
-	    this->partition_size[0] = total_size[0];
-	    this->start_global_index[0] = 0;
-        */
     }
 }
 
@@ -137,7 +140,7 @@ void ContiguousMap<dimension>::redistribute(bool slice, size_t slice_dimension){
 }
 
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_start_my_global_index( size_t rank){
+size_t ContiguousMap<dimension>::get_start_my_global_index(size_t rank) const{
     if(this->is_sliced){
         return this->start_global_index[rank];
     }
@@ -147,7 +150,7 @@ size_t ContiguousMap<dimension>::get_start_my_global_index( size_t rank){
     }
 }
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_end_my_global_index(size_t rank){
+size_t ContiguousMap<dimension>::get_end_my_global_index(size_t rank) const{
     if(this->is_sliced){
         if(rank < this->world_size){
             return this->start_global_index[rank+1];
@@ -162,7 +165,7 @@ size_t ContiguousMap<dimension>::get_end_my_global_index(size_t rank){
     }
 }
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_my_partition_size(size_t rank){
+size_t ContiguousMap<dimension>::get_my_partition_size(size_t rank) const{
     if(this->is_sliced){
         return this->partition_size[rank];
     }
@@ -172,7 +175,7 @@ size_t ContiguousMap<dimension>::get_my_partition_size(size_t rank){
     }
 }
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_my_partitioned_data_size(size_t rank){
+size_t ContiguousMap<dimension>::get_my_partitioned_data_size(size_t rank) const{
     if(this->is_sliced){
         return this->tensor_total_size_mult[dimension] * get_my_partition_size(rank) / this->tensor_total_size[this->sliced_dimension];
     }
@@ -182,7 +185,7 @@ size_t ContiguousMap<dimension>::get_my_partitioned_data_size(size_t rank){
     }
 }
 template <size_t dimension>
-size_t *ContiguousMap<dimension>::get_partition_size_array()
+size_t *ContiguousMap<dimension>::get_partition_size_array() const
 {
     if(this->is_sliced){
         return this->partition_size;
@@ -193,7 +196,7 @@ size_t *ContiguousMap<dimension>::get_partition_size_array()
     }
 }
 template <size_t dimension>
-size_t* ContiguousMap<dimension>::get_start_global_index_array(){
+size_t* ContiguousMap<dimension>::get_start_global_index_array() const{
     if(this->is_sliced){
         return this->start_global_index;
     }
@@ -204,7 +207,7 @@ size_t* ContiguousMap<dimension>::get_start_global_index_array(){
 }
 
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const size_t global_index){
+size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const size_t global_index) const{
     if(this->is_sliced){
         size_t chunk_size = this->tensor_total_size[this->sliced_dimension] / this->world_size;
         size_t my_rank = global_index / chunk_size;
@@ -217,7 +220,7 @@ size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const size_t glob
 }
 
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const std::array<size_t, dimension> global_index){
+size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const std::array<size_t, dimension> global_index) const{
     if(this->is_sliced){
         return get_my_rank_from_global_index(global_index[this->sliced_dimension]);
     }
@@ -228,7 +231,7 @@ size_t ContiguousMap<dimension>::get_my_rank_from_global_index(const std::array<
 
 // array -> array
 template <size_t dimension>
-std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const std::array<size_t, dimension> local_index, size_t rank){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const std::array<size_t, dimension> local_index, size_t rank) const{
     std::array<size_t, dimension> global_index = local_index;
     if(this->is_sliced){
 
@@ -242,7 +245,7 @@ std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(c
     return global_index;
 }
 template <size_t dimension>
-std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const std::array<size_t, dimension> global_index, size_t rank){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const std::array<size_t, dimension> global_index, size_t rank) const{
     std::array<size_t, dimension> local_index = global_index;
     
     if(this->is_sliced){
@@ -254,26 +257,26 @@ std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(co
 
 // size_t -> array
 template <size_t dimension>
-std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const size_t local_index, size_t rank){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_global_array_index(const size_t local_index, size_t rank) const{
     std::array<size_t, dimension> local_array_index = sliced_index_unflatten(local_index, this->sliced_dimension, rank);
     //std::cout << "local : " << local_index << " , local-array : " << local_array_index[0] << " " << local_array_index[1] << ", " << rank << std::endl;
     return get_global_array_index(local_array_index, rank);
 }
 template <size_t dimension>
-std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const size_t global_index, size_t rank){
+std::array<size_t, dimension> ContiguousMap<dimension>::get_local_array_index(const size_t global_index, size_t rank) const{
     std::array<size_t, dimension> global_array_index = global_index_unflatten(global_index);
     return get_local_array_index(global_array_index, rank);
 }
 
 // array -> size_t
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_global_index(const std::array<size_t, dimension> local_index, size_t rank){
+size_t ContiguousMap<dimension>::get_global_index(const std::array<size_t, dimension> local_index, size_t rank) const{
     std::array<size_t,dimension> global_array_index = get_global_array_index(local_index, rank);
     return global_tensor_index_flatten(global_array_index);
 }
 
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, dimension> global_index, size_t rank){
+size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, dimension> global_index, size_t rank) const{
     std::array<size_t,dimension> local_array_index = get_local_array_index(global_index, rank);
     //std::cout << "here" << std::endl;
     return sliced_tensor_index_flatten(local_array_index, this->sliced_dimension, rank);
@@ -281,11 +284,11 @@ size_t ContiguousMap<dimension>::get_local_index(const std::array<size_t, dimens
 
 // size_t -> size_t
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_global_index(const size_t local_index, size_t rank){
+size_t ContiguousMap<dimension>::get_global_index(const size_t local_index, size_t rank) const{
     return get_global_index(sliced_index_unflatten(local_index, this->sliced_dimension, rank), rank);
 }
 template <size_t dimension>
-size_t ContiguousMap<dimension>::get_local_index(const size_t global_index, size_t rank){
+size_t ContiguousMap<dimension>::get_local_index(const size_t global_index, size_t rank) const{
     return get_local_index(global_index_unflatten(global_index), rank);   
 }
 
@@ -316,7 +319,7 @@ size_t ContiguousMap<dimension>::global_to_local(size_t num_global_index, size_t
 */
 template <size_t dimension>
 //size_t ContiguousMap<dimension>::whole_tensor_to_array_index(std::array<size_t, dimension> tensor_index){
-size_t ContiguousMap<dimension>::global_tensor_index_flatten(std::array<size_t, dimension> tensor_index){
+size_t ContiguousMap<dimension>::global_tensor_index_flatten(std::array<size_t, dimension> tensor_index) const{
     size_t return_index = 0;
     for(size_t dim = 0; dim < dimension; ++dim){
         assert(tensor_index[dim] < this->tensor_total_size[dim]);
@@ -327,7 +330,7 @@ size_t ContiguousMap<dimension>::global_tensor_index_flatten(std::array<size_t, 
 
 template <size_t dimension>
 //size_t ContiguousMap<dimension>::sliced_tensor_to_array_index(std::array<size_t, dimension> tensor_index, size_t slice_dimension, size_t rank){
-size_t ContiguousMap<dimension>::sliced_tensor_index_flatten(std::array<size_t, dimension> tensor_index, size_t slice_dimension, size_t rank){    
+size_t ContiguousMap<dimension>::sliced_tensor_index_flatten(std::array<size_t, dimension> tensor_index, size_t slice_dimension, size_t rank) const{    
     if(!this->is_sliced || this->sliced_dimension != slice_dimension){
         return global_tensor_index_flatten(tensor_index);
     }
@@ -359,7 +362,7 @@ size_t ContiguousMap<dimension>::sliced_tensor_index_flatten(std::array<size_t, 
 
 template <size_t dimension>
 //std::array<size_t, dimension> ContiguousMap<dimension>::array_to_whole_tensor_index(size_t array_index){
-std::array<size_t, dimension> ContiguousMap<dimension>::global_index_unflatten(size_t array_index){
+std::array<size_t, dimension> ContiguousMap<dimension>::global_index_unflatten(size_t array_index) const{
     assert(array_index < this->tensor_total_size_mult[dimension]);
     std::array<size_t, dimension> return_index;
     for(size_t dim = 0; dim <dimension; ++dim){
@@ -371,7 +374,7 @@ std::array<size_t, dimension> ContiguousMap<dimension>::global_index_unflatten(s
 
 template <size_t dimension>
 //std::array<size_t, dimension> ContiguousMap<dimension>::array_to_sliced_tensor_index(size_t array_index, size_t slice_dimension, size_t rank){
-std::array<size_t, dimension> ContiguousMap<dimension>::sliced_index_unflatten(size_t array_index, size_t slice_dimension, size_t rank){
+std::array<size_t, dimension> ContiguousMap<dimension>::sliced_index_unflatten(size_t array_index, size_t slice_dimension, size_t rank)  const{
     if(!this->is_sliced || this->sliced_dimension != slice_dimension){
         return global_index_unflatten(array_index);
     }
