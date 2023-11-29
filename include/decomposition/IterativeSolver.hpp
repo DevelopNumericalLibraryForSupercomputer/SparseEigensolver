@@ -69,12 +69,12 @@ void calculate_residual<double, SEMkl>(double* W_iter, double* sub_eigval, doubl
 }
 
 template<typename datatype, typename computEnv>
-bool check_convergence(Comm<computEnv>* _comm, datatype* residual, datatype* old_residual, size_t n, size_t num_eigenvalues, datatype tolerance){
+bool check_convergence(const Comm<computEnv>* _comm, datatype* residual, datatype* old_residual, size_t n, size_t num_eigenvalues, datatype tolerance){
     std::cout << "not implemented" << std::endl;
     exit(1);
 }
 template<>
-bool check_convergence<double, SEMkl>(Comm<SEMkl>* _comm, double* residual, double* old_residual, size_t n, size_t num_eigenvalues, double tolerance){
+bool check_convergence<double, SEMkl>(const Comm<SEMkl>* _comm, double* residual, double* old_residual, size_t n, size_t num_eigenvalues, double tolerance){
     //convergence check
     double sum_of_norm_square = 0.0;
     for(int index = 0; index < n*num_eigenvalues; index++){

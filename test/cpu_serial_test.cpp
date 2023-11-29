@@ -28,9 +28,7 @@ int main(int argc, char* argv[]){
     
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    ContiguousMap<2>* new_map = new ContiguousMap(test_shape, 1);
-    /// map 고치기! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl> test_matrix(comm.get(), new_map, test_shape, &test_data[0]);
+    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl> test_matrix(comm.get(), test_shape, &test_data[0]);
     //test_matrix.print_tensor();
     auto out = decompose(test_matrix, "evd");
     print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
@@ -38,7 +36,6 @@ int main(int argc, char* argv[]){
     std::cout << "========================\nDense matrix davidson test" << std::endl;
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
-    ContiguousMap<2>* new_map2 = new ContiguousMap(test_shape2, 1);
     double* test_data2 = malloc<double, SEMkl>(N*N);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
@@ -51,7 +48,7 @@ int main(int argc, char* argv[]){
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
         }
     }
-    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> > test_matrix2(comm.get(), new_map2, test_shape2, test_data2);
+    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> > test_matrix2(comm.get(), test_shape2, test_data2);
     std::cout << "========================\nDense matrix davidson diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, "evd");
@@ -60,8 +57,7 @@ int main(int argc, char* argv[]){
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
     
-    ContiguousMap<2>* new_map3 = new ContiguousMap(test_shape2, 1);
-    SE::Tensor<STORETYPE::COO, double, 2, SEMkl, ContiguousMap<2> > test_sparse(comm.get(), new_map3, test_shape2, N*9);
+    SE::Tensor<STORETYPE::COO, double, 2, SEMkl, ContiguousMap<2> > test_sparse(comm.get(), test_shape2, N*9);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
             std::array<size_t,2> index = {i,j};
@@ -78,7 +74,7 @@ int main(int argc, char* argv[]){
     std::cout << "matrix construction complete" << std::endl;
     test_sparse.print();
 
-    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> > test_matrix3(comm.get(), new_map2, test_shape2, test_data2);
+    SE::Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> > test_matrix3(comm.get(), test_shape2, test_data2);
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, "davidson");
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
