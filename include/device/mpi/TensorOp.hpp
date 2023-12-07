@@ -5,9 +5,9 @@
 
 namespace SE{
 //spmv
-template <typename maptype1, typename maptype2>
-Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype1>* a, 
-                                                         Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* v,
+template <typename MAPTYPE1, typename MAPTYPE2>
+Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE1>* a, 
+                                                         Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
                                                          SE_transpose transa){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
@@ -28,8 +28,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::Den
                 size_t my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size);
                 gemm<double, SEMpi>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, my_size, 1, k, 1.0, a->data, my_size, vector, k, 0.0, return_data, my_size);
-                //maptype2* return_map = new maptype2(return_size, a->comm->world_size, 0);
-                Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(a->comm, return_size, return_data);
+                //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size, 0);
+                Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(a->comm, return_size, return_data);
                 return return_mat;
             }
             else{
@@ -40,8 +40,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::Den
         else{
             double* return_data = malloc<double, SEMpi>(m);
             gemm<double, SEMpi>(SE_layout::ColMajor, transa, SE_transpose::NoTrans, m, 1, k, 1.0, a->data, m, vector, k, 0.0, return_data, m);
-            //maptype2* return_map = new maptype2(return_size, a->comm->world_size);
-            Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(v->comm, return_size, return_data);
+            //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size);
+            Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(v->comm, return_size, return_data);
             return return_mat;
         }
     }
@@ -55,8 +55,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::Den
                 
                 gemm<double, SEMpi>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, my_size, 1, k, 1.0, a->data, my_size, v->data, k, 0.0, return_data, my_size);
                 
-                //maptype2* return_map = new maptype2(return_size, a->comm->world_size, 0);
-                Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(a->comm, return_size, return_data, true, 0);
+                //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size, 0);
+                Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(a->comm, return_size, return_data, true, 0);
                 
                 return return_mat;
             }
@@ -68,24 +68,24 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::Den
         else{
             double* return_data = malloc<double, SEMpi>(m);
             gemm<double, SEMpi>(SE_layout::ColMajor, transa, SE_transpose::NoTrans, m, 1, k, 1.0, a->data, m, v->data, k, 0.0, return_data, m);
-            //maptype2* return_map = new maptype2(return_size, a->comm->world_size);
-            Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(v->comm, return_size, return_data);
+            //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size);
+            Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(v->comm, return_size, return_data);
             return return_mat;
         }
     }
 
 }   
 
-template <typename maptype>
-Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* a, 
-                                                        Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* v,
+template <typename MAPTYPE>
+Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* a, 
+                                                        Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* v,
                                                         SE_transpose transa){
     return matmul(a, v, transa, SE_transpose::NoTrans);
 }   
 
-template <typename maptype1, typename maptype2>
-Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, maptype1>* a, 
-                                                        Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* v,
+template <typename MAPTYPE1, typename MAPTYPE2>
+Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, MAPTYPE1>* a, 
+                                                        Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
                                                         SE_transpose transa){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
@@ -112,8 +112,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::COO
                     return_data[ a->map.get_local_index(entity.first[0], rank) ] += entity.second * vector[ entity.first[1] ];
                 }
                 
-                //maptype2* return_map = new maptype2(return_size, a->comm->world_size, 0);
-                auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(a->comm, return_size, return_data, true, 0);
+                //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size, 0);
+                auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(a->comm, return_size, return_data, true, 0);
                 return return_mat;
             }
             else{
@@ -136,8 +136,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::COO
                 }
             }
             
-            //maptype2* return_map = new maptype2(return_size, a->comm->world_size);
-            auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(a->comm, return_size, return_data);
+            //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size);
+            auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(a->comm, return_size, return_data);
             return return_mat;
         }
     }
@@ -155,8 +155,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::COO
                     return_data[ a->map.get_local_index(entity.first[0], rank) ] += entity.second * v->data[ entity.first[1] ];
                 }
                 a->comm->barrier();
-                //maptype2* return_map = new maptype2(return_size, a->comm->world_size, 0);
-                auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(a->comm, return_size, return_data, true, 0);
+                //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size, 0);
+                auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(a->comm, return_size, return_data, true, 0);
                 return return_mat;
             }
             else{
@@ -177,16 +177,16 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>* spmv(Tensor<STORETYPE::COO
                     return_data[ entity.first[1] ] += entity.second * v->data[ entity.first[0] ];
                 }
             }
-            //maptype2* return_map = new maptype2(return_size, a->comm->world_size);
-            auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, maptype2>(v->comm, return_size, return_data);
+            //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size);
+            auto return_mat = new Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>(v->comm, return_size, return_data);
             return return_mat;
         }
     }
 }   
 
-template <typename maptype>
-Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, maptype>* a, 
-                                                        Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* v,
+template <typename MAPTYPE>
+Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, MAPTYPE>* a, 
+                                                        Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* v,
                                                         SE_transpose transa){
     size_t m = a->shape[0];
     size_t k = a->shape[1];
@@ -217,8 +217,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO,
                     }
                 }
 
-                //maptype* return_map = new maptype(return_size, a->comm->world_size, 0);
-                auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>(a->comm, return_size, return_data, true, 0);
+                //MAPTYPE* return_map = new MAPTYPE(return_size, a->comm->world_size, 0);
+                auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>(a->comm, return_size, return_data, true, 0);
                 return return_mat;
             }
             else{
@@ -245,8 +245,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO,
                 }
             }            
 
-            //maptype* return_map = new maptype(return_size, a->comm->world_size);
-            auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>(a->comm, return_size, return_data);
+            //MAPTYPE* return_map = new MAPTYPE(return_size, a->comm->world_size);
+            auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>(a->comm, return_size, return_data);
             return return_mat;
         }
     }
@@ -264,8 +264,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO,
                         return_data[  a->map.get_local_index(entity.first[0], rank)  + n*my_size] += entity.second * v->data[ entity.first[1] + n*my_size];
                     }
                 }
-                //maptype* return_map = new maptype(return_size, a->comm->world_size, 0);
-                auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>(a->comm, return_size, return_data, true, 0);
+                //MAPTYPE* return_map = new MAPTYPE(return_size, a->comm->world_size, 0);
+                auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>(a->comm, return_size, return_data, true, 0);
                 return return_mat;
             }
             else{
@@ -291,8 +291,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO,
                     }
                 }
             }
-            //maptype* return_map = new maptype(return_size, a->comm->world_size);
-            auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>(a->comm, return_size, return_data);
+            //MAPTYPE* return_map = new MAPTYPE(return_size, a->comm->world_size);
+            auto return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>(a->comm, return_size, return_data);
             return return_mat;
         }
     }
@@ -301,9 +301,9 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* spmv(Tensor<STORETYPE::COO,
 
 //matmul
 //alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
-template <typename maptype>
-Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* matmul(Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* a,
-                                                          Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* b,
+template <typename MAPTYPE>
+Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* matmul(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* a,
+                                                          Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* b,
                                                           SE_transpose transa = SE_transpose::NoTrans,
                                                           SE_transpose transb = SE_transpose::NoTrans){
     size_t m = a->shape[0];
@@ -324,8 +324,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* matmul(Tensor<STORETYPE::De
         double* return_data = malloc<double, SEMpi>(m*n);
 
         gemm<double, SEMpi>(SE_layout::ColMajor, transa, transb, m, n, k, 1.0, a->data, m, b->data, k, 0.0, return_data, m);
-        //maptype* return_map = new maptype(return_size, a->comm->world_size);
-        Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, maptype>(a->comm, return_size, return_data);
+        //MAPTYPE* return_map = new MAPTYPE(return_size, a->comm->world_size);
+        Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* return_mat = new Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>(a->comm, return_size, return_data);
         return return_mat;
     }
     else{

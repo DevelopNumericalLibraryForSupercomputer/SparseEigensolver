@@ -2,25 +2,31 @@
 #pragma once
 #include <string>
 namespace SE{
-struct ComputEnv{
+
+
+//#define  MKL DEVICETYPE::MKL;
+//#define MPI DEVICETYPE::MPI;
+
+/*
+struct BaseComputEnv{
     public:
     const char* env_name;
     constexpr ComputEnv(const char* _env_name="BASE"): env_name(_env_name){};
 };
 
-struct SEMkl: public ComputEnv{
+struct SEMkl: public BaseComputEnv{
     constexpr SEMkl() {ComputEnv("MKL");};
 };
-struct SEMpi: public ComputEnv{
+struct SEMpi: public BaseComputEnv{
     constexpr SEMpi() {ComputEnv("MPI");};
 };
-struct SECuda: public ComputEnv{
+struct SECuda: public BaseComputEnv{
     constexpr SECuda(){ComputEnv("CUDA"); };
 };
-struct SENccl: public ComputEnv{
+struct SENccl: public BaseComputEnv{
     constexpr SENccl(){ComputEnv("NCCL");};
 };
-
+*/
 }
 
 

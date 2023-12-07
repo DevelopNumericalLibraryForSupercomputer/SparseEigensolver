@@ -12,12 +12,12 @@
 
 namespace SE{
 
-template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
-void calculate_Witer(Tensor<storetype, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+template<STORETYPE storetype, typename DATATYPE, size_t dimension, DEVICETYPE device, typename MAPTYPE>
+void calculate_Witer(Tensor<storetype, DATATYPE, 2, device, MAPTYPE>& tensor, DATATYPE* guess, size_t n, size_t block_size, DATATYPE* W_iter){
     //null
 }
-template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(Tensor<STORETYPE::COO, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
+template<typename DATATYPE, DEVICETYPE device, typename MAPTYPE>
+void calculate_Witer(Tensor<STORETYPE::COO, DATATYPE, 2, device, MAPTYPE>& tensor, DATATYPE* guess, size_t n, size_t block_size, DATATYPE* W_iter){
     for(size_t i=0;i<n;i++){
         for(size_t vector_index = 0; vector_index < block_size ; vector_index++){
             W_iter[i+vector_index*n] = 0;
@@ -30,31 +30,31 @@ void calculate_Witer(Tensor<STORETYPE::COO, datatype, 2, computEnv, maptype>& te
     }
 }
 
-template<typename datatype, typename computEnv, typename maptype>
-void calculate_Witer(Tensor<STORETYPE::Dense, datatype, 2, computEnv, maptype>& tensor, datatype* guess, size_t n, size_t block_size, datatype* W_iter){
-    gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, n, 1.0, tensor.data, n, guess, n, 0.0, W_iter, n);
+template<typename DATATYPE, DEVICETYPE device, typename MAPTYPE>
+void calculate_Witer(Tensor<STORETYPE::Dense, DATATYPE, 2, device, MAPTYPE>& tensor, DATATYPE* guess, size_t n, size_t block_size, DATATYPE* W_iter){
+    gemm<DATATYPE, device>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, n, 1.0, tensor.data, n, guess, n, 0.0, W_iter, n);
 }
 
-template<typename datatype, typename computEnv>
-void subspace_diagonalization(datatype* rayleigh, size_t block_size, datatype* sub_eigval, datatype* sub_eigvec){
-    datatype* rayleigh_eigval_imag = malloc<datatype, computEnv>(block_size);
-    datatype* rayleigh_eigvec_left = malloc<datatype, computEnv>(block_size * block_size);
+template<typename DATATYPE, DEVICETYPE device>
+void subspace_diagonalization(DATATYPE* rayleigh, size_t block_size, DATATYPE* sub_eigval, DATATYPE* sub_eigvec){
+    DATATYPE* rayleigh_eigval_imag = malloc<DATATYPE, device>(block_size);
+    DATATYPE* rayleigh_eigvec_left = malloc<DATATYPE, device>(block_size * block_size);
 
     //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
-    geev<datatype, computEnv>(SE_layout::ColMajor, 'N', 'V', block_size, rayleigh, block_size, sub_eigval, rayleigh_eigval_imag, rayleigh_eigvec_left, block_size, sub_eigvec, block_size);
-    free<datatype, computEnv>(rayleigh_eigval_imag);
-    free<datatype, computEnv>(rayleigh_eigvec_left);
-    eigenvec_sort<datatype, computEnv>(sub_eigval, sub_eigvec, block_size, block_size);
+    geev<DATATYPE, device>(SE_layout::ColMajor, 'N', 'V', block_size, rayleigh, block_size, sub_eigval, rayleigh_eigval_imag, rayleigh_eigvec_left, block_size, sub_eigvec, block_size);
+    free<DATATYPE, device>(rayleigh_eigval_imag);
+    free<DATATYPE, device>(rayleigh_eigvec_left);
+    eigenvec_sort<DATATYPE, device>(sub_eigval, sub_eigvec, block_size, block_size);
 }
 
-template<typename datatype, typename computEnv>
-void calculate_ritz_vector(datatype* guess, datatype* sub_eigvec, size_t n, size_t block_size, datatype* ritz_vec){
+template<typename DATATYPE, DEVICETYPE device>
+void calculate_ritz_vector(DATATYPE* guess, DATATYPE* sub_eigvec, size_t n, size_t block_size, DATATYPE* ritz_vec){
     //Ritz vector calculation, x_ki = V_k y_ki
-    gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, block_size, 1.0, guess, n, sub_eigvec, block_size, 0.0, ritz_vec, n); 
+    gemm<DATATYPE, device>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, block_size, 1.0, guess, n, sub_eigvec, block_size, 0.0, ritz_vec, n); 
 }
 
-template<typename datatype, typename computEnv>
-void calculate_residual(datatype* W_iter, datatype* sub_eigval, datatype* sub_eigvec, datatype* ritz_vec, size_t n, size_t block_size, datatype* residual){
+template<typename DATATYPE, DEVICETYPE device>
+void calculate_residual(DATATYPE* W_iter, DATATYPE* sub_eigval, DATATYPE* sub_eigvec, DATATYPE* ritz_vec, size_t n, size_t block_size, DATATYPE* residual){
     std::cout << "not implemented" << std::endl;
 }
 template<>
@@ -68,8 +68,8 @@ void calculate_residual<double, SEMkl>(double* W_iter, double* sub_eigval, doubl
     gemm<double, SEMkl>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, n, block_size, block_size, 1.0, W_iter, n, sub_eigvec, block_size, -1.0, residual, n);
 }
 
-template<typename datatype, typename computEnv>
-bool check_convergence(const Comm<computEnv>* _comm, datatype* residual, datatype* old_residual, size_t n, size_t num_eigenvalues, datatype tolerance){
+template<typename DATATYPE, DEVICETYPE device>
+bool check_convergence(const Comm<device>* _comm, DATATYPE* residual, DATATYPE* old_residual, size_t n, size_t num_eigenvalues, DATATYPE tolerance){
     std::cout << "not implemented" << std::endl;
     exit(1);
 }
@@ -102,20 +102,20 @@ bool check_convergence<double, SEMkl>(const Comm<SEMkl>* _comm, double* residual
     return sum_of_norm_square < tolerance*tolerance;
 }
 
-template<STORETYPE storetype, typename datatype, size_t dimension, typename computEnv, typename maptype>
-void preconditioner(Tensor<storetype, datatype, dimension, computEnv, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+template<STORETYPE storetype, typename DATATYPE, size_t dimension, DEVICETYPE device, typename MAPTYPE>
+void preconditioner(Tensor<storetype, DATATYPE, dimension, device, MAPTYPE>& tensor, DecomposeOption option, DATATYPE* sub_eigval, DATATYPE* residual, size_t block_size, DATATYPE* guess){
     std::cout << "undefined Tensor?" << std::endl;
 }
 
-template <typename datatype, typename maptype>
-void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, SEMkl, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+template <typename DATATYPE, typename MAPTYPE>
+void preconditioner(Tensor<STORETYPE::Dense, DATATYPE, 2, SEMkl, MAPTYPE>& tensor, DecomposeOption option, DATATYPE* sub_eigval, DATATYPE* residual, size_t block_size, DATATYPE* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
         //std::cout << "precond: ";
         for(size_t i=0; i<option.num_eigenvalues; i++){
             index = {i,i};
-            datatype coeff_i = sub_eigval[i] - tensor.data[i+n*i];
+            DATATYPE coeff_i = sub_eigval[i] - tensor.data[i+n*i];
             if(coeff_i > option.preconditioner_tolerance){
                 for(int j=0;j<n;j++){
                     guess[n*(block_size+i) + j] = residual[n*i + j] / coeff_i;
@@ -129,15 +129,15 @@ void preconditioner(Tensor<STORETYPE::Dense, datatype, 2, SEMkl, maptype>& tenso
         exit(1);
     }
 }
-template <typename datatype, typename maptype>
-void preconditioner(Tensor<STORETYPE::COO, datatype, 2, SEMkl, maptype>& tensor, DecomposeOption option, datatype* sub_eigval, datatype* residual, size_t block_size, datatype* guess){
+template <typename DATATYPE, typename MAPTYPE>
+void preconditioner(Tensor<STORETYPE::COO, DATATYPE, 2, SEMkl, MAPTYPE>& tensor, DecomposeOption option, DATATYPE* sub_eigval, DATATYPE* residual, size_t block_size, DATATYPE* guess){
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
         size_t n = tensor.shape[0];
         std::array<size_t, 2> index;
         //std::cout << "precond: ";
         for(size_t i=0; i<option.num_eigenvalues; i++){
             index = {i,i};
-            datatype coeff_i = sub_eigval[i] - tensor.operator()(index);
+            DATATYPE coeff_i = sub_eigval[i] - tensor.operator()(index);
             if(coeff_i > option.preconditioner_tolerance){
                 for(int j=0;j<n;j++){
                     guess[n*(block_size+i) + j] = residual[n*i + j] / coeff_i;
@@ -152,16 +152,16 @@ void preconditioner(Tensor<STORETYPE::COO, datatype, 2, SEMkl, maptype>& tensor,
     }
 }
 
-template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, datatype, 2, computEnv, maptype>& tensor){
+template <typename DATATYPE, DEVICETYPE device, typename MAPTYPE>
+std::unique_ptr<DecomposeResult<DATATYPE> > davidson(Tensor<STORETYPE::Dense, DATATYPE, 2, device, MAPTYPE>& tensor){
     DecomposeOption option;
-    std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
-    std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
+    std::unique_ptr<DATATYPE[]> real_eigvals(new DATATYPE[option.num_eigenvalues]);
+    std::unique_ptr<DATATYPE[]> imag_eigvals(new DATATYPE[option.num_eigenvalues]);
 
     assert(tensor.shape[0] == tensor.shape[1]);
     const size_t n = tensor.shape[0];
 
-    //std::unique_ptr<datatype[]> eigvec_0(new datatype[option.num_eigenvalues*n]);
+    //std::unique_ptr<DATATYPE[]> eigvec_0(new DATATYPE[option.num_eigenvalues*n]);
 
     int block_size = option.num_eigenvalues;
     if(option.max_iterations * block_size > n){
@@ -171,8 +171,8 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
     }
     // initialization of gusss vector(s), V
     // guess : unit vector
-    datatype* guess = malloc<datatype, computEnv>(n*block_size*option.max_iterations);
-    memset<datatype, computEnv>(guess, 0.0, n*block_size*option.max_iterations);
+    DATATYPE* guess = malloc<DATATYPE, device>(n*block_size*option.max_iterations);
+    memset<DATATYPE, device>(guess, 0.0, n*block_size*option.max_iterations);
 
     
 
@@ -180,15 +180,15 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
     for(int i=0;i<option.num_eigenvalues;i++){
         guess[i*n+i] = 1.0;
     }
-    datatype* old_residual = malloc<datatype, computEnv>(n*option.num_eigenvalues);
-    memset<datatype, computEnv>(old_residual, 0.0, n*option.num_eigenvalues);
+    DATATYPE* old_residual = malloc<DATATYPE, device>(n*option.num_eigenvalues);
+    memset<DATATYPE, device>(old_residual, 0.0, n*option.num_eigenvalues);
     
     int iter = 0;
     while(iter<option.max_iterations){
-        orthonormalize<datatype, computEnv>(guess, n, block_size, "qr");
+        orthonormalize<DATATYPE, device>(guess, n, block_size, "qr");
         // W_iterk = A V_k
         // W_iter should be updated everytime because of the numerical instability
-        datatype* W_iter = malloc<datatype, computEnv>(n*block_size);
+        DATATYPE* W_iter = malloc<DATATYPE, device>(n*block_size);
         calculate_Witer(tensor, guess, n, block_size, W_iter);
 /*
     std::cout << "guess" << std::endl;
@@ -208,12 +208,12 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
     }
     std::cout << "=======================" << std::endl;
 */
-        datatype* rayleigh = malloc<datatype, computEnv>(block_size* block_size);
-        datatype* rayleigh_eigval_0 = malloc<datatype, computEnv>(block_size);
-        datatype* rayleigh_eigvec_0 = malloc<datatype, computEnv>(block_size * block_size);
+        DATATYPE* rayleigh = malloc<DATATYPE, device>(block_size* block_size);
+        DATATYPE* rayleigh_eigval_0 = malloc<DATATYPE, device>(block_size);
+        DATATYPE* rayleigh_eigvec_0 = malloc<DATATYPE, device>(block_size * block_size);
         
         //Subspace(Rayleigh) matrix (dense) H_k = V_k^t A V_k
-        gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::Trans, SE_transpose::NoTrans, block_size, block_size, n, 1.0, guess, n, W_iter, n, 0.0, rayleigh, block_size);
+        gemm<DATATYPE, device>(SE_layout::ColMajor, SE_transpose::Trans, SE_transpose::NoTrans, block_size, block_size, n, 1.0, guess, n, W_iter, n, 0.0, rayleigh, block_size);
 /*
     std::cout << "rayleigh" << std::endl;
     for(int i=0;i<block_size;i++){
@@ -223,7 +223,7 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
         std::cout << std::endl;
     }
 */
-        subspace_diagonalization<datatype, computEnv>(rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigvec_0);
+        subspace_diagonalization<DATATYPE, device>(rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigvec_0);
 
 /*
     std::cout << "=======================" << std::endl;
@@ -238,8 +238,8 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
 */
 
         //calculate ritz vector
-        datatype* ritz_vec = malloc<datatype, computEnv>(n*block_size);
-        calculate_ritz_vector<datatype, computEnv>(guess, rayleigh_eigvec_0, n, block_size, ritz_vec);
+        DATATYPE* ritz_vec = malloc<DATATYPE, device>(n*block_size);
+        calculate_ritz_vector<DATATYPE, device>(guess, rayleigh_eigvec_0, n, block_size, ritz_vec);
 /*
     std::cout << "ritz:" << std::endl;
     for(int i=0;i<n;i++){
@@ -250,14 +250,14 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
     }
     std::cout << "=======================" << std::endl;
 */
-        datatype* residual = malloc<datatype, computEnv>(n*block_size);
-        calculate_residual<datatype, computEnv>(W_iter, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec, n, block_size, residual);
-        free<datatype, computEnv>(W_iter);
+        DATATYPE* residual = malloc<DATATYPE, device>(n*block_size);
+        calculate_residual<DATATYPE, device>(W_iter, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec, n, block_size, residual);
+        free<DATATYPE, device>(W_iter);
 
-        bool is_converged = check_convergence<datatype, computEnv>(tensor.comm, residual, old_residual, n, option.num_eigenvalues, option.tolerance);
+        bool is_converged = check_convergence<DATATYPE, device>(tensor.comm, residual, old_residual, n, option.num_eigenvalues, option.tolerance);
         if(iter != 0 && is_converged){
-            //memcpy<datatype, computEnv>(eigvec_0.get(), ritz_vec, n*option.num_eigenvalues);
-            memcpy<datatype, computEnv>(real_eigvals.get(), rayleigh_eigval_0, option.num_eigenvalues);
+            //memcpy<DATATYPE, device>(eigvec_0.get(), ritz_vec, n*option.num_eigenvalues);
+            memcpy<DATATYPE, device>(real_eigvals.get(), rayleigh_eigval_0, option.num_eigenvalues);
             break;
         }
         //correction vector
@@ -274,13 +274,13 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
         }
         std::cout << std::endl;
 */
-        memcpy<datatype, computEnv>(old_residual, residual, n*option.num_eigenvalues);
+        memcpy<DATATYPE, device>(old_residual, residual, n*option.num_eigenvalues);
         block_size += option.num_eigenvalues;
         iter++;
-        free<datatype, computEnv>(rayleigh_eigval_0);
-        free<datatype, computEnv>(rayleigh_eigvec_0);
-        free<datatype, computEnv>(ritz_vec);
-        free<datatype, computEnv>(residual);
+        free<DATATYPE, device>(rayleigh_eigval_0);
+        free<DATATYPE, device>(rayleigh_eigvec_0);
+        free<DATATYPE, device>(ritz_vec);
+        free<DATATYPE, device>(residual);
     }
     if(iter == option.max_iterations){
         std::cout << "diagonalization did not converged!" << std::endl;
@@ -291,21 +291,21 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::Dense, da
             imag_eigvals.get()[i] = 0;
         }
     
-        std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
+        std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
 
         return std::move(return_val);
     }
 }
-template <typename datatype, typename computEnv, typename maptype>
-std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::COO, datatype, 2, computEnv, maptype>& tensor){
+template <typename DATATYPE, DEVICETYPE device, typename MAPTYPE>
+std::unique_ptr<DecomposeResult<DATATYPE> > davidson(Tensor<STORETYPE::COO, DATATYPE, 2, device, MAPTYPE>& tensor){
     DecomposeOption option;
-    std::unique_ptr<datatype[]> real_eigvals(new datatype[option.num_eigenvalues]);
-    std::unique_ptr<datatype[]> imag_eigvals(new datatype[option.num_eigenvalues]);
+    std::unique_ptr<DATATYPE[]> real_eigvals(new DATATYPE[option.num_eigenvalues]);
+    std::unique_ptr<DATATYPE[]> imag_eigvals(new DATATYPE[option.num_eigenvalues]);
 
     assert(tensor.shape[0] == tensor.shape[1]);
     const size_t n = tensor.shape[0];
 
-    //std::unique_ptr<datatype[]> eigvec_0(new datatype[option.num_eigenvalues*n]);
+    //std::unique_ptr<DATATYPE[]> eigvec_0(new DATATYPE[option.num_eigenvalues*n]);
 
     int block_size = option.num_eigenvalues;
     if(option.max_iterations * block_size > n){
@@ -315,42 +315,42 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::COO, data
     }
     // initialization of gusss vector(s), V
     // guess : unit vector
-    datatype* guess = malloc<datatype, computEnv>(n*block_size*option.max_iterations);
-    memset<datatype, computEnv>(guess, 0.0, n*block_size);
+    DATATYPE* guess = malloc<DATATYPE, device>(n*block_size*option.max_iterations);
+    memset<DATATYPE, device>(guess, 0.0, n*block_size);
     for(int i=0;i<option.num_eigenvalues;i++){
         guess[i*n+i] = 1.0;
     }
-    datatype* old_residual = malloc<datatype, computEnv>(n*option.num_eigenvalues);
-    memset<datatype, computEnv>(old_residual, 0.0, n*option.num_eigenvalues);
+    DATATYPE* old_residual = malloc<DATATYPE, device>(n*option.num_eigenvalues);
+    memset<DATATYPE, device>(old_residual, 0.0, n*option.num_eigenvalues);
 
     int iter = 0;
     while(iter < option.max_iterations){
-        orthonormalize<datatype, computEnv>(guess, n, block_size, "qr");
+        orthonormalize<DATATYPE, device>(guess, n, block_size, "qr");
         // W_iterk = A V_k
         // W_iter should be updated everytime because of the numerical instability
-        datatype* W_iter = malloc<datatype, computEnv>(n*block_size);
+        DATATYPE* W_iter = malloc<DATATYPE, device>(n*block_size);
         calculate_Witer(tensor, guess, n, block_size, W_iter);
         
-        datatype* rayleigh = malloc<datatype, computEnv>(block_size* block_size);
-        datatype* rayleigh_eigval_0 = malloc<datatype, computEnv>(block_size);
-        datatype* rayleigh_eigvec_0 = malloc<datatype, computEnv>(block_size * block_size);
+        DATATYPE* rayleigh = malloc<DATATYPE, device>(block_size* block_size);
+        DATATYPE* rayleigh_eigval_0 = malloc<DATATYPE, device>(block_size);
+        DATATYPE* rayleigh_eigvec_0 = malloc<DATATYPE, device>(block_size * block_size);
 
         //Subspace(Rayleigh) matrix (dense) H_k = V_k^t A V_k
-        gemm<datatype, computEnv>(SE_layout::ColMajor, SE_transpose::Trans, SE_transpose::NoTrans, block_size, block_size, n, 1.0, guess, n, W_iter, n, 0.0, rayleigh, block_size);
-        subspace_diagonalization<datatype, computEnv>(rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigvec_0);
+        gemm<DATATYPE, device>(SE_layout::ColMajor, SE_transpose::Trans, SE_transpose::NoTrans, block_size, block_size, n, 1.0, guess, n, W_iter, n, 0.0, rayleigh, block_size);
+        subspace_diagonalization<DATATYPE, device>(rayleigh, block_size, rayleigh_eigval_0, rayleigh_eigvec_0);
 
         //calculate ritz vector
-        datatype* ritz_vec = malloc<datatype, computEnv>(n*block_size);
-        calculate_ritz_vector<datatype, computEnv>(guess, rayleigh_eigvec_0, n, block_size, ritz_vec);
+        DATATYPE* ritz_vec = malloc<DATATYPE, device>(n*block_size);
+        calculate_ritz_vector<DATATYPE, device>(guess, rayleigh_eigvec_0, n, block_size, ritz_vec);
 
-        datatype* residual = malloc<datatype, computEnv>(n*block_size);
-        calculate_residual<datatype, computEnv>(W_iter, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec, n, block_size, residual);
-        free<datatype, computEnv>(W_iter);
+        DATATYPE* residual = malloc<DATATYPE, device>(n*block_size);
+        calculate_residual<DATATYPE, device>(W_iter, rayleigh_eigval_0, rayleigh_eigvec_0, ritz_vec, n, block_size, residual);
+        free<DATATYPE, device>(W_iter);
 
-        bool is_converged = check_convergence<datatype, computEnv>(tensor.comm, residual, old_residual, n, option.num_eigenvalues, option.tolerance);
+        bool is_converged = check_convergence<DATATYPE, device>(tensor.comm, residual, old_residual, n, option.num_eigenvalues, option.tolerance);
         if(iter != 0 && is_converged){
-            //memcpy<datatype, computEnv>(eigvec_0.get(), ritz_vec, n*option.num_eigenvalues);
-            memcpy<datatype, computEnv>(real_eigvals.get(), rayleigh_eigval_0, option.num_eigenvalues);
+            //memcpy<DATATYPE, device>(eigvec_0.get(), ritz_vec, n*option.num_eigenvalues);
+            memcpy<DATATYPE, device>(real_eigvals.get(), rayleigh_eigval_0, option.num_eigenvalues);
             break;
         }
         //correction vector
@@ -362,14 +362,14 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::COO, data
         preconditioner(tensor, option,rayleigh_eigval_0, residual, block_size, guess);
         
 //        std::cout << std::endl;
-        memcpy<datatype, computEnv>(old_residual, residual, n*option.num_eigenvalues);
+        memcpy<DATATYPE, device>(old_residual, residual, n*option.num_eigenvalues);
         block_size += option.num_eigenvalues;
         iter++;
 
-        free<datatype, computEnv>(rayleigh_eigval_0);
-        free<datatype, computEnv>(rayleigh_eigvec_0);
-        free<datatype, computEnv>(ritz_vec);
-        free<datatype, computEnv>(residual);
+        free<DATATYPE, device>(rayleigh_eigval_0);
+        free<DATATYPE, device>(rayleigh_eigvec_0);
+        free<DATATYPE, device>(ritz_vec);
+        free<DATATYPE, device>(residual);
     }
     if(iter == option.max_iterations){
         std::cout << "diagonalization did not converged!" << std::endl;
@@ -380,7 +380,7 @@ std::unique_ptr<DecomposeResult<datatype> > davidson(Tensor<STORETYPE::COO, data
             imag_eigvals.get()[i] = 0;
         }
     
-        std::unique_ptr<DecomposeResult<datatype> > return_val(new DecomposeResult<datatype>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
+        std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
 
         return std::move(return_val);
     }

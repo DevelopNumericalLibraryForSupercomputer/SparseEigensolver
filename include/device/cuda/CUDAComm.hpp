@@ -37,25 +37,25 @@ Comm<SECuda>::~Comm(){
 }
 
 template<>
-template <typename datatype>
-void Comm<SECuda>::allreduce(const datatype *src, size_t count, datatype *trg, SEop op) const{
-    memcpy<datatype, SECuda> (trg,src,count);
+template <typename DATATYPE>
+void Comm<SECuda>::allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, SEop op) const{
+    memcpy<DATATYPE, SECuda> (trg,src,count);
     return;
 }
 
 template<>
-template <typename datatype>
-void Comm<SECuda>::alltoall(datatype *src, size_t sendcount, datatype *trg, size_t recvcount) const{
+template <typename DATATYPE>
+void Comm<SECuda>::alltoall(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<datatype, SECuda> (trg,src,sendcount);
+    memcpy<DATATYPE, SECuda> (trg,src,sendcount);
     return ;
 }
 
 template<>
-template <typename datatype>
-void Comm<SECuda>::allgather(datatype *src, size_t sendcount, datatype *trg, size_t recvcount) const{
+template <typename DATATYPE>
+void Comm<SECuda>::allgather(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<datatype, SECuda> (trg,src,sendcount);
+    memcpy<DATATYPE, SECuda> (trg,src,sendcount);
   
 }
 

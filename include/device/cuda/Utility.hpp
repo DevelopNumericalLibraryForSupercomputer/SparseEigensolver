@@ -20,9 +20,9 @@ typedef enum {
 
 cublasOperation_t map_transpose(SE::SE_transpose trans){
     switch (trans){
-        case SE::SE_transpose::NoTrans:   return CUBLAS_OP_N;
-        case SE::SE_transpose::Trans:     return CUBLAS_OP_T;
-        case SE::SE_transpose::ConjTrans: return CUBLAS_OP_C;
+        case TRANSPOSE::N:     return CUBLAS_OP_N;
+        case TRANSPOSE::T:     return CUBLAS_OP_T;
+        case TRANSPOSE::C:     return CUBLAS_OP_C;
         default: throw std::runtime_error("map_transpose in device/CUDA/Utility.hpp");
     }
 

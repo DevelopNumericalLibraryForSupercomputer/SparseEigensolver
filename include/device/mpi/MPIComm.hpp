@@ -18,9 +18,9 @@ MPI_Comm mpi_comm = MPI_COMM_WORLD;
 //    void initialize(int argc, char *argv[]);
 //    void barrier();
 //    
-//    template <typename datatype> void allreduce(const datatype *src, size_t count, datatype *trg, SE_op op);
-//    template <typename datatype> void alltoall (datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
-//    template <typename datatype> void allgather(datatype* src, size_t sendcount, datatype* trg, size_t recvcount);
+//    template <typename DATATYPE> void allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, SE_op op);
+//    template <typename DATATYPE> void alltoall (DATATYPE* src, size_t sendcount, DATATYPE* trg, size_t recvcount);
+//    template <typename DATATYPE> void allgather(DATATYPE* src, size_t sendcount, DATATYPE* trg, size_t recvcount);
 //};
 //
 /*
