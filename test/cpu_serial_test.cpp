@@ -70,7 +70,6 @@ int main(int argc, char* argv[]){
     SE::SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> test_sparse( *ptr_comm, map2, N*9);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
-            std::cout <<i << "\t" <<j <<std::endl;
             std::array<size_t,2> index = {i,j};
             if(i == j)                   test_sparse.global_insert_value(index, 2.0*((double)i+1.0-(double)N) );
             //if(i == j +1 || i == j -1)   test_sparse.global_insert_value(index, 3.0);

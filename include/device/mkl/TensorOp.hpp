@@ -75,7 +75,6 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     TRANSTYPE trans1,
     TRANSTYPE trans2)
 {
-    std::cout << "Start" <<std::endl;
     // the code for the case with trans2 ==TRANSTYPE::Y is not yet developed
     assert (trans2 == TRANSTYPE::N);
     sparse_matrix_t cooA;
@@ -103,15 +102,12 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
         num_col = shape[0];
     }    
 
-    std::cout << "000000000" <<std::endl;
     auto p_comm=mat2.copy_comm();
-    std::cout << "333333333" <<std::endl;
     auto p_map =mat2.copy_map();
 
     assert (mat1.map.get_global_shape(1)==p_map->get_global_shape(0));
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> output(*p_comm, *p_map );
 
-    std::cout << "11111111" <<std::endl;
     status = mkl_sparse_d_create_coo( &cooA,
                                       SPARSE_INDEX_BASE_ZERO,
                                       num_row,    // number of rows
@@ -127,7 +123,6 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans1 == TRANSTYPE::N){
-        std::cout << "2222222222" <<std::endl;
         status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data, num_col,num_col, 1.0, output.data, num_col);
     }
     else{

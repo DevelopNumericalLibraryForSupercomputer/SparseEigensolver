@@ -2,13 +2,12 @@
 //#include "DenseTensor.hpp"
 #include <vector>
 #include <array>
-#include "device/CUDA/CUDAComm.hpp"
-#include "device/CUDA/Utility.hpp"
-#include "ContiguousMap.hpp"
-//#include <iomanip>
+#include "device/cuda/CUDAComm.hpp"
+#include "device/cuda/Utility.hpp"
+#include "Contiguous1DMap.hpp"
 #include "DenseTensor.hpp"
-//#include "decomposition/DirectSolver.hpp"
-using namespace std;
+
+//using namespace std;
 using namespace SE;
 
 __global__ void kernel_sum2(int myinit, int myfin, double step, double* sum){
@@ -23,20 +22,21 @@ __global__ void kernel_sum2(int myinit, int myfin, double step, double* sum){
 }
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<SECuda>(argc, argv);
+    //auto comm = create_comm<DEVICETYPE::CUDA>(argc, argv);
 
+    auto comm =  std::make_shared< Comm<DEVICETYPE::CUDA> >( 0, 1);
     
     auto host_sum  = malloc<double> (1);
     auto host_tsum = malloc<double> (1);
 
     std::cout << "gpu SERIAL test" << std::endl;
     std::cout << *comm <<std::endl;
-    double* sum  = malloc<double, SECuda>(1);
-    memset<double, SECuda>(sum, 0, 1);
-    double* tsum = malloc<double, SECuda>(1);
-    memset<double, SECuda>(tsum, 0, 1);
-    int myrank = comm->rank;
-    int nprocs = comm->world_size;
+    double* sum  = malloc<double, DEVICETYPE::CUDA>(1);
+    memset<double, DEVICETYPE::CUDA>(sum, 0, 1);
+    double* tsum = malloc<double, DEVICETYPE::CUDA>(1);
+    memset<double, DEVICETYPE::CUDA>(tsum, 0, 1);
+    int myrank = comm->get_rank();
+    int nprocs = comm->get_world_size();
         
     int nn=100000;
     double step = 0.00001;
@@ -50,43 +50,54 @@ int main(int argc, char* argv[]){
     std::cout << "myrank : " << myrank << ", myinit : " << myinit << ", myfin : " << myfin << std::endl;
     kernel_sum2<<< 128,16 >>> (myinit, myfin, step, sum);
 
-    comm->allreduce<double>(sum,1,tsum,SEop::SUM);
+    comm->allreduce<double>(sum,1,tsum,OPTYPE::SUM);
     std::cout.precision(10);
-    cudaMemcpy(host_sum,   sum, 1*sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_tsum, tsum, 1*sizeof(double), cudaMemcpyDeviceToHost);
+    memcpy<double, DEVICETYPE::CUDA>(host_sum, sum, 1, COPYTYPE::DEVICE2HOST);
+    memcpy<double, DEVICETYPE::CUDA>(host_tsum, tsum, 1, COPYTYPE::DEVICE2HOST);
+
     std::cout << "myrank : " << myrank << ", sum = " << *host_sum << ", tsum*step = " << (*host_tsum)*step << std::endl;
-    memset<double, SECuda>(sum, 0, 1);
-    memset<double, SECuda>(tsum, 0, 1);
+    memset<double, DEVICETYPE::CUDA>(sum, 0, 1);
+    memset<double, DEVICETYPE::CUDA>(tsum, 0, 1);
     
     comm->barrier();
     kernel_sum2<<< 128, 16 >>>(myinit, myfin, step, sum);
-    comm->allreduce(sum,1,tsum,SEop::SUM);
+    comm->allreduce(sum,1,tsum,OPTYPE::SUM);
     std::cout.precision(10);
-    cudaMemcpy(host_sum,   sum, 1*sizeof(double), cudaMemcpyDeviceToHost);
-    cudaMemcpy(host_tsum, tsum, 1*sizeof(double), cudaMemcpyDeviceToHost);
+    memcpy<double, DEVICETYPE::CUDA>(host_sum, sum, 1, COPYTYPE::DEVICE2HOST);
+    memcpy<double, DEVICETYPE::CUDA>(host_tsum, tsum, 1, COPYTYPE::DEVICE2HOST);
     std::cout << "myrank : " << myrank << ", sum = " << *host_sum << ", tsum*step = " << (*host_tsum)*step << std::endl;
 
 
     // need to edit!!
 
     if(myrank == 0) { std::cout << "alltoall test" << std::endl;}
-    auto irecv      = malloc<double, SECuda >(sizeof(double)*100);
+    auto irecv      = malloc<double, DEVICETYPE::CUDA >(100);
+    auto irecv_      = malloc<double >(100);
     auto test_array_ = malloc<double>(100);
     for(int i=0;i<100;i++){
         test_array_[i] = (double)i*(myrank+1);
     }
-    auto test_array = malloc<double,SECuda>(100);
-    cudaMemcpy(test_array, test_array_, 1*sizeof(double), cudaMemcpyHostToDevice);
-    comm->alltoall(test_array,100/nprocs,irecv,100/nprocs);   
-    cudaMemcpy(test_array_, test_array, 1*sizeof(double), cudaMemcpyDeviceToHost);
- 
-    if(myrank == 1) {
+
+    if(myrank == 0) {
         for(int i=0;i<100;i++){
-            std::cout << i << " : " << test_array[i] << " " <<  irecv[i] << std::endl;
+            std::cout << i << " : " << test_array_[i] << " " <<  irecv_[i] << std::endl;
+        }
+    }
+
+    auto test_array = malloc<double,DEVICETYPE::CUDA>(100);
+    memcpy<double, DEVICETYPE::CUDA>(test_array, test_array_, 100, COPYTYPE::HOST2DEVICE);
+
+    comm->alltoall(test_array,100/nprocs,irecv,100/nprocs);   
+
+    memcpy<double, DEVICETYPE::CUDA>(irecv_, irecv, 100, COPYTYPE::DEVICE2HOST);       
+ 
+    if(myrank == 0) {
+        for(int i=0;i<100;i++){
+            std::cout << i << " : " << test_array_[i] << " " <<  irecv_[i] << std::endl;
         }
     }
     comm->barrier();
-    if(myrank == 1) { std::cout << "allgather test" << std::endl;}
+    if(myrank == 0) { std::cout << "allgather test" << std::endl;}
 
 //    comm->allgather(test_array,100/nprocs,irecv,100/nprocs);
 //    if(myrank == 1) {
@@ -238,19 +249,30 @@ int main(int argc, char* argv[]){
 ////    comm->barrier();
     
     std::array<size_t, 2> test_shape = {3,3};
-    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    
-
-    auto  new_map = std::make_unique< ContiguousMap<2> >(test_shape, comm.get()->world_size, 0);
-    //Tensor<STORETYPE::Dense,double, 2, Comm<SECuda>, ContiguousMap<2> > test_matrix();
-    Tensor<STORETYPE::Dense,double, 2, SECuda, ContiguousMap<2> > test_matrix(comm.get(), new_map.get(), test_shape, test_data.data());
-//                = SE::DenseTensor<double, 2, Comm<SE::PROTOCOL::SERIAL>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    auto test_data_ = malloc<double>(test_shape[0]*test_shape[1]);
+    auto test_data = malloc<double, DEVICETYPE::CUDA>(test_shape[0]*test_shape[1]);
+    test_data_[0]=1.0;
+    test_data_[1]=0.0;
+    test_data_[2]=2.0;
+    test_data_[3]=0.0;
+    test_data_[4]=1.0;
+    test_data_[5]=0.0;
+    test_data_[6]=2.0;
+    test_data_[7]=0.0;
+    test_data_[8]=1.0;
+    memcpy<double, DEVICETYPE::CUDA>(test_data, test_data_, 9);
+    auto  new_map = std::make_unique< Contiguous1DMap<2> >(test_shape, comm->get_rank(), comm->get_world_size());
+    DenseTensor<2,double, Contiguous1DMap<2>, DEVICETYPE::CUDA > test_matrix(*comm.get(), *new_map.get(), test_data);
     comm->barrier();
 
+    free< DEVICETYPE::CUDA> (sum);
+    free< DEVICETYPE::CUDA> (tsum);
+    free< DEVICETYPE::CUDA> (irecv);
+    free< DEVICETYPE::CUDA> (test_data);
+    free< DEVICETYPE::CUDA> (test_array);
     //auto out = test_matrix.decompose("EVD");
 
     //print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 
-    //SERIAL_Finalize();
     return 0;
 }

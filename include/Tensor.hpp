@@ -14,20 +14,20 @@ namespace SE{
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
 class Tensor{
 using array_d = std::array<size_t, dimension>;
-using _internal_DATATYPE = typename std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
+using INTERNALTYPE = typename std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
     //const STORETYPE store = store;
     const Comm<device> comm;
     const MAPTYPE map;
-    _internal_DATATYPE data; 
+    INTERNALTYPE data; 
 
     // constructor
     Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
         filled=false;
     }
     //Tensor(const Comm<device>& comm, const MAPTYPE& map, size_t reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
-    Tensor(const Comm<device>& comm, const MAPTYPE& map, _internal_DATATYPE& data): comm(comm), map(map), data(data){
+    Tensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE& data): comm(comm), map(map), data(data){
         filled=false;
     } 
 
@@ -45,22 +45,22 @@ public:
         return map.clone();
     }
 
-    virtual _internal_DATATYPE copy_data() const=0;
+    virtual INTERNALTYPE copy_data() const=0;
 
     // clone function 
     virtual Tensor<dimension,DATATYPE,MAPTYPE,device,store>* clone(bool call_complete=false) const=0;
 
     // insert function (add value ) 
-    virtual void global_insert_value(array_d global_array_index, DATATYPE value)=0;
-    virtual void local_insert_value(array_d local_array_index, DATATYPE value)=0;
-    virtual void global_insert_value(size_t global_index, DATATYPE value)=0;
-    virtual void local_insert_value(size_t local_index, DATATYPE value)=0;
+    virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;
+    virtual void local_insert_value (const array_d local_array_index,  const DATATYPE value)=0;
+    virtual void global_insert_value(const size_t global_index,        const DATATYPE value)=0;
+    virtual void local_insert_value (const size_t local_index,         const DATATYPE value)=0;
 
     // set function 
-//    virtual void global_set_value(array_d global_array_index, DATATYPE value)=0;
-//    virtual void local_set_value(array_d local_array_index, DATATYPE value)=0;
-//    virtual void global_set_value(size_t global_index, DATATYPE value)=0;
-//    virtual void local_set_value(size_t local_index, DATATYPE value)=0;
+    virtual void global_set_value(const array_d global_array_index, const DATATYPE value)=0;
+    virtual void local_set_value (const array_d local_array_index,  const DATATYPE value)=0;
+    virtual void global_set_value(const size_t global_index,        const DATATYPE value)=0;
+    virtual void local_set_value (const size_t local_index,         const DATATYPE value)=0;
 
 
     // access function, it works only when filled==false

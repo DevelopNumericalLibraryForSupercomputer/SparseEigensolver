@@ -17,8 +17,8 @@ DATATYPE* malloc(const size_t size){
     return static_cast<DATATYPE*>(std::malloc(size * sizeof(DATATYPE)));
 }
 
-template<typename DATATYPE, DEVICETYPE devicetype=DEVICETYPE::BASE>
-void free(DATATYPE* ptr){
+template< DEVICETYPE devicetype=DEVICETYPE::BASE>
+void free(void* ptr){
     std::free(ptr);
 }
 

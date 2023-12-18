@@ -14,15 +14,7 @@ public:
     Contiguous1DMap( const array_d global_shape, const size_t my_rank, const size_t world_size, const std::array<bool, dimension> is_parallel );
     Contiguous1DMap( const array_d global_shape, const size_t my_rank, const size_t world_size, const array_d ranks_per_dim );
 
-    Contiguous1DMap<dimension>* clone() const{
-        std::cout << "clone map" <<std::endl; 
-        std::cout << this->global_shape[0] <<" " <<this->global_shape[1] <<std::endl;
-        std::cout << this->my_rank << " " <<  this->world_size <<std::endl;
-        std::cout << this->ranks_per_dim[0] << " " <<this->ranks_per_dim[1] <<std::endl;
-        std::cout << *this <<std::endl;
-        auto p_map = new Contiguous1DMap(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
-        std::cout << *p_map <<std::endl;
-        std::cout << "end" <<std::endl;
+    Contiguous1DMap<dimension>* clone() const override{
         return new Contiguous1DMap(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
     };
     // get number of elements
@@ -43,7 +35,7 @@ public:
     size_t find_rank_from_global_index(size_t global_index) const;
     size_t find_rank_from_global_array_index(array_d global_array_index) const;
 private:
-    size_t split_dim=-1;
+    size_t split_dim=0;
     void initialize();
     std::vector< array_d > all_local_shape;
 };
@@ -65,7 +57,7 @@ Contiguous1DMap<dimension>::Contiguous1DMap( std::array<size_t, dimension> globa
 :Map<dimension, MTYPE::Contiguous1D>(global_shape, my_rank, world_size){
     cumprod(this->global_shape, this->global_shape_mult);
 
-    assert 1==std::count(is_parallel.begin(), is_parallel.end(), true);
+    assert (1==std::count(is_parallel.begin(), is_parallel.end(), true));
     split_dim = std::distance(is_parallel.begin(), std::find(is_parallel.begin(), is_parallel.end(), true));
     split_dim = split_dim==dimension? 0: split_dim;
     this->ranks_per_dim.fill(1);
@@ -76,29 +68,24 @@ Contiguous1DMap<dimension>::Contiguous1DMap( std::array<size_t, dimension> globa
 template<size_t dimension>
 Contiguous1DMap<dimension>::Contiguous1DMap( const std::array<size_t, dimension> global_shape, const size_t my_rank, const size_t world_size, const std::array<size_t, dimension> ranks_per_dim )
 : Map<dimension,MTYPE::Contiguous1D>(global_shape, my_rank, world_size, ranks_per_dim){
-    std::cout << "debug?" <<std::endl;
 
     split_dim = std::distance(this->ranks_per_dim.begin(), std::find_if(this->ranks_per_dim.begin(), this->ranks_per_dim.end(), [](size_t d){return (d!=1);}) );
     split_dim = split_dim==dimension? 0: split_dim;
+    assert (this->ranks_per_dim[split_dim] == this->world_size);
     initialize();
 }
 
 template <size_t dimension>
 void Contiguous1DMap<dimension>::initialize(){
 
-    assert (split_dim>=0);
+    assert (split_dim<dimension);
 
     for (size_t i_rank=0; i_rank< this->world_size; i_rank++){
-        std::cout << "Contiguous1DMap::initialize() " << i_rank <<std::endl;
         auto tmp_local_shape = this->global_shape;
-        std::cout << 11 <<std::endl;
         tmp_local_shape[split_dim] = tmp_local_shape[split_dim] / this->ranks_per_dim[split_dim];
-        std::cout << 33 <<std::endl;
         tmp_local_shape[split_dim] += tmp_local_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
-        std::cout << 44 <<std::endl;
 
         all_local_shape.push_back(tmp_local_shape);
-        std::cout << 55 <<std::endl;
     }
     this->local_shape = all_local_shape[this->my_rank];
     cumprod(this->local_shape, this->local_shape_mult);
@@ -138,7 +125,7 @@ std::array<size_t, dimension> Contiguous1DMap<dimension>::global_to_local(const 
         local_array_index[split_dim] -= all_local_shape[i_rank][split_dim];
     }
 
-    assert (local_array_index[split_dim] >= 0 && local_array_index[split_dim] < this->local_shape[split_dim]) ;
+    assert ( local_array_index[split_dim] < this->local_shape[split_dim]) ;
 
     return local_array_index;
 }
@@ -187,10 +174,17 @@ size_t Contiguous1DMap<dimension>::find_rank_from_global_index(size_t global_ind
 template <size_t dimension>
 size_t Contiguous1DMap<dimension>::find_rank_from_global_array_index(std::array<size_t, dimension> global_array_index) const{
     size_t temp_index = global_array_index[split_dim];
+
     for(size_t i_rank = 0; i_rank<this->world_size ; i_rank++){
-        temp_index -= all_local_shape[i_rank][split_dim];
-        if(temp_index<0)  return i_rank;
+        if(temp_index<all_local_shape[i_rank][split_dim]){
+            return i_rank;
+        }
+        else{
+            temp_index -= all_local_shape[i_rank][split_dim];
+        }
     }
+    assert(true);
+    return 0;
 }
 
 }

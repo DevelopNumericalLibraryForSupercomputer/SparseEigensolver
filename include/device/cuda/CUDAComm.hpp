@@ -9,53 +9,63 @@
 
 namespace SE{
 
-cudaStream_t stream;
+// cublasHandle_t handle & cudaStream_t stream are defined in Utility.hpp
 
 template<>
-std::unique_ptr<Comm<SECuda> > createComm(int argc, char *argv[]){
+std::unique_ptr<Comm<DEVICETYPE::CUDA> > create_comm(int argc, char *argv[]){
 
-    return std::make_unique< Comm<SECuda> >( 0, 1);
+    return std::make_unique< Comm<DEVICETYPE::CUDA> >( 0, 1);
 }
 
 template<>
-Comm<SECuda>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
+Comm<DEVICETYPE::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
 {
-    auto status =cublasCreate(&SE::cublasHandle);
-    assert (CUBLAS_STATUS_SUCCESS==status);
-
-    cudaStreamCreate(&stream);
+    if (handle ==NULL){
+        auto status1 =cublasCreate(&SE::handle);
+        assert (CUBLAS_STATUS_SUCCESS==status1);
+    }
+    if (stream==NULL){ 
+        auto status2 = cudaStreamCreate(&stream);
+        assert ( cudaSuccess == status2);
+    }
     return;
 }
 
 template<>
-Comm<SECuda>::~Comm(){
-    //Finalize cublas 
-    auto status = cublasDestroy(SE::cublasHandle);
-    assert (CUBLAS_STATUS_SUCCESS==status);
-    // Finalize CUDA stream
-    cudaStreamDestroy(stream);
+Comm<DEVICETYPE::CUDA>::~Comm(){
+    if (handle!=NULL){
+        auto status1 = cublasDestroy(SE::handle);
+        assert (CUBLAS_STATUS_SUCCESS==status1);
+        handle=NULL;
+    }
+    if(stream!=NULL){
+        // Finalize CUDA stream
+        auto status2 = cudaStreamDestroy(stream);
+        assert ( cudaSuccess == status2);
+        stream=NULL;
+    }
 }
 
 template<>
 template <typename DATATYPE>
-void Comm<SECuda>::allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, SEop op) const{
-    memcpy<DATATYPE, SECuda> (trg,src,count);
+void Comm<DEVICETYPE::CUDA>::allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, OPTYPE op) const{
+    memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,count,COPYTYPE::DEVICE2DEVICE);
     return;
 }
 
 template<>
 template <typename DATATYPE>
-void Comm<SECuda>::alltoall(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::CUDA>::alltoall(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<DATATYPE, SECuda> (trg,src,sendcount);
+    memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,sendcount,COPYTYPE::DEVICE2DEVICE);
     return ;
 }
 
 template<>
 template <typename DATATYPE>
-void Comm<SECuda>::allgather(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::CUDA>::allgather(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<DATATYPE, SECuda> (trg,src,sendcount);
+    memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,sendcount,COPYTYPE::DEVICE2DEVICE);
   
 }
 

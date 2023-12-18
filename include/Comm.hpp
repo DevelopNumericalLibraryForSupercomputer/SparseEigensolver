@@ -28,7 +28,7 @@ public:
     //template <typename DATATYPE> void reduce(const DATATYPE *src, size_t count, DATATYPE *trg, SEop op, int root);
     //template <typename DATATYPE> void gather(DATATYPE* src, size_t sendcount, DATATYPE* trg, size_t recvcount);
 
-    template <typename DATATYPE> void allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, SEop op) const;
+    template <typename DATATYPE> void allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, OPTYPE op) const;
     template <typename DATATYPE> void alltoall (DATATYPE* src, size_t sendcount, DATATYPE* trg, size_t recvcount) const;
     template <typename DATATYPE> void allgather(DATATYPE* src, size_t sendcount, DATATYPE* trg, size_t recvcount) const;
 
@@ -52,10 +52,11 @@ std::ostream &operator<<(std::ostream &os, Comm<device> const &comm) {
 }
 
 template<DEVICETYPE device>
-std::unique_ptr<Comm<device> > create_comm(int argc, char *argv[]){
-    std::cout << "empty comm" << std::endl;
-    return std::make_unique< Comm<device> >();
-};
+std::unique_ptr<Comm<device> > create_comm(int argc, char *argv[]);
+//{
+//    std::cout << "empty comm" << std::endl;
+//    return std::make_unique< Comm<device> >();
+//};
 
 
 

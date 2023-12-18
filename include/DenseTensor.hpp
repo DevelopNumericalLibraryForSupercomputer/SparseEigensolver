@@ -9,12 +9,12 @@ template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE devic
 class DenseTensor: public Tensor<dimension, DATATYPE, MAPTYPE, device, STORETYPE::DENSE > {
 
 using array_d = std::array<size_t, dimension>;
-//using _internal_DATATYPE = std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >; 
-using _internal_DATATYPE = DATATYPE*;
+//using INTERNALTYPE = std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >; 
+using INTERNALTYPE = DATATYPE*;
 
 public:
     DenseTensor(const Comm<device>& comm, const MAPTYPE& map);
-    DenseTensor(const Comm<device>& comm, const MAPTYPE& map, _internal_DATATYPE data);
+    DenseTensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
 
     DATATYPE* copy_data() const;
@@ -25,12 +25,20 @@ public:
         return return_val;
     }
 
-    void global_insert_value(array_d global_array_index, DATATYPE value);
-    void local_insert_value(array_d local_array_index, DATATYPE value);
-    void global_insert_value(size_t global_index, DATATYPE value);
-    void local_insert_value(size_t local_index, DATATYPE value);
+    void global_insert_value(const array_d global_array_index, const DATATYPE value) override;
+    void local_insert_value(const array_d local_array_index, const DATATYPE value) override;
+    void global_insert_value(const size_t global_index, const DATATYPE value) override;
+    void local_insert_value(const size_t local_index, const DATATYPE value) override;
 
-    friend std::ostream& operator<< <>(std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
+    void global_set_value(const array_d global_array_index, const DATATYPE value) override;
+    void local_set_value(const array_d local_array_index, const DATATYPE value) override;
+    void global_set_value(const size_t global_index, const DATATYPE value) override;
+    void local_set_value(const size_t local_index, const DATATYPE value) override;
+
+
+
+    friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
+    //friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
 };
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
@@ -44,7 +52,7 @@ DenseTensor<dimension,DATATYPE,MAPTYPE,device>::DenseTensor(const Comm<device>& 
 
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-DenseTensor<dimension,DATATYPE,MAPTYPE,device>::DenseTensor(const Comm<device>& comm, const MAPTYPE& map, _internal_DATATYPE data)
+DenseTensor<dimension,DATATYPE,MAPTYPE,device>::DenseTensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE data)
 :Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>(comm,map,data){
     this->filled=false;
 };
@@ -65,46 +73,72 @@ DATATYPE* DenseTensor<dimension,DATATYPE,MAPTYPE,device>::copy_data() const{
 
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(std::array<size_t, dimension> global_array_index, DATATYPE value){
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(const std::array<size_t, dimension> global_array_index, const DATATYPE value){
     size_t local_index = this->map.unpack_local_array_index(this->map.global_to_local(global_array_index));
     local_insert_value(local_index, value);
     return;
 }
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(std::array<size_t, dimension> local_array_index, DATATYPE value){
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(const std::array<size_t, dimension> local_array_index, const DATATYPE value){
     for(size_t i=0;i<dimension;i++){
-        assert (local_array_index[i] >=0 && local_array_index[i] < this->map.get_local_shape(i));
+        assert (local_array_index[i] < this->map.get_local_shape(i));
     }
     local_insert_value(this->map.unpack_local_array_index(local_array_index), value);
     return;
 }
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(size_t global_index, DATATYPE value){
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(const size_t global_index, const DATATYPE value){
     size_t local_index = this->map.global_to_local(global_index);
     local_insert_value(local_index, value);
     return;
 }
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(size_t local_index, DATATYPE value) {
-    assert (local_index >=0);
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(const size_t local_index, const DATATYPE value) {
     assert (local_index <this->map.get_num_local_elements());
     this->data[local_index] += value;
     return;
 }
 
-template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_set_value(std::array<size_t, dimension> global_array_index, DATATYPE value){
+    size_t local_index = this->map.unpack_local_array_index(this->map.global_to_local(global_array_index));
+    local_set_value(local_index, value);
+    return;
+}
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value(std::array<size_t, dimension> local_array_index, DATATYPE value) {
+    for(size_t i=0;i<dimension;i++){
+        assert ( local_array_index[i] < this->map.get_local_shape(i));
+    }
+    local_set_value(this->map.unpack_local_array_index(local_array_index), value);
+    return;
+}
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::global_set_value(size_t global_index, DATATYPE value) {
+    size_t local_index = this->map.global_to_local(global_index);
+    local_set_value(local_index, value);
+}
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value(size_t local_index, DATATYPE value) {
+    assert (local_index <this->map.get_num_local_elements());
+    this->data[local_index] = value;
+    return;
+}
+
+
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+std::ostream& operator<< (std::ostream& stream, const DenseTensor<2,DATATYPE,MAPTYPE,device>& tensor){
     //std::cout <<(Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>)tensor << std::endl;
-    const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
+    const Tensor<2,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
     std::cout <<*p_tensor <<std::endl;
 
-    std::cout << "========= Tensor Content =========" <<std::endl;
     auto const num_row = tensor.map.get_global_shape(0);
     auto const num_col = tensor.map.get_global_shape(1);
 
+    std::cout << "========= Tensor Content =========" <<std::endl;
     for (size_t i=0; i<num_row; i++){
         for (size_t j=0; j<num_col; j++){
             std::cout << tensor.data[i+j*num_row] << " ";
@@ -113,6 +147,20 @@ std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATA
     }
     return stream;
 }
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+std::ostream& operator<< (std::ostream& stream, const DenseTensor<1,DATATYPE,MAPTYPE,device>& tensor){
+    //std::cout <<(Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>)tensor << std::endl;
+    const Tensor<1,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
+    std::cout <<*p_tensor <<std::endl;
 
+    auto const num_row = tensor.map.get_global_shape(0);
+
+    std::cout << "========= Tensor Content =========" <<std::endl;
+    for (size_t i=0; i<num_row; i++){
+        std::cout << tensor.data[i] << " ";
+    }
+    std::cout << std::endl;
+    return stream;
+}
 
 }

@@ -18,63 +18,75 @@ typedef enum {
 */
 
 
-cublasOperation_t map_transpose(SE::SE_transpose trans){
+cublasOperation_t map_transtype(SE::TRANSTYPE trans){
     switch (trans){
-        case TRANSPOSE::N:     return CUBLAS_OP_N;
-        case TRANSPOSE::T:     return CUBLAS_OP_T;
-        case TRANSPOSE::C:     return CUBLAS_OP_C;
-        default: throw std::runtime_error("map_transpose in device/CUDA/Utility.hpp");
+        case SE::TRANSTYPE::N:     return CUBLAS_OP_N;
+        case SE::TRANSTYPE::T:     return CUBLAS_OP_T;
+        case SE::TRANSTYPE::C:     return CUBLAS_OP_C;
+        default: throw std::runtime_error("map_transtype in device/CUDA/Utility.hpp");
     }
 
     // to supress warning;
     return CUBLAS_OP_N;
 }
+
+cudaMemcpyKind map_copytype(SE::COPYTYPE copy_type){
+    switch (copy_type){
+        case SE::COPYTYPE::NONE:          return cudaMemcpyHostToHost;
+        case SE::COPYTYPE::HOST2DEVICE:   return cudaMemcpyHostToDevice;
+        case SE::COPYTYPE::DEVICE2HOST:   return cudaMemcpyDeviceToHost;
+        case SE::COPYTYPE::DEVICE2DEVICE: return cudaMemcpyDeviceToDevice;
+        default: throw std::runtime_error("map_copytype in device/CUDA/Utility.hpp");
+    }
+    return  cudaMemcpyHostToHost;
+}
 namespace SE
 {
 
-cublasHandle_t cublasHandle;
+cublasHandle_t handle=NULL;
+cudaStream_t stream=NULL;
 
 template<>
-double* malloc<double, SECuda>(const size_t size){
+double* malloc<double, DEVICETYPE::CUDA>(const size_t size){
     double* ptr;
     cudaMalloc( &ptr, size*sizeof(double) );
     return static_cast<double*> (ptr);
 }
 template<>
-void free<double, SECuda>(double* ptr ){
+void free<DEVICETYPE::CUDA>(void* ptr ){
     cudaFree(ptr);
     return;
 }
 template<>
-void memcpy<double, SECuda>(double* dest, const double* source, size_t size ){
-    cudaMemcpyKind kind = cudaMemcpyDeviceToDevice ;
-    cudaMemcpy(dest, source, sizeof(double)*size, kind );
+void memcpy<double, DEVICETYPE::CUDA>(double* dest, const double* source, size_t size, COPYTYPE copy_type ){
+    //cudaMemcpyKind kind = cudaMemcpyDeviceToDevice ;
+    cudaMemcpy(dest, source, sizeof(double)*size, map_copytype(copy_type) );
     return;
 }
 template<>
-void memset<double, SECuda>(double* dest, int value, size_t size){
+void memset<double, DEVICETYPE::CUDA>(double* dest, int value, size_t size){
     cudaMemset((void*)dest, value, size * sizeof(double) );
     return;
 }
 
 template<>
-void gemm<double, SECuda>(const SE_layout Layout, const SE_transpose transa, const SE_transpose transb,
+void gemm<double, DEVICETYPE::CUDA>(const ORDERTYPE Layout, const TRANSTYPE transa, const TRANSTYPE transb,
                        const size_t m, const size_t n, const size_t k,
                        const double alpha, const double *a, const size_t lda,
                        const double *b, const size_t ldb, const double beta,
                        double *c, const size_t ldc){
-    cublasDgemm(cublasHandle,  map_transpose(transa), map_transpose(transb), m, n, k, &alpha, a, lda, b, ldb, &beta, c, ldc);
+    cublasDgemm(handle,  map_transtype(transa), map_transtype(transb), m, n, k, &alpha, a, lda, b, ldb, &beta, c, ldc);
     return;
 }
 
 template <>
-void axpy<double, SECuda>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
-    cublasDaxpy(cublasHandle, n, &a, x, incx, y, incy);
+void axpy<double, DEVICETYPE::CUDA>(const size_t n, const double a, const double *x, const size_t incx, double *y, const size_t incy){
+    cublasDaxpy(handle, n, &a, x, incx, y, incy);
     return;
 }
 
 template <>
-int geev<double, SECuda>(const SE_layout Layout, char jobvl, char jobvr, const size_t n, double* a, const size_t lda,
+int geev<double, DEVICETYPE::CUDA>(const ORDERTYPE Layout, char jobvl, char jobvr, const size_t n, double* a, const size_t lda,
           double* wr, double* wi, double* vl, const size_t ldvl, double* vr, const size_t ldvr){
     return 0;
 //    return LAPACKE_dgeev(map_layout_lapack(Layout), jobvl, jobvr, n, a, lda, wr, wi, vl, ldvl, vr, ldvr);
