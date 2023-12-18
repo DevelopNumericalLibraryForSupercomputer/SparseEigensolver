@@ -7,17 +7,6 @@
 namespace SE{
 
 
-//template <size_t I,typename U,typename T> 
-//struct tuple_n{
-//    template<typename U, typename...Args> using type = typename tuple_n<I-1,U, T>::template type<U, T, Args...>;
-//};
-//
-//template <typename U,typename T> 
-//struct tuple_n<0, U, T> {
-//    template<typename U, typename...Args> using type = std::tuple<U, Args...>;   
-//};
-
-
 template<size_t dimension, typename DATATYPE, typename MAPTYPE=Contiguous1DMap<dimension>, DEVICETYPE device=DEVICETYPE::BASE> 
 class SparseTensor: public Tensor<dimension, DATATYPE, MAPTYPE, device, STORETYPE::COO > {
 

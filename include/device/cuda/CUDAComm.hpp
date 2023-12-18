@@ -28,17 +28,20 @@ Comm<DEVICETYPE::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_
         auto status2 = cudaStreamCreate(&stream);
         assert ( cudaSuccess == status2);
     }
+    count+=1;
+
     return;
 }
 
 template<>
 Comm<DEVICETYPE::CUDA>::~Comm(){
-    if (handle!=NULL){
+    count-=1;
+    if (count==0 && handle!=NULL){
         auto status1 = cublasDestroy(SE::handle);
         assert (CUBLAS_STATUS_SUCCESS==status1);
         handle=NULL;
     }
-    if(stream!=NULL){
+    if(count==0 && stream!=NULL){
         // Finalize CUDA stream
         auto status2 = cudaStreamDestroy(stream);
         assert ( cudaSuccess == status2);

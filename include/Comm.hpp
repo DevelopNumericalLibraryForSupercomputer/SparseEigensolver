@@ -12,8 +12,8 @@ namespace SE{
 template<DEVICETYPE device>
 class Comm{
 public:
-    Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
-    Comm(){ };
+    Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) { count+=1;};
+    Comm(){ conut+=1; };
     ~Comm(){};
 
     //const size_t get_rank(){ return rank; };
@@ -43,6 +43,7 @@ public:
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     size_t world_size = 1;     // Total number of processes in the job
 
+    static size_t count =0;
 };
 
 // helper function 

@@ -5,6 +5,55 @@
 
 namespace SE{
 //spmv
+
+template <>
+DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MPI>(
+    const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
+    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
+    TRANSTYPE trans)
+{
+    assert (mat.comm.world_size == vec.comm.world_size);
+    assert (mat.comm.rank == vec.comm.rank);
+
+    size_t mat_dim;
+    if( trans ==TRANSTYPE::N){
+        mat_dim = 1;
+    }
+    else{
+        mat_dim=0;
+    }
+
+    assert (  mat.map.get_global_shape(mat_dim) == vec.map.get_global_shape(0) );
+
+    
+    DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(vec.copy_comm(), vec.copy_map());
+    
+    int m = mat.map.get_global_shape(0);
+    int n = mat.map.get_global_shape(1);
+
+    double* buffer1;
+    double* buffer2;
+    if ( mat.map.get_local_shape(dim) == vec.map.get_local_shape(0) ){
+        buffer1 = malloc<double>(vec.map.get_local_shape(0));
+        buffer2 = malloc<double>(vec.map.get_local_shape(0));
+        gemv<double, DEVICETYPE::MPI>( ORDERTYPE::ROW, trans, m,n, 1.0, mat.data, m, vec.data, 1, 0.0, buffer1 ); 
+        output.comm.allreduce(buffer1,  vec.map.get_local_shape(0), buffer2, OPTYPE::SUM);
+        
+        
+    }
+    else if (){
+
+    }
+    else{
+
+    }
+    return output;
+
+
+};
+
+
+
 template <typename MAPTYPE1, typename MAPTYPE2>
 Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE1>* a, 
                                                          Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
