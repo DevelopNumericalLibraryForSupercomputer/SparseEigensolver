@@ -133,9 +133,10 @@ std::array<size_t, dimension> Contiguous1DMap<dimension>::global_to_local(const 
 
 template <size_t dimension>
 size_t  Contiguous1DMap<dimension>::unpack_local_array_index(std::array<size_t, dimension> local_array_index) const{
-    size_t local_index = 0;
-    for(size_t i=dimension;i>0;i--){
-        local_index += local_array_index[i] * this->local_shape_mult[dimension-i];
+    size_t local_index = local_array_index[0];
+    for(size_t i=1;i<dimension;i++){
+        local_index *= this->local_shape[i];
+        local_index += local_array_index[i];
     }
     return local_index;
 }
@@ -143,17 +144,21 @@ size_t  Contiguous1DMap<dimension>::unpack_local_array_index(std::array<size_t, 
 template <size_t dimension>
 std::array<size_t, dimension> Contiguous1DMap<dimension>::pack_local_index(size_t local_index) const{
     std::array<size_t, dimension>  local_array_index;
-    for(size_t i=0;i<dimension;i++){
-        local_array_index[i] = local_index % this->local_shape_mult[dimension-i-1];
+    size_t tmp_index = local_index;
+    for(size_t i = dimension-1;i>0;i--){
+        local_array_index[i] = tmp_index% this->local_shape[i];
+        tmp_index /= this->local_shape[i];
     }
+    local_array_index[0] = tmp_index;
     return local_array_index;
 }
 
 template <size_t dimension>
 size_t  Contiguous1DMap<dimension>::unpack_global_array_index( std::array<size_t, dimension> global_array_index) const{
-    size_t global_index = 0;
-    for(size_t i=dimension;i>0;i--){
-        global_index += global_array_index[i] * this->global_shape_mult[dimension-i];
+    size_t global_index = global_array_index[0];
+    for(size_t i=1;i<dimension;i++){
+        global_index *= this->global_shape[i];
+        global_index += global_array_index[i];
     }
     return global_index;
 }
@@ -161,9 +166,12 @@ size_t  Contiguous1DMap<dimension>::unpack_global_array_index( std::array<size_t
 template <size_t dimension>
 std::array<size_t, dimension> Contiguous1DMap<dimension>::pack_global_index(size_t global_index) const{
     std::array<size_t, dimension> global_array_index;
-    for(size_t i=0;i<dimension;i++){
-        global_array_index[i] = global_index % this->global_shape_mult[dimension-i-1];
+    size_t tmp_index = global_index;
+    for(size_t i = dimension-1;i>0;i--){
+        global_array_index[i] = tmp_index% this->global_shape[i];
+        tmp_index /= this->global_shape[i];
     }
+    global_array_index[0] = tmp_index;
     return global_array_index;
 }
 
