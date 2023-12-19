@@ -13,7 +13,7 @@ template<DEVICETYPE device>
 class Comm{
 public:
     Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) { count+=1;};
-    Comm(){ conut+=1; };
+    Comm(){ count+=1; };
     ~Comm(){};
 
     //const size_t get_rank(){ return rank; };

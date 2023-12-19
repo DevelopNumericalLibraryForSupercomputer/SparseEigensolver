@@ -20,10 +20,10 @@ public:
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, size_t reserve_size);
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, INTERNALTYPE data);
 
-    INTERNALTYPE copy_data() const {return this->data;};
+    INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone
-    SparseTensor<dimension, DATATYPE, MAPTYPE, device>* clone(bool call_complete) const;
+    SparseTensor<dimension, DATATYPE, MAPTYPE, device>* clone(bool call_complete) const override;
     // insert function
     void global_insert_value(const array_d global_array_index, const DATATYPE value) override;
     void local_insert_value (const array_d local_array_index, const DATATYPE value) override;

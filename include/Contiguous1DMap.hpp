@@ -19,22 +19,22 @@ public:
         return new Contiguous1DMap(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
     };
     // get number of elements
-    size_t get_num_local_elements() const {return this->local_shape_mult[dimension]; };
+    size_t get_num_local_elements() const override {return this->local_shape_mult[dimension]; };
 
     // global index <-> local index
-    size_t local_to_global(const size_t local_index) const;
-    size_t global_to_local(const size_t global_index) const;
-    array_d local_to_global(const array_d local_array_index) const;
-    array_d global_to_local(const array_d global_array_index) const;
+    size_t local_to_global(const size_t local_index)  const override;
+    size_t global_to_local(const size_t global_index) const override;
+    array_d local_to_global(const array_d local_array_index) const override;
+    array_d global_to_local(const array_d global_array_index) const override;
                                                                                 
     // local array index <-> local index 
-    size_t  unpack_local_array_index(array_d local_array_index) const;
-    array_d pack_local_index(size_t local_index) const;
-    size_t  unpack_global_array_index(array_d global_array_index) const;
-    array_d pack_global_index(size_t global_index) const;
+    size_t  unpack_local_array_index(array_d local_array_index) const override;
+    array_d pack_local_index(size_t local_index) const override;
+    size_t  unpack_global_array_index(array_d global_array_index) const override;
+    array_d pack_global_index(size_t global_index) const override;
 
-    size_t find_rank_from_global_index(size_t global_index) const;
-    size_t find_rank_from_global_array_index(array_d global_array_index) const;
+    size_t find_rank_from_global_index(size_t global_index) const override;
+    size_t find_rank_from_global_array_index(array_d global_array_index) const override;
 private:
     size_t split_dim=0;
     void initialize();

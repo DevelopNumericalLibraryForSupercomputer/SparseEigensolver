@@ -7,39 +7,39 @@
 #include "mkl_spblas.h"
 namespace SE{
 
-// dense mv 
-template <typename DATATYPE>
-DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
-//DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul<DATATYPE, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MKL>(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,
-    const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, DEVICETYPE::MKL>& vec,
-    TRANSTYPE trans=TRANSTYPE::N)
+// dense mv
+template <>
+DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
+//DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MKL>(
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,
+    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL>& vec,
+    TRANSTYPE trans)
 {
     assert ( mat.map.get_global_shape(1) == vec.map.get_global_shape(0) );
-    DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), *vec.copy_map() );
+    DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), *vec.copy_map() );
 
     size_t m = mat.map.get_global_shape(0);
     size_t k = mat.map.get_global_shape(1);
-    if(trans != TRANPOSE::N){
+    if(trans != TRANSTYPE::N){
         m= mat.map.get_global_shape(1);
         k= mat.map.get_global_shape(0);
     }
     //mby k * kby n
-    gemm<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, k, vec.data, 1, 0.0, output.data, 1);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, k, vec.data, 1, 0.0, output.data, 1);
     return output;
 }
 
 // dense mm
-template <typename DATATYPE>
-DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
-//DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul<DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MKL>(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat1,
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat2,
-    TRANSTYPE trans1=TRANSTYPE::N,
-    TRANSTYPE trans2=TRANSTYPE::N)
+template <>
+DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
+//DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul<double, Contiguous1DMap<2>, DEVICETYPE::MKL>(
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat1,
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat2,
+    TRANSTYPE trans1,
+    TRANSTYPE trans2)
 {
     assert ( mat1.map.get_global_shape(1) == mat2.map.get_global_shape(0) );
-    DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat2.copy_comm(), *mat2.copy_map() );
+    DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat2.copy_comm(), *mat2.copy_map() );
 
     size_t m = mat1.map.get_global_shape(0);
     size_t k = mat1.map.get_global_shape(1);
@@ -56,7 +56,7 @@ DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
     assert(k == k2);
 
     //mby k * kby n
-    gemm<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, k, mat2.data, n, 0.0, output.data, n);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, k, mat2.data, n, 0.0, output.data, n);
     return output;
 }
 

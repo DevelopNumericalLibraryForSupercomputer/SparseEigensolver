@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
     }
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix2(*ptr_comm, map2, test_data2);
     std::cout << test_matrix2 <<std::endl; 
-    std::cout <<  TensorOp::matmul<>( test_matrix2, test_matrix2 ) <<std::endl;
+    std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
     std::cout << "========================\nDense matrix davidson diag start" << std::endl;
 //    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
 //    auto out1 = decompose(test_matrix2, "evd");
@@ -82,7 +82,7 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    std::cout <<  TensorOp::matmul<>( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
+    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
     
 //    test_sparse.print();
 //
