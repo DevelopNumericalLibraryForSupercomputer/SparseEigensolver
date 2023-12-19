@@ -45,58 +45,6 @@ void orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string 
 }
 
 
-// dense matrix multiplication 
-template <typename DATATYPE, DEVICETYPE device>
-DenseTensor<1,DATATYPE,Contiguous1DMap<1>, device> TensorOp::matmul(
-//DenseTensor<1,DATATYPE,Contiguous1DMap<1>, device> TensorOp::matmul<DATATYPE, Contiguous1DMap<2>, Contiguous1DMap<1>, device>(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, device>& mat,
-    const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, device>& vec,
-    TRANSTYPE trans=TRANSTYPE::N)
-{
-    assert ( mat.map.get_global_shape(1) == vec.map.get_global_shape(0) );
-    DenseTensor<1,DATATYPE,Contiguous1DMap<1>, device> output ( *vec.copy_comm(), *vec.copy_map() );
-
-    size_t m = mat.map.get_global_shape(0);
-    size_t k = mat.map.get_global_shape(1);
-    if(trans != TRANPOSE::N){
-        m= mat.map.get_global_shape(1);
-        k= mat.map.get_global_shape(0);
-    }
-    //mby k * kby n
-    gemm<DATATYPE, device>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, k, vec.data, 1, 0.0, output.data, 1);
-    return output;
-}
-
-
-template <typename DATATYPE, DEVICETYPE device>
-DenseTensor<2,DATATYPE,Contiguous1DMap<2>, device> TensorOp::matmul(
-//DenseTensor<2,DATATYPE,Contiguous1DMap<2>, device> TensorOp::matmul<DATATYPE, Contiguous1DMap<2>, device>(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, device>& mat1,
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, device>& mat2,
-    TRANSTYPE trans1=TRANSTYPE::N,
-    TRANSTYPE trans2=TRANSTYPE::N)
-{
-    assert ( mat1.map.get_global_shape(1) == mat2.map.get_global_shape(0) );
-    DenseTensor<2,DATATYPE,Contiguous1DMap<2>, device> output ( *mat2.copy_comm(), *mat2.copy_map() );
-
-    size_t m = mat1.map.get_global_shape(0);
-    size_t k = mat1.map.get_global_shape(1);
-    if(trans1 != TRANSTYPE::N){
-        m= mat1.map.get_global_shape(1);
-        k= mat1.map.get_global_shape(0);
-    }
-    size_t k2 = mat2.map.get_global_shape(0);
-    size_t n = mat2.map.get_global_shape(1);
-    if(trans2 != TRANSTYPE::N){
-        k2 = mat2.map.get_global_shape(1);
-        n = mat2.map.get_global_shape(0);
-    }
-    assert(k == k2);
-
-    //mby k * kby n
-    gemm<DATATYPE, device>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, k, mat2.data, n, 0.0, output.data, n);
-    return output;
-}
 /*
 // sparse mv 
 template <typename DATATYPE, DEVICETYPE device>

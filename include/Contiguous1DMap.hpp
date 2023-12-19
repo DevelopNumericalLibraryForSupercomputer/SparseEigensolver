@@ -2,10 +2,11 @@
 #include <cassert>
 #include <algorithm>
 #include "Map.hpp"
-
+//#include "Gather.hpp"
 namespace SE{
 template<size_t dimension> 
 class Contiguous1DMap: public Map<dimension,MTYPE::Contiguous1D> {
+    //friend Gather<Contiguous1DMap>;
     using array_d = std::array<size_t, dimension>;
 
 public:

@@ -24,9 +24,19 @@ std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto comm = createComm<SEMpi>(argc, argv);
+    auto ptr_comm = create_comm<DEVICETYPE::MPI>(argc, argv);
     std::cout << "MPI test" << std::endl;
-    double x = 0.0, sum = 0.0;
+    std::cout << *ptr_comm <<std::endl;    
+    
+    std::array<size_t, 2> test_shape = {3,3};
+    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
+    Contiguous1DMap map (test_shape,  0,1);
+    //std::cout << typeid(map)<< std::endl;
+    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MPI> test_matrix(*ptr_comm,map);
+    test_matrix.complete();
+    //test_matrix.print_tensor();
+    
+
     int myrank = comm->rank;
     int nprocs = comm->world_size;
     /*      
@@ -230,8 +240,8 @@ int main(int argc, char* argv[]){
     std::array<size_t, 2> test_shape = {3,3};
     std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     ContiguousMap<2> new_map = ContiguousMap<2>(test_shape);
-    SE::DenseTensor<double, 2, Comm<SEMpi>, ContiguousMap<2> > test_matrix
-                = SE::DenseTensor<double, 2, Comm<SEMpi>, ContiguousMap<2> > (test_shape, &test_data[0]);
+    SE::DenseTensor<double, 2, Comm<DEVICETYPE::MPI>, ContiguousMap<2> > test_matrix
+                = SE::DenseTensor<double, 2, Comm<DEVICETYPE::MPI>, ContiguousMap<2> > (test_shape, &test_data[0]);
     auto out = test_matrix.decompose("EVD");
     if (comm->rank == 0){
         print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
@@ -242,19 +252,19 @@ int main(int argc, char* argv[]){
 
     size_t N = 30;
     std::array<size_t, 2> test_shape2 = {N,N};
-    ContiguousMap<2>* new_map2 = new ContiguousMap<2>(test_shape2, comm.get()->world_size, 0);
-    SE::Tensor<SE::STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
+    ContiguousMap<2> new_map2(test_shape2,  comm->get_rank() , comm->get_world_size()  );
+    SE::SparseTensor<2, double, Contiguous1DMap<2> > test_sparse(comm.get(), new_map2, test_shape2);
 
     
     std::cout << "Matrix construction" << std::endl;
     size_t chunk_size = test_sparse.shape[0] / test_sparse.comm->world_size;
-    size_t* local_matrix_size = new_map2->get_partition_size_array();
+    size_t* local_matrix_size = new_map2.get_partition_size_array();
 
     for(size_t i=0;i<N;i++){
     //for(size_t loc_i=0; loc_i<local_matrix_size[myrank]; loc_i++){
         for(size_t j=0;j<N;j++){
             std::array<size_t,2> index = {i,j};
-            if(new_map2->get_my_rank_from_global_index(index)==myrank){
+            if(new_map2.get_my_rank_from_global_index(index)==myrank){
                 if(i == j)                   test_sparse.insert_value(index, 2.0*((double)i+1.0-(double)N));
                 //if(i == j +1 || i == j -1)   test_sparse.insert_value(index, 3.0);
                 if(i == j +2 || i == j -2)   test_sparse.insert_value(index, -1.0);
@@ -268,7 +278,7 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    test_sparse.print();
+    //test_sparse.print();
     /*
     comm->barrier();
     if (comm->rank == 0) std::cout << "Sparsematrix Davidson" << std::endl;

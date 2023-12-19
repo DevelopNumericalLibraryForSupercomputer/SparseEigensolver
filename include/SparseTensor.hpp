@@ -180,8 +180,8 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
             complete_value  = malloc<DATATYPE,device>(nnz);
             memcpy<int,      device>( complete_index, tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
             memcpy<DATATYPE, device>( complete_value, tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
-            free<int>(tmp_index);
-            free<DATATYPE>(tmp_value);
+            free<>(tmp_index);
+            free<>(tmp_value);
         }
         else{
             complete_index = tmp_index;

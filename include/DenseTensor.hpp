@@ -37,7 +37,7 @@ public:
 
 
 
-    friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
+    friend std::ostream& operator<< <> (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
     //friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
 };
 

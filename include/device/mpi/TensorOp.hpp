@@ -2,16 +2,18 @@
 #include "LinearOp.hpp"
 #include "../TensorOp.hpp"
 #include "MPIComm.hpp"
-
+#include "../../Gather.hpp"
 namespace SE{
-//spmv
+// function declaration is in device/TensorOp.hpp
 
-template <>
-DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MPI>(
-    const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
-    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
-    TRANSTYPE trans)
+//dense mv 
+template <typename DATATYPE>
+DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
+    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
+    const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
+    TRANSTYPE trans=TRANSTYPE::N)
 {
+    
     assert (mat.comm.world_size == vec.comm.world_size);
     assert (mat.comm.rank == vec.comm.rank);
 
@@ -26,7 +28,7 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul
     assert (  mat.map.get_global_shape(mat_dim) == vec.map.get_global_shape(0) );
 
     
-    DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(vec.copy_comm(), vec.copy_map());
+    DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(*vec.copy_comm(), *vec.copy_map());
     
     int m = mat.map.get_global_shape(0);
     int n = mat.map.get_global_shape(1);
@@ -38,16 +40,29 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul
         buffer2 = malloc<double>(vec.map.get_local_shape(0));
         gemv<double, DEVICETYPE::MPI>( ORDERTYPE::ROW, trans, m,n, 1.0, mat.data, m, vec.data, 1, 0.0, buffer1 ); 
         output.comm.allreduce(buffer1,  vec.map.get_local_shape(0), buffer2, OPTYPE::SUM);
-        
-        
+        Gather::gather_from_all(buffer2, output);
+        free<DEVICETYPE::MPI>(buffer1);
+        free<DEVICETYPE::MPI>(buffer2);
     }
     else if (){
+        buffer1 = malloc<double>(vec.map.get_global_shape(0));
+        output.comm.allgatherv(vec.data, vec.map.get_local_shape(0), buffer1, vec.map.get_global_shape(0) );
+        gemv<double, DEVICETYPE::MPI> (ORDERTYPE::ROW, trans, m, n, 1.0, 
 
     }
     else{
 
     }
     return output;
+}
+
+//spmv
+template <>
+DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MPI>(
+    const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
+    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
+    TRANSTYPE trans)
+{
 
 
 };

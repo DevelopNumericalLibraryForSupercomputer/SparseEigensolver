@@ -42,8 +42,8 @@ public:
     size_t rank = 0;           // Process rank
     //size_t local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     size_t world_size = 1;     // Total number of processes in the job
-
-    static size_t count =0;
+protected:
+    inline static size_t count =0;
 };
 
 // helper function 
