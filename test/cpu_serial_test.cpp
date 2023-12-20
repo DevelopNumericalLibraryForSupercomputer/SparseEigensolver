@@ -30,12 +30,16 @@ int main(int argc, char* argv[]){
     std::cout << *ptr_comm <<std::endl;    
     
     std::array<size_t, 2> test_shape = {3,3};
-    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
     Contiguous1DMap map (test_shape,  0,1);
-    //std::cout << typeid(map)<< std::endl;
+    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
+
     SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix(*ptr_comm,map);
+    for(int i=0;i<9;i++){
+        std::cout << i << " " << test_data[i] << std::endl;
+        test_matrix.global_insert_value(i,test_data[i]);
+    }
     test_matrix.complete();
-    //test_matrix.print_tensor();
+    std::cout << test_matrix <<std::endl; 
 //    auto out = decompose(test_matrix, "evd");
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
@@ -58,7 +62,7 @@ int main(int argc, char* argv[]){
     }
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix2(*ptr_comm, map2, test_data2);
     std::cout << test_matrix2 <<std::endl; 
-    std::cout <<  TensorOp::matmul<>( test_matrix2, test_matrix2 ) <<std::endl;
+    std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
     std::cout << "========================\nDense matrix davidson diag start" << std::endl;
 //    std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
 //    auto out1 = decompose(test_matrix2, "evd");
@@ -82,7 +86,7 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    std::cout <<  TensorOp::matmul<>( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
+    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
     
 //    test_sparse.print();
 //

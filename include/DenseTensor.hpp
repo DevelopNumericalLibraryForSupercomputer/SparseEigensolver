@@ -17,9 +17,9 @@ public:
     DenseTensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
 
-    DATATYPE* copy_data() const;
+    DATATYPE* copy_data() const override;
 
-    DenseTensor<dimension, DATATYPE, MAPTYPE, device>* clone(bool call_complete) const {
+    DenseTensor<dimension, DATATYPE, MAPTYPE, device>* clone(bool call_complete) const override{
         auto return_val = new DenseTensor<dimension,DATATYPE,MAPTYPE,device>(*this->copy_comm(), *this->copy_map(), this->copy_data() );
         if(call_complete) return_val->complete();
         return return_val;
@@ -35,10 +35,35 @@ public:
     void global_set_value(const size_t global_index, const DATATYPE value) override;
     void local_set_value(const size_t local_index, const DATATYPE value) override;
 
+    friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
+        stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>&> (tensor);
 
+        auto const num_row = tensor.map.get_global_shape(0);
+        auto const num_col = tensor.map.get_global_shape(1);
 
-    //friend std::ostream& operator<< <> (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
-    friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
+        stream << "========= Tensor Content =========" <<std::endl;
+        if(dimension == 1){
+            for (size_t i=0; i<num_row; i++){
+                stream << tensor.data[i] << " ";
+            }
+            stream << std::endl;
+        }
+        else if (dimension == 2){
+            for (size_t i=0; i<num_row; i++){
+                for (size_t j=0; j<num_col; j++){
+                    stream << tensor.data[i+j*num_row] << " ";
+                }
+                stream << std::endl;
+            }
+        }
+        else{
+            for (size_t i=0; i<num_row; i++){
+                stream << tensor.data[i] << " ";
+            }
+            stream << std::endl;
+        }
+        return stream;
+    }
 };
 
 template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
@@ -128,39 +153,43 @@ void DenseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value(size_t loca
     return;
 }
 
-
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-std::ostream& operator<< (std::ostream& stream, const DenseTensor<2,DATATYPE,MAPTYPE,device>& tensor){
+/*
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
     //std::cout <<(Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>)tensor << std::endl;
-    const Tensor<2,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
-    std::cout <<*p_tensor <<std::endl;
+    //const Tensor<2,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
+    //std::cout <<*p_tensor <<std::endl;
+
+    tensor.print_tensor_info();
 
     auto const num_row = tensor.map.get_global_shape(0);
     auto const num_col = tensor.map.get_global_shape(1);
 
-    std::cout << "========= Tensor Content =========" <<std::endl;
+    stream << "========= Tensor Content =========" <<std::endl;
     for (size_t i=0; i<num_row; i++){
         for (size_t j=0; j<num_col; j++){
-            std::cout << tensor.data[i+j*num_row] << " ";
+            stream << tensor.data[i+j*num_row] << " ";
         }
-        std::cout << std::endl;
+        stream << std::endl;
     }
     return stream;
 }
+
 template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 std::ostream& operator<< (std::ostream& stream, const DenseTensor<1,DATATYPE,MAPTYPE,device>& tensor){
     //std::cout <<(Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>)tensor << std::endl;
-    const Tensor<1,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
-    std::cout <<*p_tensor <<std::endl;
+    //const Tensor<1,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>*  p_tensor = &tensor;
+    //std::cout <<*p_tensor <<std::endl;
+    stream << static_cast<const Tensor<1, DATATYPE, MAPTYPE, device, STORETYPE::DENSE> &> (tensor);
 
     auto const num_row = tensor.map.get_global_shape(0);
 
-    std::cout << "========= Tensor Content =========" <<std::endl;
+    stream << "========= Tensor Content =========" <<std::endl;
     for (size_t i=0; i<num_row; i++){
-        std::cout << tensor.data[i] << " ";
+        stream << tensor.data[i] << " ";
     }
-    std::cout << std::endl;
+    stream << std::endl;
     return stream;
 }
-
+*/
 }
