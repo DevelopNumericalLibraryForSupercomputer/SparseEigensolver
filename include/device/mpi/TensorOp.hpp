@@ -13,19 +13,15 @@ DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
     const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
     TRANSTYPE trans=TRANSTYPE::N)
 {
-    
-    assert (mat.comm.world_size == vec.comm.world_size);
-    assert (mat.comm.rank == vec.comm.rank);
+    auto world_size = mat.comm.world_size;
+    auto rank = mat.comm.rank;
 
-    size_t mat_dim;
-    if( trans ==TRANSTYPE::N){
-        mat_dim = 1;
-    }
-    else{
-        mat_dim=0;
-    }
+    assert (world_size == vec.comm.world_size);
+    assert (rank == vec.comm.rank);
 
-    assert (  mat.map.get_global_shape(mat_dim) == vec.map.get_global_shape(0) );
+    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
+
+    assert (  mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
 
     
     DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(*vec.copy_comm(), *vec.copy_map());
@@ -41,34 +37,80 @@ DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
         gemv<double, DEVICETYPE::MPI>( ORDERTYPE::ROW, trans, m,n, 1.0, mat.data, m, vec.data, 1, 0.0, buffer1 ); 
         output.comm.allreduce(buffer1,  vec.map.get_local_shape(0), buffer2, OPTYPE::SUM);
         Gather::gather_from_all(buffer2, output);
-        free<DEVICETYPE::MPI>(buffer1);
-        free<DEVICETYPE::MPI>(buffer2);
+        free<>(buffer1);
+        free<>(buffer2);
     }
-    else if (){
+    else if (mat.map.get_local_shape(dim) == vec.map.get_global_shape(0) ){
         buffer1 = malloc<double>(vec.map.get_global_shape(0));
-        output.comm.allgatherv(vec.data, vec.map.get_local_shape(0), buffer1, vec.map.get_global_shape(0) );
-        gemv<double, DEVICETYPE::MPI> (ORDERTYPE::ROW, trans, m, n, 1.0, 
+
+        auto all_local_shape = vec.map.get_all_local_shape();
+
+        size_t recv_counts[world_size];
+        for (size_t i=0; i<world_size; i++){
+            recv_counts[i] = all_local_shape[i][0];
+        }
+
+
+        output.comm.allgatherv(vec.data, all_local_shape[rank][0], buffer1, recv_counts );
+        gemv<double, DEVICETYPE::MPI> (ORDERTYPE::ROW, trans, m, n, 1.0, mat.data, m, buffer1, 1, 0.0, output.data );
 
     }
     else{
-
+        std::cout << "???" <<std::endl;
+        exit(-1)
     }
     return output;
 }
 
-//spmv
-template <>
-DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MPI>(
-    const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
-    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
-    TRANSTYPE trans)
+template <typename DATATYPE>
+DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
+    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat1,
+    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat2,
+    TRANSTYPE trans=TRANSTYPE::N)
 {
+    auto world_size = mat1.comm.world_size;
+    auto rank = mat1.comm.rank;
+
+    assert (world_size == mat2.comm.world_size);
+    assert (rank == mat2.comm.rank);
+
+    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
+
+    assert (  mat1.map.get_global_shape(contract_dim) == mat2.map.get_global_shape(0) );
+
+    std::array<size_t, 2> output_shape = { mat1.map.get_global_size(1-contract_dim)   , mat2.map.get_global_size(1) }
+    std::array<bool, 2> is_parallel = {};
+    DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI> output(*mat2.copy_comm(), 
+                                                                       Contiguous1DMap<2>( output_shape, rank, world_size) );
+    
+    int m = mat1.map.get_global_shape(0);
+    int n = mat1.map.get_global_shape(1);
+
+    if (mat2.map.get_split_dim()==0){
+        assert (mat2.map.get_global_shape(1)==mat2.map.get_local_shape(1) );
+        for (size_t i =0; i<mat2.map.get_global_shape(1); i++){
+            TensorOp::matmul<>();
+        }
+    }
+    else{
+        assert(false); //not implemented yet.
+    }
+
+    return output;
+}
+////spmv
+//template <>
+//DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MPI>(
+//    const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
+//    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
+//    TRANSTYPE trans)
+//{
+//
+//
+//};
 
 
-};
-
-
-
+/*
 template <typename MAPTYPE1, typename MAPTYPE2>
 Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE1>* a, 
                                                          Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
@@ -397,7 +439,9 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* matmul(Tensor<STORETYPE::De
         exit(-1);
     }
 }
+*/
 
+/*
 //QR
 template <>
 void orthonormalize<double, SEMpi>(double* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
@@ -420,7 +464,7 @@ void orthonormalize<double, SEMpi>(double* eigvec, size_t vector_size, size_t nu
         free<double, SEMpi>(new_eigvec);
     }
 }
-
+*/
 
 
 }

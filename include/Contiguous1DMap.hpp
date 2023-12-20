@@ -2,11 +2,9 @@
 #include <cassert>
 #include <algorithm>
 #include "Map.hpp"
-//#include "Gather.hpp"
 namespace SE{
 template<size_t dimension> 
 class Contiguous1DMap: public Map<dimension,MTYPE::Contiguous1D> {
-    //friend Gather<Contiguous1DMap>;
     using array_d = std::array<size_t, dimension>;
 
 public:
@@ -35,10 +33,13 @@ public:
 
     size_t find_rank_from_global_index(size_t global_index) const;
     size_t find_rank_from_global_array_index(array_d global_array_index) const;
+
+    std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
+    size_t get_split_dim() const {return split_dim;};
 private:
+    std::vector< array_d > all_local_shape;
     size_t split_dim=0;
     void initialize();
-    std::vector< array_d > all_local_shape;
 };
 
 template <size_t dimension>
