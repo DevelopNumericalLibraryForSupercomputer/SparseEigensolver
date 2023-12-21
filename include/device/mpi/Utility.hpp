@@ -4,7 +4,7 @@
 
 namespace SE{
 
-CBLAS_LAYOUT map_layout_blas_MPI(ORDERTYPE layout){
+CBLAS_LAYOUT map_order_blas_MPI(ORDERTYPE layout){
     switch (layout){
         case ORDERTYPE::ROW: return CblasRowMajor;
         case ORDERTYPE::COL: return CblasColMajor;
@@ -12,7 +12,7 @@ CBLAS_LAYOUT map_layout_blas_MPI(ORDERTYPE layout){
     exit(-1);
 }
 
-int map_layout_lapack_MPI(ORDERTYPE layout){
+int map_order_lapack_MPI(ORDERTYPE layout){
     switch (layout){
         case ORDERTYPE::ROW: return LAPACK_ROW_MAJOR;
         case ORDERTYPE::COL: return LAPACK_COL_MAJOR;

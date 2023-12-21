@@ -8,21 +8,23 @@ namespace SE{
 MPI_Comm mpi_comm = NULL; // MPI_COMM_WORLD;
 
 template<>
-std::unique_ptr<Comm<DEVICETYPE::MPI> > createComm(int argc, char *argv[]){
-    std::cout << "MPI Comm" << std::endl;
+std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
     MPI_Init(&argc, &argv);
-    int myRank ,nRanks;
-    MPI_Comm_rank(mpi_comm, &myRank);
-    MPI_Comm_size(mpi_comm, &nRanks);
-    assert(nRanks>0);
-    assert(myRank>=0);
     mpi_comm = MPI_COMM_WORLD;
-    return std::make_unique< Comm<DEVICETYPE::MPI> >( (size_t) myRank, (size_t) nRanks );
+    int rank ,world_size;
+    MPI_Comm_rank(mpi_comm, &rank);
+    MPI_Comm_size(mpi_comm, &world_size);
+    std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
+    assert(world_size>0);
+    assert(rank>=0);
+    return std::make_unique< Comm<DEVICETYPE::MPI> >( (size_t) rank, (size_t) world_size );
 }
 
 template<>
 Comm<DEVICETYPE::MPI>::~Comm(){
+    std::cout << "comm count: " << count << std::endl;
     count-=0;
+    
     if (count==0 && mpi_comm!=NULL){
         auto status = MPI_Finalize();
         assert (status == MPI_SUCCESS);

@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <algorithm>
+#include <iomanip>
 #include "Map.hpp"
 namespace SE{
 template<size_t dimension> 
@@ -30,9 +31,6 @@ public:
     array_d pack_local_index(size_t local_index) const override;
     size_t  unpack_global_array_index(array_d global_array_index) const override;
     array_d pack_global_index(size_t global_index) const override;
-
-    size_t find_rank_from_global_index(size_t global_index) const;
-    size_t find_rank_from_global_array_index(array_d global_array_index) const;
 
     size_t find_rank_from_global_index(size_t global_index) const override;
     size_t find_rank_from_global_array_index(array_d global_array_index) const override;
@@ -87,8 +85,8 @@ void Contiguous1DMap<dimension>::initialize(){
 
     for (size_t i_rank=0; i_rank< this->world_size; i_rank++){
         auto tmp_local_shape = this->global_shape;
-        tmp_local_shape[split_dim] = tmp_local_shape[split_dim] / this->ranks_per_dim[split_dim];
-        tmp_local_shape[split_dim] += tmp_local_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
+        tmp_local_shape[split_dim] =  this->global_shape[split_dim] / this->ranks_per_dim[split_dim];
+        tmp_local_shape[split_dim] += this->global_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
 
         all_local_shape.push_back(tmp_local_shape);
     }

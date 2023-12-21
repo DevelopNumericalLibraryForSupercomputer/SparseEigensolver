@@ -36,31 +36,39 @@ public:
     void local_set_value(const size_t local_index, const DATATYPE value) override;
 
     friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
+
         stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>&> (tensor);
+        tensor.comm.barrier();
 
-        auto const num_row = tensor.map.get_global_shape(0);
-        auto const num_col = tensor.map.get_global_shape(1);
-
-        stream << "========= Tensor Content =========" <<std::endl;
-        if(dimension == 1){
-            for (size_t i=0; i<num_row; i++){
-                stream << tensor.data[i] << " ";
+        for (size_t rank=0; rank<tensor.comm.get_world_size(); rank++){
+            if(rank!=tensor.comm.get_rank()){
+                tensor.comm.barrier();
             }
-            stream << std::endl;
-        }
-        else if (dimension == 2){
-            for (size_t i=0; i<num_row; i++){
-                for (size_t j=0; j<num_col; j++){
-                    stream << tensor.data[i+j*num_row] << " ";
+            else{
+                stream << "========= Tensor Content"<< rank << "=========" <<std::endl;
+                if(dimension == 1){
+                    auto const num_row = tensor.map.get_local_shape(0);
+                    for (size_t i=0; i<num_row; i++){ stream << tensor.data[i] << " "; }
+                    stream << std::endl;
                 }
-                stream << std::endl;
+                else if (dimension == 2){
+                    auto const num_row = tensor.map.get_local_shape(0);
+                    auto const num_col = tensor.map.get_local_shape(1);
+                    for (size_t i=0; i<num_row; i++){
+                        for (size_t j=0; j<num_col; j++){
+                            stream << std::fixed << std::setw(5) << std::setprecision(2) << tensor.data[tensor.map.unpack_local_array_index(std::array<size_t,2>({i,j}))] << " ";
+                        }
+                        stream << std::endl;
+                    }
+                }
+                else{
+                    for (size_t i=0; i<num_row; i++){
+                        stream << tensor.data[i] << " ";
+                    }
+                    stream << std::endl;
+                }
+                tensor.comm.barrier();
             }
-        }
-        else{
-            for (size_t i=0; i<num_row; i++){
-                stream << tensor.data[i] << " ";
-            }
-            stream << std::endl;
         }
         return stream;
     }
@@ -71,7 +79,7 @@ DenseTensor<dimension,DATATYPE,MAPTYPE,device>::DenseTensor(const Comm<device>& 
 :Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>(comm,map){
     auto data_size = this->map.get_num_local_elements();
     this->data = malloc<DATATYPE, device>( data_size );
-    memset<DATATYPE,device>( this->data, data_size, 0);
+    memset<DATATYPE,device>( this->data, 0, data_size);
     this->filled=false;
 };
 

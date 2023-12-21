@@ -89,18 +89,20 @@ public:
 //    DATATYPE operator() (const array_d idx);
     friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor){
     //void print_tensor_info() const{
-        stream << "========= Tensor Info =========" <<std::endl;
-        stream << "dimension: " << dimension<< "\n" 
-                  << "DATATYPE: "  << typeid(DATATYPE).name()
-                  << "   shape: ("  ;
-        for (auto shape_i : tensor.map.get_global_shape()){
-            stream << shape_i << ",";
+        if(tensor.comm.get_rank() == 0){
+            stream << "========= Tensor Info =========" <<std::endl;
+            stream << "dimension: " << dimension<< "\n" 
+                   << "DATATYPE: "  << typeid(DATATYPE).name()
+                   << "   shape: ("  ;
+            for (auto shape_i : tensor.map.get_global_shape()){
+                stream << shape_i << ",";
+            }
+            stream << ")\n"
+                   << "MAPTYPE: "   << typeid(MAPTYPE).name() << "\n" 
+                   << "Device: "    << (int) device <<"\n"
+                   << "store: "     << (int) store <<  std::endl;
+            return stream;
         }
-        stream << ")\n"
-                  << "MAPTYPE: "   << typeid(MAPTYPE).name() << "\n" 
-                  << "Device: "    << (int) device <<"\n"
-                  << "store: "     << (int) store <<  std::endl;
-        return stream;
     }
 
 
