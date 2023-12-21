@@ -40,7 +40,7 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> matmul(
 
 //QR
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-void orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string method);
+DenseTensor<2, DATATYPE, MAPTYPE, device> orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string method);
 
 }
 

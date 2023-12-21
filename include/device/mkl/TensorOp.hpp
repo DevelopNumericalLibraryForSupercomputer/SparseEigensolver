@@ -187,41 +187,53 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
 
     return output;
 }
-////QR
-//template <>
-//void SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>( 
-//    DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,  
-//    std::string method)
-//{
-//    auto number_of_vectors = mat.map.get_global_shape(1);
-//    auto vector_size       = mat.map.get_global_shape(0);
-//
-//    if(method == "qr"){
-//        double* tau = malloc<double, DEVICETYPE::MKL>(number_of_vectors);
-//        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, vector_size, tau);
-//        if(info != 0){
-//            std::cout << "QR decomposition failed!" << std::endl;
-//            exit(1);
-//        }
-//        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, number_of_vectors, number_of_vectors, eigvec, vector_size, tau);
-//        if(info != 0){
-//            std::cout << "QR decomposition failed!" << std::endl;
-//            exit(1);
-//        }
-//        free<double, DEVICETYPE::MKL>(tau);
-//    }
-//    else{
-//        std::cout << "default orthonormalization" << std::endl;
-//        double* submatrix = malloc<double, DEVICETYPE::MKL>(number_of_vectors*number_of_vectors);
-//        double* submatrix_eigvals = malloc<double, DEVICETYPE::MKL>(number_of_vectors);
-//        gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, TRANSTYPE::T, TRANSTYPE::N, number_of_vectors, number_of_vectors, vector_size, 1.0, eigvec, number_of_vectors, eigvec, vector_size, 0.0, submatrix, number_of_vectors);
-//        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix, number_of_vectors, submatrix_eigvals);
-//        double* new_eigvec = malloc<double, DEVICETYPE::MKL>(vector_size*number_of_vectors);
-//        gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, TRANSTYPE::N, TRANSTYPE::N,vector_size, number_of_vectors, number_of_vectors, 1.0, eigvec, vector_size, submatrix, number_of_vectors, 0.0, new_eigvec, vector_size);
-//        memcpy<double, DEVICETYPE::MKL>(eigvec, new_eigvec, vector_size*number_of_vectors);
-//        free<double, DEVICETYPE::MKL>(submatrix);
-//        free<double, DEVICETYPE::MKL>(submatrix_eigvals);
-//        free<double, DEVICETYPE::MKL>(new_eigvec);
-//    }
-//}
+//orthonormalize
+template <>
+DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>( 
+    DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,  
+    std::string method)
+{
+    auto number_of_vectors = mat.map.get_global_shape(1);
+    auto vector_size       = mat.map.get_global_shape(0);
+    double* eigvec         = mat.copy_data();
+    
+    
+    if(method == "qr"){
+        DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat.copy_comm(), *mat.copy_map() );
+        //double* tau = malloc<double, DEVICETYPE::MKL>(number_of_vectors);
+        std::unique_ptr<double[]> tau(new double[number_of_vectors]);
+        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, vector_size, tau.get());
+        if(info != 0){
+            std::cout << "QR decomposition failed!" << std::endl;
+            exit(1);
+        }
+        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, number_of_vectors, number_of_vectors, eigvec, vector_size, tau.get());
+        if(info != 0){
+            std::cout << "QR decomposition failed!" << std::endl;
+            exit(1);
+        }
+        //free<double, DEVICETYPE::MKL>(tau);
+        //return DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(mat.copy_comm(), mat.copy_map(), eigvec);
+        memcpy<double, DEVICETYPE::MKL>(output.data, eigvec, number_of_vectors*vector_size, COPYTYPE::NONE);
+        free<DEVICETYPE::MKL>(eigvec);
+        return output;
+    }
+    else{
+        std::cout << "default orthonormalization" << std::endl;
+        //double* submatrix = malloc<double, DEVICETYPE::MKL>(number_of_vectors*number_of_vectors);
+        //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, TRANSTYPE::T, TRANSTYPE::N, number_of_vectors, number_of_vectors, vector_size, 1.0, eigvec, number_of_vectors, eigvec, vector_size, 0.0, submatrix.get(), number_of_vectors);
+        auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
+        std::cout << "submatrix" << std::endl;
+        std::cout << submatrix;
+        //double* submatrix_eigvals = malloc<double, DEVICETYPE::MKL>(number_of_vectors);
+        std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
+        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data, number_of_vectors, submatrix_eigvals.get());
+        std::cout << "submatrix" << std::endl;
+        std::cout << submatrix;
+        return TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
+        //double* new_eigvec = malloc<double, DEVICETYPE::MKL>(vector_size*number_of_vectors);
+        //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, TRANSTYPE::N, TRANSTYPE::N,vector_size, number_of_vectors, number_of_vectors, 1.0, eigvec, vector_size, submatrix, number_of_vectors, 0.0, new_eigvec, vector_size);
+        //free<double, DEVICETYPE::MKL>(new_eigvec);
+    }
+}
 }

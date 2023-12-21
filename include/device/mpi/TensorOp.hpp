@@ -66,7 +66,8 @@ template <typename DATATYPE>
 DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
     const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat1,
     const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat2,
-    TRANSTYPE trans=TRANSTYPE::N)
+    TRANSTYPE trans1=TRANSTYPE::N,
+    TRANSTYPE trans2=TRANSTYPE::N)
 {
     auto world_size = mat1.comm.world_size;
     auto rank = mat1.comm.rank;
