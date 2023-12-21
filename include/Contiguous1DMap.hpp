@@ -1,6 +1,7 @@
 #pragma once
 #include <cassert>
 #include <algorithm>
+#include <iomanip>
 #include "Map.hpp"
 namespace SE{
 template<size_t dimension> 
@@ -84,8 +85,8 @@ void Contiguous1DMap<dimension>::initialize(){
 
     for (size_t i_rank=0; i_rank< this->world_size; i_rank++){
         auto tmp_local_shape = this->global_shape;
-        tmp_local_shape[split_dim] = tmp_local_shape[split_dim] / this->ranks_per_dim[split_dim];
-        tmp_local_shape[split_dim] += tmp_local_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
+        tmp_local_shape[split_dim] =  this->global_shape[split_dim] / this->ranks_per_dim[split_dim];
+        tmp_local_shape[split_dim] += this->global_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
 
         all_local_shape.push_back(tmp_local_shape);
     }

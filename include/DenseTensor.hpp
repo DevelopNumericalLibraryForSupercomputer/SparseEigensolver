@@ -37,41 +37,48 @@ public:
 
     friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
         stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>&> (tensor);
+        tensor.comm.barrier();
 
-
-        stream << "========= Tensor Content =========" <<std::endl;
-        if(dimension == 1){
-            auto const num_row = tensor.map.get_global_shape(0);
-            for (size_t i=0; i<num_row; i++){
-                stream << tensor.data[i] << " ";
+        for (size_t rank=0; rank<tensor.comm.get_world_size(); rank++){
+            if(rank!=tensor.comm.get_rank()){
+                tensor.comm.barrier();
             }
-            stream << std::endl;
-        }
-        else if (dimension == 2){
-            auto const num_row = tensor.map.get_global_shape(0);
-            auto const num_col = tensor.map.get_global_shape(1);
-            for (size_t i=0; i<num_row; i++){
-                for (size_t j=0; j<num_col; j++){
-                    stream << tensor.data[i+j*num_row] << " ";
+            else{
+                stream << "========= Tensor Content"<< rank << "=========" <<std::endl;
+                if(dimension == 1){
+                    auto const num_row = tensor.map.get_local_shape(0);
+                    for (size_t i=0; i<num_row; i++){
+                        stream << tensor.data[i] << " ";
+                    }
+                    stream << std::endl;
                 }
-                stream << std::endl;
-            }
-        }
-        else{
-            for(size_t j=0;j<dimension;j++){
-                stream << j << '\t';
-            }
-            stream  << "value" << std::endl;
-            stream  << "=================================" << std::endl;
-            auto const num = tensor.map.get_num_global_elements();
-            for (size_t i=0; i<num; i++){
-                auto global_index_array_tmp = tensor.map.pack_global_index(i);
-                for(size_t j=0; j<dimension;j++){
-                    stream << global_index_array_tmp[j] << '\t';
+                else if (dimension == 2){
+                    auto const num_row = tensor.map.get_local_shape(0);
+                    auto const num_col = tensor.map.get_local_shape(1);
+                    for (size_t i=0; i<num_row; i++){
+                        for (size_t j=0; j<num_col; j++){
+                            stream << std::fixed << std::setw(5) << std::setprecision(2) << tensor.data[i*num_col + j] << " ";
+                        }
+                        stream << std::endl;
+                    }
                 }
-                stream << tensor.data[i] << " ";
+                else{
+                    for(size_t j=0;j<dimension;j++){
+                        stream << j << '\t';
+                    }
+                    stream  << "value" << std::endl;
+                    stream  << "=================================" << std::endl;
+                    auto const num = tensor.map.get_num_local_elements();
+                    for (size_t i=0; i<num; i++){
+                        auto global_index_array_tmp = tensor.map.local_to_global(tensor.map.pack_local_index(i));
+                        for(size_t j=0; j<dimension;j++){
+                            stream << global_index_array_tmp[j] << '\t';
+                        }
+                        stream << tensor.data[i] << " ";
+                    }
+                }
+                tensor.comm.barrier();
             }
-            stream << std::endl;
         }
         return stream;
     }
