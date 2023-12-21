@@ -57,7 +57,7 @@ public:
                     auto const num_col = tensor.map.get_local_shape(1);
                     for (size_t i=0; i<num_row; i++){
                         for (size_t j=0; j<num_col; j++){
-                            stream << std::fixed << std::setw(5) << std::setprecision(2) << tensor.data[tensor.map.unpack_local_array_index(std::array<size_t,2>({i,j}))] << " ";
+                            stream << std::fixed << std::setw(5) << std::setprecision(2) << tensor.data[i*num_col + j] << " ";
                         }
                         stream << std::endl;
                     }
