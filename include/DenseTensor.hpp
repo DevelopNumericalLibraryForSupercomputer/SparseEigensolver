@@ -36,7 +36,6 @@ public:
     void local_set_value(const size_t local_index, const DATATYPE value) override;
 
     friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
-
         stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>&> (tensor);
         tensor.comm.barrier();
 
@@ -48,7 +47,9 @@ public:
                 stream << "========= Tensor Content"<< rank << "=========" <<std::endl;
                 if(dimension == 1){
                     auto const num_row = tensor.map.get_local_shape(0);
-                    for (size_t i=0; i<num_row; i++){ stream << tensor.data[i] << " "; }
+                    for (size_t i=0; i<num_row; i++){
+                        stream << tensor.data[i] << " ";
+                    }
                     stream << std::endl;
                 }
                 else if (dimension == 2){
@@ -62,10 +63,19 @@ public:
                     }
                 }
                 else{
-                    for (size_t i=0; i<num_row; i++){
+                    for(size_t j=0;j<dimension;j++){
+                        stream << j << '\t';
+                    }
+                    stream  << "value" << std::endl;
+                    stream  << "=================================" << std::endl;
+                    auto const num = tensor.map.get_num_local_elements();
+                    for (size_t i=0; i<num; i++){
+                        auto global_index_array_tmp = tensor.map.local_to_global(tensor.map.pack_local_index(i));
+                        for(size_t j=0; j<dimension;j++){
+                            stream << global_index_array_tmp[j] << '\t';
+                        }
                         stream << tensor.data[i] << " ";
                     }
-                    stream << std::endl;
                 }
                 tensor.comm.barrier();
             }
