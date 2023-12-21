@@ -65,6 +65,12 @@ void gemm(const ORDERTYPE layout, const TRANSTYPE transa, const TRANSTYPE transb
           const DATATYPE *b, const size_t ldb, const DATATYPE beta,
           DATATYPE *c, const size_t ldc);
 
+//Blas-like extensions
+//void mkl_domatcopy (char ordering, char trans, size_t rows, size_t cols,
+//                   const double alpha, const double * A, size_t lda, double * B, size_t ldb);
+template <typename DATATYPE, DEVICETYPE devicetype>
+void omatcopy(const ORDERTYPE layout, const TRANSTYPE trans, size_t rows, size_t cols,
+              const double alpha, DATATYPE *a, size_t lda, DATATYPE *b, size_t ldb);
 
 
 //LAPACK

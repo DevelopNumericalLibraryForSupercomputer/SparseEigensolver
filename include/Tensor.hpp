@@ -100,10 +100,10 @@ public:
             stream << ")\n"
                    << "MAPTYPE: "   << typeid(MAPTYPE).name() << "\n" 
                    << "Device: "    << (int) device <<"\n"
-                   << "store: "     << (int) store <<  std::endl;
-            return stream;
+                   << "store: "     << (int) store <<  std::endl;   
         }
-    }
+        return stream;
+    };
 
 
 protected:

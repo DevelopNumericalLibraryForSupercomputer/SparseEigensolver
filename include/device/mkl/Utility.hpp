@@ -30,5 +30,21 @@ CBLAS_TRANSPOSE map_transpose_blas_MKL(TRANSTYPE trans){
     exit(-1);
 }
 
+char map_order_blas_extension_MKL(ORDERTYPE order){
+    switch (order){
+        case ORDERTYPE::ROW: return 'R';
+        case ORDERTYPE::COL: return 'C';
+    }
+    exit(-1);
+}
+
+char map_transpose_blas_extension_MKL(TRANSTYPE trans){
+    switch (trans){
+        case TRANSTYPE::N:      return 'N';
+        case TRANSTYPE::T:      return 'T';
+        case TRANSTYPE::C:      return 'C';
+    }
+    exit(-1);
+}
 
 }

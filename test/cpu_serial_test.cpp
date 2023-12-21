@@ -29,17 +29,21 @@ int main(int argc, char* argv[]){
     std::cout << "SERIAL test" << std::endl;
     std::cout << *ptr_comm <<std::endl;    
     
-    std::array<size_t, 2> test_shape = {3,3};
+    std::array<size_t, 2> test_shape = {4,3};
     Contiguous1DMap map (test_shape,  0,1);
-    std::vector<double> test_data = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
+    std::vector<double> test_data = {1,0,-1,0,1,0,1,0,1,0,0,0};
 
     SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix(*ptr_comm,map);
-    for(int i=0;i<9;i++){
+    for(int i=0;i<test_shape[0] * test_shape[1];i++){
         test_matrix.local_insert_value(i,test_data[i]);
     }
     test_matrix.complete();
     std::cout << test_matrix <<std::endl; 
-
+    std::cout << "QR ortho" << std::endl;
+    std::cout << TensorOp::orthonormalize(test_matrix,"qr") << std::endl;
+    std::cout << "general ortho" << std::endl;
+    std::cout << TensorOp::orthonormalize(test_matrix,"normal") << std::endl;
+/*
     std::array<size_t, 1> vector_shape = {3};
     Contiguous1DMap map1d (vector_shape,  0,1);
     SE::DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> test_vector(*ptr_comm,map1d);
@@ -113,7 +117,7 @@ int main(int argc, char* argv[]){
     std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "sgemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
-    
+*/
 //    test_sparse.print();
 //
 //    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(*ptr_comm, map2, test_data2 );
