@@ -38,17 +38,18 @@ public:
     friend std::ostream& operator<< (std::ostream& stream, const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
         stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>&> (tensor);
 
-        auto const num_row = tensor.map.get_global_shape(0);
-        auto const num_col = tensor.map.get_global_shape(1);
 
         stream << "========= Tensor Content =========" <<std::endl;
         if(dimension == 1){
+            auto const num_row = tensor.map.get_global_shape(0);
             for (size_t i=0; i<num_row; i++){
                 stream << tensor.data[i] << " ";
             }
             stream << std::endl;
         }
         else if (dimension == 2){
+            auto const num_row = tensor.map.get_global_shape(0);
+            auto const num_col = tensor.map.get_global_shape(1);
             for (size_t i=0; i<num_row; i++){
                 for (size_t j=0; j<num_col; j++){
                     stream << tensor.data[i+j*num_row] << " ";
@@ -57,7 +58,17 @@ public:
             }
         }
         else{
-            for (size_t i=0; i<num_row; i++){
+            for(size_t j=0;j<dimension;j++){
+                stream << j << '\t';
+            }
+            stream  << "value" << std::endl;
+            stream  << "=================================" << std::endl;
+            auto const num = tensor.map.get_num_global_elements();
+            for (size_t i=0; i<num; i++){
+                auto global_index_array_tmp = tensor.map.pack_global_index(i);
+                for(size_t j=0; j<dimension;j++){
+                    stream << global_index_array_tmp[j] << '\t';
+                }
                 stream << tensor.data[i] << " ";
             }
             stream << std::endl;
@@ -71,7 +82,7 @@ DenseTensor<dimension,DATATYPE,MAPTYPE,device>::DenseTensor(const Comm<device>& 
 :Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::DENSE>(comm,map){
     auto data_size = this->map.get_num_local_elements();
     this->data = malloc<DATATYPE, device>( data_size );
-    memset<DATATYPE,device>( this->data, data_size, 0);
+    memset<DATATYPE,device>( this->data, 0, data_size);
     this->filled=false;
 };
 

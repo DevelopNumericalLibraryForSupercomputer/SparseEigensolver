@@ -31,9 +31,6 @@ public:
     size_t  unpack_global_array_index(array_d global_array_index) const override;
     array_d pack_global_index(size_t global_index) const override;
 
-    size_t find_rank_from_global_index(size_t global_index) const;
-    size_t find_rank_from_global_array_index(array_d global_array_index) const;
-
     size_t find_rank_from_global_index(size_t global_index) const override;
     size_t find_rank_from_global_array_index(array_d global_array_index) const override;
 

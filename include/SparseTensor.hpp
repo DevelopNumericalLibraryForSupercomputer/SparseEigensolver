@@ -34,6 +34,26 @@ public:
     void local_set_value (const array_d local_array_index,  const DATATYPE value) override;
     void global_set_value(const size_t global_index,        const DATATYPE value) override;
     void local_set_value (const size_t local_index,         const DATATYPE value) override;
+    // string stream
+    friend std::ostream& operator<< (std::ostream& stream, const SparseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
+        stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::COO>&> (tensor);
+
+        stream << "========= Tensor Content =========" <<std::endl;
+        auto const num = tensor.get_num_nonzero();
+        for(size_t j=0;j<dimension;j++){
+            stream << j << '\t';
+        }
+        stream  << "value" << std::endl;
+        stream << "==================================" <<std::endl;
+        for (size_t i=0; i<num; i++){
+            for(size_t j=0; j<dimension;j++){
+                stream << tensor.data[i].first[j] << '\t';
+            }
+            stream << tensor.data[i].second << std::endl;
+        }
+        stream << std::endl;
+        return stream;
+    }
 
     // Sparse Tensor Only 
     void complete(bool reuse=false);
@@ -161,7 +181,7 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
         auto tmp_index = malloc<int> (this->data.size()*dimension);
         auto tmp_value  = malloc<DATATYPE>(this->data.size());
     
-        auto offset= this->data.size()*sizeof(DATATYPE);
+        auto offset= this->data.size();
         for (size_t i = 0; i < this->data.size() ; i++){
             tmp_value[i] = this->data[i].second;
             for (size_t j=0; j<dimension; j++){
@@ -173,7 +193,6 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
         if(reuse==false){
             this->data.clear();
         }
-
 
         if ( (int)device <10){
             complete_index = malloc<int,device> (nnz*dimension);

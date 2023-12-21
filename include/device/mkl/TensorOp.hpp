@@ -60,7 +60,7 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
     return output;
 }
 
-// sparse mv 
+// sparse mv
 template <>
 DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> SE::TensorOp::matmul<double, Contiguous1DMap<2>, Contiguous1DMap<1>, DEVICETYPE::MKL>(
     const SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,
@@ -112,10 +112,10 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> SE::TensorOp::matmul
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans == TRANSTYPE::N){
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data, 1.0, output.data);
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data, 0.0, output.data);
     }
     else{
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data, 1.0, output.data);
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data, 0.0, output.data);
     }
     assert (status == SPARSE_STATUS_SUCCESS);
 
