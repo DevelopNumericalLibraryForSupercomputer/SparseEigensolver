@@ -44,6 +44,10 @@ void scal(const size_t n, const DATATYPE alpha, DATATYPE *x, const size_t incx);
 template <typename DATATYPE, DEVICETYPE devicetype>
 void axpy(const size_t n, const DATATYPE a, const DATATYPE *x, const size_t incx, DATATYPE *y, const size_t incy);
 
+//Euclidean norm, ||x||
+template <typename DATATYPE, DEVICETYPE devicetype>
+DATATYPE nrm2(const size_t n, const DATATYPE *x, const size_t incx);
+
 //alpha * A * x + beta * y
 template <typename DATATYPE, DEVICETYPE devicetype>
 void gemv(const ORDERTYPE layout, const TRANSTYPE transa, const size_t m, const size_t n, const DATATYPE alpha,
