@@ -14,12 +14,11 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 */
 //std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(DenseTensor<DATATYPE,2,comm,map>& tensor, std::string method)
 
-template<STORETYPE storetype, typename DATATYPE, size_t dimension, DEVICETYPE device, typename MAPTYPE>
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<storetype, DATATYPE, dimension, device, MAPTYPE>& tensor, std::string method)
-{static_assert(false, "not implemented yet"); };
+//template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+//std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor, std::string method);
 
-template<STORETYPE storetype, typename DATATYPE, DEVICETYPE device, typename MAPTYPE>
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<storetype, DATATYPE, 2, device, MAPTYPE>& tensor, std::string method)
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor, std::string method)
 {
     if(method == "evd"){
         return evd(tensor);
