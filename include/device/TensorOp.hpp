@@ -42,8 +42,8 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> matmul(
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-DenseTensor<2, DATATYPE, MAPTYPE, device> orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string method);
-
+void orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string method);
+//DenseTensor<2, DATATYPE, MAPTYPE, device>
 }
 
 

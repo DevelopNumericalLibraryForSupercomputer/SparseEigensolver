@@ -27,7 +27,7 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
     Contiguous1DMap output_map(output_shape, 0,1);
     DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), output_map);
     //mby k * kby 1
-    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, m, vec.data, 1, 0.0, output.data, 1);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.map.get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
     return output;
 }
 
@@ -58,7 +58,7 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
     Contiguous1DMap output_map (output_shape, 0,1);
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat2.copy_comm(), output_map );
     //mby k * kby n
-    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, m, mat2.data, n, 0.0, output.data, n);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, mat1.map.get_global_shape(1), mat2.data, mat2.map.get_global_shape(1), 0.0, output.data, n);
     return output;
 }
 
@@ -197,7 +197,8 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 template <>
-DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>( 
+//DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> 
+void SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>( 
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat,  
     std::string method)
 {
@@ -209,33 +210,35 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::orthon
     if(method == "qr"){
         DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat.copy_comm(), *mat.copy_map() );
         std::unique_ptr<double[]> tau(new double[number_of_vectors]);
-        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::COL, vector_size, number_of_vectors, eigvec, vector_size, tau.get());
+        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, number_of_vectors, tau.get());
         if(info != 0){
             std::cout << "QR decomposition failed!" << std::endl;
             exit(1);
         }
-        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::COL, vector_size, number_of_vectors, eigvec, vector_size, tau.get());
+        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, number_of_vectors, tau.get());
         if(info != 0){
             std::cout << "QR decomposition failed!" << std::endl;
             exit(1);
         }
-        omatcopy<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, TRANSTYPE::T, number_of_vectors, vector_size, 1.0, eigvec, vector_size, output.data, number_of_vectors);
+        memcpy<double, DEVICETYPE::MKL>(mat.data, eigvec, number_of_vectors*vector_size);
         free<DEVICETYPE::MKL>(eigvec);
-        return output;
+        //return output;
     }
     else{
         std::cout << "default orthonormalization" << std::endl;
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
         syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data, number_of_vectors, submatrix_eigvals.get());
-        auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::T);
+
+        auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
         for(size_t i=0; i<number_of_vectors; i++){
             double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output.data[i], number_of_vectors);
             assert(norm != 0.0);
             scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);
         }
-        return output;
+        memcpy<double, DEVICETYPE::MKL>(mat.data, output.data, number_of_vectors*vector_size);
+        //return output;
     }
 }
 }

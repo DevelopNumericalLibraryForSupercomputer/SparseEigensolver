@@ -48,6 +48,10 @@ void axpy(const size_t n, const DATATYPE a, const DATATYPE *x, const size_t incx
 template <typename DATATYPE, DEVICETYPE devicetype>
 DATATYPE nrm2(const size_t n, const DATATYPE *x, const size_t incx);
 
+//y (i*N+incy) = x (i*M+incx) 
+template <typename DATATYPE, DEVICETYPE devicetype>
+void copy(const size_t n, const DATATYPE *x, const size_t incx, DATATYPE *y, const size_t incy);
+
 //alpha * A * x + beta * y
 template <typename DATATYPE, DEVICETYPE devicetype>
 void gemv(const ORDERTYPE layout, const TRANSTYPE transa, const size_t m, const size_t n, const DATATYPE alpha,

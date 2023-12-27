@@ -49,6 +49,11 @@ double nrm2<double, DEVICETYPE::MKL>(const size_t n, const double *x, const size
 }
 
 template <>
+void copy<double, DEVICETYPE::MKL>(const size_t n, const double *x, const size_t incx, double* y, const size_t incy){
+    cblas_dcopy(n, x, incx, y, incy);
+}
+
+template <>
 void gemv<double, DEVICETYPE::MKL>(const ORDERTYPE order, const TRANSTYPE transa, const size_t m, const size_t n, const double alpha,
                        const double *a, const size_t lda, const double *x, const size_t incx,
                        const double beta, double *y, const size_t incy)
