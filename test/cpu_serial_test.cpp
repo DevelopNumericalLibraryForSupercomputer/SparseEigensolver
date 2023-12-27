@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 15;
+    size_t N = 100;
     std::array<size_t, 2> test_shape2 = {N,N};
     Contiguous1DMap map2 (test_shape2,  0,1);
     std::array<size_t, 1> test_shape2_vec = {N};
@@ -73,9 +73,9 @@ int main(int argc, char* argv[]){
         for(size_t j=0;j<N;j++){
             test_data2[i+j*N] = 0;
             if(i == j)                  test_data2[i+j*N] += 2.0*((double)i-(double)N) - invh2*5.0/2.0;
-            if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
-            if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            //if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
+            //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;

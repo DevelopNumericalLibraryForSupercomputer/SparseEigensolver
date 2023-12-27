@@ -43,23 +43,24 @@ bool check_convergence(DenseTensor<2, DATATYPE, MAPTYPE, device> residual, size_
 }
 
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(               //return new guess = vec_size * new_block_size
+DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(               
                     DenseTensor<2, DATATYPE, MAPTYPE, device> tensor,   //vec_size * vec_size
                     DenseTensor<2, DATATYPE, MAPTYPE, device> residual, //vec_size * block_size
-                    DenseTensor<2, DATATYPE, MAPTYPE, device> old_guess,//vec_size * block_size
+                    DenseTensor<2, DATATYPE, MAPTYPE, device> guess,    //vec_size * block_size
+                                                                        //return new guess = vec_size * new_block_size
                     DATATYPE* sub_eigval,                               //block_size
                     DecomposeOption option){
     size_t vec_size = residual.map.get_global_shape()[0];
     size_t block_size = residual.map.get_global_shape()[1];
     size_t num_eig = option.num_eigenvalues;
     size_t new_block_size = block_size + num_eig;
-
+    
     std::array<size_t, 2> new_guess_shape = {vec_size, new_block_size};
     auto new_guess_map = MAPTYPE(new_guess_shape, tensor.comm.get_rank(), tensor.comm.get_world_size());
     DenseTensor<2, DATATYPE, MAPTYPE, device> new_guess(*tensor.copy_comm(), new_guess_map);
     //copy old guesses
     for(int i=0;i<block_size;i++){
-        copy<DATATYPE, device>(vec_size, &old_guess.data[i], block_size, &new_guess.data[i], new_block_size);
+        copy<DATATYPE, device>(vec_size, &guess.data[i], block_size, &new_guess.data[i], new_block_size);
     }
 
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
@@ -72,6 +73,7 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(               //return
                 scal<DATATYPE, device>(vec_size, 1.0/coeff_i, &new_guess.data[block_size + index], new_block_size);
             }
         }
+        TensorOp::orthonormalize(new_guess, "qr");
     }
     else{
         std::cout << "not implemented" << std::endl;
@@ -108,81 +110,73 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(DenseTensor<2, DATATYPE, MA
     // 0th iteration do not need orthonormalize (up to now).
     //orthonormalize<DATATYPE, device>(guess, n, block_size, "qr");
 
-    // W_iterk = A V_k
-    auto w_iter = TensorOp::matmul(tensor, guess, TRANSTYPE::N, TRANSTYPE::N);
-
-    //Subspace(Rayleigh) matrix (dense) H_k = V_k^t A V_k
-    auto subspace_matrix = TensorOp::matmul(guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
-    
-    //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
-    DATATYPE* sub_eigval = malloc<DATATYPE, device>(option.num_eigenvalues);
-    DenseTensor<2, DATATYPE, MAPTYPE, device> sub_eigvec(subspace_matrix);
-    int info = syev<DATATYPE, device>(ORDERTYPE::ROW, 'V', 'U', option.num_eigenvalues, sub_eigvec.data, option.num_eigenvalues, sub_eigval);
-    if(info !=0){
-        std::cout << "subspace_diagonalization error!" << std::endl;
-        exit(-1);
-    }
-    //syev sorts the eigenvectors and eigenvalues in ascending order.
-    //eigenvec_sort<double, device>(sub_eigval, sub_eigvec, block_size, block_size);
-
-    //calculate ritz vector
-    //Ritz vector calculation, x_ki = V_k y_ki
-    auto ritz_vec = TensorOp::matmul(guess, sub_eigvec, TRANSTYPE::N, TRANSTYPE::N);
-
     bool return_result = false;
     size_t iter = 0;
     while(iter < option.max_iterations){
-
+        DenseTensor<2, DATATYPE, MAPTYPE, device>* new_guess;
+        new_guess = &guess;
         //block expansion loop
         size_t i_block = 0;
+        
         while(true){
-            if(i_block == option.max_block) break;
+            if(i_block == option.max_block){
+                for(int i=0;i<option.num_eigenvalues;i++){
+                    copy<DATATYPE, device>(vec_size, &new_guess->data[i], option.max_block*option.num_eigenvalues, &guess.data[i], option.num_eigenvalues);
+                }
+                break;
+            }
+
+            std::cout << "iter : " << iter << " , iblock : " << i_block << " / " << option.max_block << std::endl;
+
+            size_t block_size = option.num_eigenvalues*(i_block+1);
+            // W_iterk = A V_k
+            auto w_iter = TensorOp::matmul(tensor, *new_guess, TRANSTYPE::N, TRANSTYPE::N);
+
+            //Subspace(Rayleigh) matrix (dense) H_k = V_k^t A V_k
+            auto subspace_matrix = TensorOp::matmul(*new_guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
+        
+            //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
+            DATATYPE* sub_eigval = malloc<DATATYPE, device>(block_size);
+            DenseTensor<2, DATATYPE, MAPTYPE, device> sub_eigvec(subspace_matrix);
+            int info = syev<DATATYPE, device>(ORDERTYPE::ROW, 'V', 'U', block_size, sub_eigvec.data, block_size, sub_eigval);
+            if(info !=0){
+                std::cout << "subspace_diagonalization error!" << std::endl;
+                exit(-1);
+            }
+    
+            //calculate ritz vector
+            //Ritz vector calculation, x_ki = V_k y_ki
+            auto ritz_vec = TensorOp::matmul(*new_guess, sub_eigvec, TRANSTYPE::N, TRANSTYPE::N);
+            //ritz vectors are new eigenvector candidates
+    
+            std::cout << ritz_vec << std::endl;
+            for(int i=0;i<option.num_eigenvalues;i++) {std::cout << sub_eigval[i] << ' ';}
+            std::cout << std::endl;
 
             //get residual
             auto residual = calculate_residual(w_iter, sub_eigval, sub_eigvec, ritz_vec);
-            std::cout << "0-th step, residual\n" << residual << std::endl;
+            //std::cout << "0-th step, residual\n" << residual << std::endl;
             //check convergence
             bool is_converged = check_convergence(residual, option.num_eigenvalues, option.tolerance);
             if(is_converged){
                 return_result = true;
+                memset<DATATYPE, device>(imag_eigvals.get(), 0.0, option.num_eigenvalues);
+                memcpy<DATATYPE, device>(real_eigvals.get(), sub_eigval, option.num_eigenvalues);
                 break;
             }
             //preconditioning
             //"Diagonal preconditioner" return expanded guess matrix.
-            DenseTensor<2, DATATYPE, MAPTYPE, device> old_guess(guess);
-            std::cout << "BEFORE PRECONDITIONER" << std::endl;
-            auto& guess = preconditioner(tensor, residual, old_guess, sub_eigval, option);
-            std::cout << guess << std::endl;
-            TensorOp::orthonormalize(guess, "qr");
-            std::cout << guess << std::endl;
-            /*
-            //auto& sub_eigvec = TensorOp::concat(new_guess, sub_eigvec);
-            //TensorOp::orthonormalize(sub_eigvec,'qr')
-            auto& subeigvec = TensorOp::orthonormalize(new_guess, sub_eigvec, "qr");
-            //orthonormalize
-            //TensorOp::orthonormalize(new_guess, "qr");
-            */
-
-            // W_iterk = A V_k
-            //w_iter = TensorOp::matmul(tensor, guess, TRANSTYPE::N, TRANSTYPE::N);
-
-            //Subspace(Rayleigh) matrix (dense) H_k = V_k^t A V_k
-            //subspace_matrix = TensorOp::matmul(guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
-    
+            auto tmp_guess = preconditioner(tensor, residual, ritz_vec, sub_eigval, option);
+            new_guess = &tmp_guess;
             
-
-
-            exit(-1);
             i_block++;
         }
-        if(return_result){
-            //memcpy<DATATYPE, device>(eigvec_0.get(), ritz_vec, n*option.num_eigenvalues);
-            memset<DATATYPE, device>(imag_eigvals.get(), 0.0, option.num_eigenvalues);
-            memcpy<DATATYPE, device>(real_eigvals.get(), sub_eigval, option.num_eigenvalues);
-                
+        if(return_result){                
             break;
         }
-        iter++;
+        else{
+            iter++;
+        }
     }
     if(!return_result){
         std::cout << "NOT CONVERGED!" << std::endl;
