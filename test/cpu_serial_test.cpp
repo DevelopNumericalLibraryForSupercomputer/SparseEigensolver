@@ -66,13 +66,13 @@ int main(int argc, char* argv[]){
     std::array<size_t, 1> test_shape2_vec = {N};
     Contiguous1DMap map2_vec (test_shape2_vec,  0,1);
     
-    // local potnetial v(x) = 2.0*(i-N) + spacing 0.2, 4th order kinetic energy matrix
+    // local potnetial v(x) = 2.0*(i-N) + spacing 0.2, 3th order kinetic energy matrix
     double invh2 = 1/0.2/0.2;
     double* test_data2 = malloc<double, DEVICETYPE::MKL>(N*N);
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
             test_data2[i+j*N] = 0;
-            if(i == j)                  test_data2[i+j*N] += 2.0*((double)i-(double)N)  - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
+            if(i == j)                  test_data2[i+j*N] += 0.0  - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
             if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
             if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
             //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;

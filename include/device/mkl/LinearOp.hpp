@@ -70,11 +70,11 @@ void gemm<double, DEVICETYPE::MKL>(const ORDERTYPE order, const TRANSTYPE transa
     return cblas_dgemm(map_order_blas_MKL(order), map_transpose_blas_MKL(transa), map_transpose_blas_MKL(transb), m, n, k, alpha, a, lda, b, ldb, beta, c, ldc);
 }
 
-template <>
-void omatcopy<double, DEVICETYPE::MKL>(const ORDERTYPE order, const TRANSTYPE trans, size_t rows, size_t cols,
-                                       const double alpha, double *a, size_t lda, double *b, size_t ldb){
-    return mkl_domatcopy(map_order_blas_extension_MKL(order), map_transpose_blas_extension_MKL(trans), rows, cols, alpha, a, lda, b, ldb);
-}
+//template <>
+//void omatcopy<double, DEVICETYPE::MKL>(const ORDERTYPE order, const TRANSTYPE trans, size_t rows, size_t cols,
+//                                       const double alpha, double *a, size_t lda, double *b, size_t ldb){
+//    return mkl_domatcopy(map_order_blas_extension_MKL(order), map_transpose_blas_extension_MKL(trans), rows, cols, alpha, a, lda, b, ldb);
+//}
 
 template<>
 int geqrf<double, DEVICETYPE::MKL>(const ORDERTYPE order, size_t m, size_t n, double* a, size_t lda, double* tau){
