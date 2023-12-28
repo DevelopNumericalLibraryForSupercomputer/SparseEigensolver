@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 100;
+    size_t N = 10000;
     std::array<size_t, 2> test_shape2 = {N,N};
     Contiguous1DMap map2 (test_shape2,  0,1);
     std::array<size_t, 1> test_shape2_vec = {N};
@@ -72,18 +72,19 @@ int main(int argc, char* argv[]){
     for(size_t i=0;i<N;i++){
         for(size_t j=0;j<N;j++){
             test_data2[i+j*N] = 0;
-            if(i == j)                  test_data2[i+j*N] += 2.0*((double)i-(double)N) - invh2*5.0/2.0;
-            //if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
-            //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
-            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            if(i == j)                  test_data2[i+j*N] += 2.0*((double)i-(double)N)  - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
+            if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
+            if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
+            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
     }
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix2(*ptr_comm, map2, test_data2);
-    std::cout << test_matrix2 <<std::endl; 
 
+    //std::cout << test_matrix2.data[0] <<std::endl; 
+    /*
 
     SE::DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> test_vec_long( *ptr_comm, map2_vec);
     test_vec_long.global_set_value(0,1.0);
@@ -93,13 +94,14 @@ int main(int argc, char* argv[]){
     std::cout <<  TensorOp::matmul( test_matrix2, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "gemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
+    
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, "evd");
     print_eigenvalues( "Eigenvalues", 3, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
-    
+    */
     
     SE::SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> test_sparse( *ptr_comm, map2, N*9);
     for(size_t i=0;i<N;i++){
@@ -116,12 +118,13 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
+/*
     std::cout <<  test_sparse << std::endl;
     std::cout << "SPMV" << std::endl;
     std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "sgemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
-
+*/
     SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(*ptr_comm, map2, test_data2 );
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, "davidson");

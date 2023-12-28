@@ -204,10 +204,11 @@ void SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>(
 {
     auto number_of_vectors = mat.map.get_global_shape(1);
     auto vector_size       = mat.map.get_global_shape(0);
-    double* eigvec         = mat.copy_data();
+    
     
     
     if(method == "qr"){
+        double* eigvec = mat.copy_data();
         DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat.copy_comm(), *mat.copy_map() );
         std::unique_ptr<double[]> tau(new double[number_of_vectors]);
         int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, number_of_vectors, tau.get());
