@@ -20,6 +20,17 @@ public:
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, size_t reserve_size);
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, INTERNALTYPE data);
 
+    ~SparseTensor() {
+        if (complete_index != nullptr) {
+            delete[] complete_index;
+            complete_index = nullptr;
+        }
+        if (complete_value != nullptr) {
+            delete[] complete_value;
+            complete_value = nullptr;
+        }
+    }
+
     INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone

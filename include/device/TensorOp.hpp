@@ -7,8 +7,6 @@ namespace SE{
 
 namespace TensorOp {
 
-
-
 //mv
 template <typename DATATYPE, typename MAPTYPE1, typename MAPTYPE2, DEVICETYPE device>
 DenseTensor<1, DATATYPE, MAPTYPE2, device> matmul(
@@ -43,97 +41,37 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> matmul(
 //Each coulumn correponds to the vector should be orthonormalized.
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 void orthonormalize(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat, std::string method);
-//DenseTensor<2, DATATYPE, MAPTYPE, device>
+
+
+template <typename DATATYPE, typename MAPTYPE1, DEVICETYPE device>
+void scale_vectors(DenseTensor<2, DATATYPE, MAPTYPE1, device>& mat, DATATYPE* scale_coeff);
+
+template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+DenseTensor<2, DATATYPE, MAPTYPE, device> add( 
+                 DenseTensor<2, DATATYPE, MAPTYPE, device>& mat1,
+                 DenseTensor<2, DATATYPE, MAPTYPE, device>& mat2, DATATYPE coeff2);
+
+template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+void get_norm_of_vectors(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat,
+                         DATATYPE* norm, size_t norm_size);
+
+template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+void copy_vectors(
+        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat1,
+        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat2, size_t new_size);
+
+
+template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
+DenseTensor<2, DATATYPE, MAPTYPE, device> append_vectors(
+        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat1,
+        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat2);
+
+ // return eigvec
+template <typename DATATYPE, typename MAPTYPE1, DEVICETYPE device>
+DenseTensor<2, DATATYPE, MAPTYPE1, device> diagonalize(DenseTensor<2, DATATYPE, MAPTYPE1, device>& mat, DATATYPE* eigval);
+
+
+
 }
-
-
-/*
-// sparse mv 
-template <typename DATATYPE, DEVICETYPE device>
-void TensorOP::matmul<DATATYPE, Contiguous1DMap<2>, Contiguous1DMap<1>, STORETYPE::SPARSE, STORETYPE::DENSE, device>(
-    const Tensor<2, DATATYPE, Contiguous1DMap<2>, device, STORETYPE::SPARSE>& mat,
-    const Tensor<1, DATATYPE, Contiguous1DMap<1>, device, STORETYPE::DENSE>& vec,
-    TRANSTYPE trans,
-    Tensor<1, DATATYPE, Contiguous1DMap<1>, device, STORETYPE::DENSE>& output )
-{
-
-//    std::unique_ptr<int[]> row_indx(new int[data.size()]) ;
-//    std::unique_ptr<int[]> col_indx(new int[data.size()]) ;
-//
-//    for (size_t i=0; i<data.size(); i++){
-//        row_indx[i] = data[i].first[i]        
-//    }
-//    mat.data
-//
-//    size_t m = mat.map.get_global_shape(0);
-//    size_t k = mat.map.get_global_shape(1);
-//    if(trans != TRANPOSE::N){
-//        m= mat.map.get_global_shape(1);
-//        k= mat.map.get_global_shape(0);
-//    }
-
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
-    if(transa != TRANSTYPE::N){
-        m = a->shape[1]; k = a->shape[0];
-    }
-    assert (v->shape[0] == k);
-    std::array<size_t,1> return_size = {m};
-    double* return_data = malloc<double, DEVICE::MKL>(m);
-    memset<double, DEVICE::MKL>(return_data, 0, m);
-    
-    if(transa == TRANSTYPE::N){
-        for(auto entity : a->data){
-            return_data[ entity.first[0] ] += entity.second * v->data[ entity.first[1] ];
-        }
-    }
-    else{
-        for(auto entity : a->data){
-            return_data[ entity.first[1] ] += entity.second * v->data[ entity.first[0] ];
-        }
-    }
-    //MAPTYPE2* return_map = new MAPTYPE2(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 1, DEVICE::MKL, MAPTYPE2>* return_mat = new Tensor<STORETYPE::Dense, double, 1, DEVICE::MKL, MAPTYPE2>(a->comm, return_size, return_data);
-    return return_mat;
-}  
- 
-template <typename MAPTYPE>
-Tensor<STORETYPE::Dense, double, 2, DEVICE::MKL, MAPTYPE>* spmv(Tensor<STORETYPE::COO, double, 2, DEVICE::MKL, MAPTYPE>* a, 
-                                                        Tensor<STORETYPE::Dense, double, 2, DEVICE::MKL, MAPTYPE>* v,
-                                                        TRANSTYPE transa){
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
-    if(transa != TRANSTYPE::N){
-        m = a->shape[1]; k = a->shape[0];
-    }
-    assert (v->shape[0] == k);
-    size_t number_of_vec = v->shape[1];
-    std::array<size_t,2> return_size = {m, number_of_vec};
-    double* return_data = malloc<double, DEVICE::MKL>(m*number_of_vec);
-    memset<double, DEVICE::MKL>(return_data, 0, m*number_of_vec);
-    
-    if(transa == TRANSTYPE::N){
-        for(auto entity : a->data){
-            for(int n = 0; n<number_of_vec ; n++){
-                return_data[ entity.first[0] + n*m ] += entity.second * v->data[ entity.first[1] + n*m];
-            }
-        }
-    }
-    else{
-        for(auto entity : a->data){
-            for(int n = 0; n<number_of_vec ; n++){
-                return_data[ entity.first[1] + n*m ] += entity.second * v->data[ entity.first[1] + n*m];
-            }
-        }
-    }
-    //MAPTYPE* return_map = new MAPTYPE(return_size, 1);
-    Tensor<STORETYPE::Dense, double, 2, DEVICE::MKL, MAPTYPE>* return_mat = new Tensor<STORETYPE::Dense, double, 2, DEVICE::MKL, MAPTYPE>(a->comm, return_size, return_data);
-    return return_mat;
-}   
-
-
-
-
-*/
 
 }

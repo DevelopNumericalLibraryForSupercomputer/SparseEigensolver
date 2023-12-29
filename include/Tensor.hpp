@@ -36,6 +36,20 @@ public:
         filled=false;
     }
 
+    //destructor
+    ~Tensor() {
+        // Depending on the storage type, perform cleanup
+        if constexpr (store == STORETYPE::DENSE) {
+            // If the data is stored as a pointer, delete it
+            if (data != nullptr) {
+                delete[] data;
+                data = nullptr;
+            }
+        } else {
+            // If the data is stored as a vector, no cleanup needed
+        }
+    }
+
     // copy functions
     Comm<device>* copy_comm() const {
         return comm.clone();
