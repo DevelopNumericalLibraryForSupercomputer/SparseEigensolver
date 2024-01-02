@@ -24,12 +24,26 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, M
         return evd(tensor);
     }
     else if(method == "davidson"){
-        return davidson(tensor);
+        BasicDenseTensorOperations basic_op(tensor);
+        return davidson(basic_op);
     }
     else{
         std::cout << method << " is not implemented" << std::endl;
         exit(1);
     }
 };
+
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<2,DATATYPE,MAPTYPE,device,store>& operations, std::string method)
+{
+    if(method == "davidson"){
+        return davidson(operations);
+    }
+    else{
+        std::cout << method << " is not implemented" << std::endl;
+        exit(1);
+    }
+};
+
 
 }
