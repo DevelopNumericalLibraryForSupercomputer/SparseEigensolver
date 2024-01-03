@@ -41,8 +41,8 @@ public:
 //    bool use_locking;            //= false;
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
     size_t max_iterations          = 100;
-    double tolerance               = 1e-3;
-    size_t max_block               = 3;
+    double tolerance               = 1e-4;
+    size_t max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
     size_t num_eigenvalues         = 3;
     size_t eigenvalue_guesses      = 3;

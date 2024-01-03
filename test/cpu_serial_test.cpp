@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 1000;
+    size_t N = 3000;
     std::array<size_t, 2> test_shape2 = {N,N};
     Contiguous1DMap map2 (test_shape2,  0,1);
     std::array<size_t, 1> test_shape2_vec = {N};
@@ -82,6 +82,7 @@ int main(int argc, char* argv[]){
         }
     }
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix2(*ptr_comm, map2, test_data2);
+    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(test_matrix2);
 
     //std::cout << test_matrix2 <<std::endl; 
     
@@ -143,7 +144,6 @@ int main(int argc, char* argv[]){
     std::cout << "sgemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
 */
-    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(*ptr_comm, map2, test_data2 );
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, guess, "davidson");
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());

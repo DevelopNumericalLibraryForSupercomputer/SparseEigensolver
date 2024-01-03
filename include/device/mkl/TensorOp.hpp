@@ -96,7 +96,7 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> SE::TensorOp::matmul
     auto p_comm=vec.copy_comm();
 
     assert (num_col==vec.map.get_global_shape(0));
-    std::array<size_t, 1> output_shape = {num_row};
+    std::array<size_t, 1> output_shape = {static_cast<unsigned long>(num_row)};
     Contiguous1DMap output_map (output_shape, 0,1);
 
     DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> output(*p_comm, output_map );
@@ -164,7 +164,7 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     auto p_comm=mat2.copy_comm();
     
     assert (num_col==mat2.map.get_global_shape(0));
-    std::array<size_t, 2> output_shape = {num_row, mat2.map.get_global_shape(1)};
+    std::array<size_t, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.map.get_global_shape(1)};
     Contiguous1DMap output_map (output_shape, 0,1);
 
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> output(*p_comm, output_map );
