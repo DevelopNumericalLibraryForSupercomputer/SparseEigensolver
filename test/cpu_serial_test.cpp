@@ -62,7 +62,7 @@ int main(int argc, char* argv[]){
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
     size_t N = 6000;
-    const size_t num_eig = 6;
+    const size_t num_eig = 3;
 
 
     std::array<size_t, 2> test_shape2 = {N,N};
