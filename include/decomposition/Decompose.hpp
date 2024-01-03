@@ -18,14 +18,14 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 //std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor, std::string method);
 
 template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor, std::string method)
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
 {
     if(method == "evd"){
-        return evd(tensor);
+        return evd(tensor, eigvec);
     }
     else if(method == "davidson"){
-        BasicDenseTensorOperations basic_op(tensor);
-        return davidson(basic_op);
+        DenseTensorOperations basic_op(tensor);
+        return davidson(&basic_op, eigvec);
     }
     else{
         std::cout << method << " is not implemented" << std::endl;
@@ -33,11 +33,26 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, M
     }
 };
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<2,DATATYPE,MAPTYPE,device,store>& operations, std::string method)
+
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
 {
     if(method == "davidson"){
-        return davidson(operations);
+        SparseTensorOperations basic_op(tensor);
+        return davidson(basic_op, eigvec);
+    }
+    else{
+        std::cout << method << " is not implemented" << std::endl;
+        exit(1);
+    }
+};
+
+
+template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations& operations, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
+{
+    if(method == "davidson"){
+        return davidson(operations, eigvec);
     }
     else{
         std::cout << method << " is not implemented" << std::endl;

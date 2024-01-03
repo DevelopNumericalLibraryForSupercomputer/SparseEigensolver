@@ -60,7 +60,7 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 3000;
+    size_t N = 1000;
     std::array<size_t, 2> test_shape2 = {N,N};
     Contiguous1DMap map2 (test_shape2,  0,1);
     std::array<size_t, 1> test_shape2_vec = {N};
@@ -95,13 +95,31 @@ int main(int argc, char* argv[]){
     std::cout << "gemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
     */
+
+    std::array<size_t, 2> guess_shape = {N,3};
+    auto guess_map = Contiguous1DMap<2>(guess_shape, 0, 1);
+    auto guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
+    // guess : unit vector
+    for(size_t i=0;i<3;i++){
+        std::array<size_t, 2> tmp_index = {i,i};
+        guess->global_set_value(tmp_index, 1.0);
+    }
+
+
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    auto out1 = decompose(test_matrix2, "evd");
+    auto out1 = decompose(test_matrix2, guess, "evd");
     print_eigenvalues( "Eigenvalues", 3, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
+    free(guess);
+    guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
+    // guess : unit vector
+    for(size_t i=0;i<3;i++){
+        std::array<size_t, 2> tmp_index = {i,i};
+        guess->global_set_value(tmp_index, 1.0);
+    }
     
     SE::SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> test_sparse( *ptr_comm, map2, N*9);
     for(size_t i=0;i<N;i++){
@@ -127,7 +145,7 @@ int main(int argc, char* argv[]){
 */
     SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(*ptr_comm, map2, test_data2 );
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    auto out2 = decompose(test_matrix3, "davidson");
+    auto out2 = decompose(test_matrix3, guess, "davidson");
     print_eigenvalues( "Eigenvalues", 3, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;

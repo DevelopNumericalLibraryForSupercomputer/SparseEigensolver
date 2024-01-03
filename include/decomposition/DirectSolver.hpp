@@ -5,7 +5,7 @@
 
 namespace SE{
 template <typename DATATYPE, typename MAPTYPE>
-std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,DEVICETYPE::MKL>& tensor){
+std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, DEVICETYPE::MKL>* eigvec){
     assert(tensor.map.get_global_shape()[0] == tensor.map.get_global_shape()[1]);
     const size_t n = tensor.map.get_global_shape()[1];
 
@@ -27,6 +27,13 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,D
     //print_eigenvectors( "Left eigenvectors", shape[0], wi, return_val.factor_matrices[0], 3 );
     //print_eigenvectors( "Right eigenvectors", shape[0], wi, return_val.factor_matrices[1], 3 );
     std::unique_ptr<DecomposeResult<DATATYPE> > return_val = std::make_unique< DecomposeResult<DATATYPE> >( (size_t) n, std::move(real_eigvals),std::move(imag_eigvals));
+    
+    //eigvec = std::move(eigvec_0);
+    const size_t num_guess = eigvec->map.get_global_shape()[1];
+    for(int i=0;i<num_guess;i++){
+        copy<DATATYPE, DEVICETYPE::MKL>(n,&eigvec_0.get()[i],n,&eigvec->data[i],num_guess);
+    }
+    
     free<DEVICETYPE::MKL>(mat);
     return std::move(return_val);
 }

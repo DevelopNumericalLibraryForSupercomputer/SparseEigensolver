@@ -46,7 +46,7 @@ bool check_convergence(DenseTensor<2, DATATYPE, MAPTYPE, device> residual, size_
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(               
 //                    DenseTensor<2, DATATYPE, MAPTYPE, device> tensor,   //vec_size * vec_size
-                    BasicDenseTensorOperations<2,DATATYPE,MAPTYPE,device> operations,   //vec_size * vec_size
+                    TensorOperations* operations,   //vec_size * vec_size
                     DenseTensor<2, DATATYPE, MAPTYPE, device> residual, //vec_size * block_size
                     DenseTensor<2, DATATYPE, MAPTYPE, device> guess,    //vec_size * block_size
                                                                         //return new guess = vec_size * new_block_size
@@ -68,7 +68,7 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(
         for(size_t index=0; index< num_eig; index++){
 //            array_index = {index, index};
             //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
-            DATATYPE coeff_i = sub_eigval[index] - operations.get_diag_element(index);
+            DATATYPE coeff_i = sub_eigval[index] - operations->get_diag_element(index);
             if(abs(coeff_i) > option.preconditioner_tolerance){
                 scale_factor[index] = 1.0/coeff_i;
             }
@@ -91,24 +91,25 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(
 
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 //std::unique_ptr<DecomposeResult<DATATYPE> > davidson(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor){
-std::unique_ptr<DecomposeResult<DATATYPE> > davidson(BasicDenseTensorOperations<2,DATATYPE,MAPTYPE,device>& operations){
+std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations* operations, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec){
     DecomposeOption option;
     
     std::unique_ptr<DATATYPE[]> real_eigvals(new DATATYPE[option.num_eigenvalues]);
     std::unique_ptr<DATATYPE[]> imag_eigvals(new DATATYPE[option.num_eigenvalues]);
 
     //auto shape = tensor.map.get_global_shape();
-    auto shape = operations.get_global_shape();
+    auto shape = operations->get_global_shape();
     assert (shape[0] == shape[1]);
     const size_t vec_size = shape[0];
 
     //auto current_comm = tensor.copy_comm();
     //auto rank = tensor.comm.get_rank();
     //auto world_size = tensor.comm.get_world_size();
-    auto current_comm = operations.copy_comm();
+    auto current_comm = eigvec->copy_comm();
     auto rank = current_comm->get_rank();
     auto world_size = current_comm->get_world_size();
 
+/*
     // initialization of gusss vector(s), V
     std::array<size_t, 2> guess_shape = {vec_size,option.num_eigenvalues};
     auto guess_map = MAPTYPE(guess_shape, rank, world_size);
@@ -119,11 +120,13 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(BasicDenseTensorOperations<
         guess.global_set_value(tmp_index, 1.0);
     }
     // univ vector guess : do not need orthonormalize.
+*/
+    //eigvec is guess.
 
     bool return_result = false;
     size_t iter = 0;
     while(iter < option.max_iterations){
-        DenseTensor<2, DATATYPE, MAPTYPE, device>* new_guess = new DenseTensor<2, DATATYPE, MAPTYPE, device>(guess);
+        DenseTensor<2, DATATYPE, MAPTYPE, device>* new_guess = new DenseTensor<2, DATATYPE, MAPTYPE, device>(*eigvec);
         //block expansion loop
         size_t i_block = 0;
         
@@ -131,7 +134,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(BasicDenseTensorOperations<
             size_t block_size = option.num_eigenvalues*(i_block+1);
             // W_iterk = A V_k
             //auto w_iter = TensorOp::matmul(tensor, *new_guess, TRANSTYPE::N, TRANSTYPE::N);
-            auto w_iter = operations.matvec(*new_guess);
+            auto w_iter = operations->matvec(*new_guess);
             //auto subspace_matrix = TensorOp::matmul(*new_guess.get(), w_iter, TRANSTYPE::T, TRANSTYPE::N);
             auto subspace_matrix = TensorOp::matmul(*new_guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
             //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
@@ -150,12 +153,14 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(BasicDenseTensorOperations<
                 return_result = true;
                 memset<DATATYPE, device>(imag_eigvals.get(), 0.0, option.num_eigenvalues);
                 memcpy<DATATYPE, device>(real_eigvals.get(), sub_eigval, option.num_eigenvalues);
+                TensorOp::copy_vectors(*eigvec, ritz_vec, option.num_eigenvalues);
                 break;
             }
             if(i_block == option.max_block-1){
-                TensorOp::copy_vectors(guess, ritz_vec, option.num_eigenvalues);
+                TensorOp::copy_vectors(*eigvec, ritz_vec, option.num_eigenvalues);
                 break;
             }
+            
             //preconditioning
             //"Diagonal preconditioner" return expanded guess matrix.
             //DenseTensor<2, DATATYPE, MAPTYPE, device> tmp_guess = preconditioner(tensor, residual, ritz_vec, sub_eigval, option);
