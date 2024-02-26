@@ -5,7 +5,7 @@
 #include "Utility.hpp"
 namespace SE{
 
-MPI_Comm mpi_comm = NULL; // MPI_COMM_WORLD;
+MPI_Comm mpi_comm = MPI_COMM_NULL; // MPI_COMM_WORLD;
 
 template<>
 std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
@@ -22,14 +22,22 @@ std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
 
 template<>
 Comm<DEVICETYPE::MPI>::~Comm(){
+    /*
     std::cout << "comm count: " << count << std::endl;
-    count-=0;
+    //count-=1;
     
-    if (count==0 && mpi_comm!=NULL){
-        auto status = MPI_Finalize();
+    if (count==0 && mpi_comm!=MPI_COMM_NULL){
+        int status = MPI_Finalize();
         assert (status == MPI_SUCCESS);
-        mpi_comm==NULL;
+        mpi_comm=MPI_COMM_NULL;
     }
+    */
+}
+
+template<>
+void Comm<DEVICETYPE::MPI>::finalize(){
+    int status = MPI_Finalize();
+    assert (status == MPI_SUCCESS);
 }
 
 template<>

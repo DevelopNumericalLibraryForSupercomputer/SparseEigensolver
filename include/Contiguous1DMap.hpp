@@ -38,6 +38,7 @@ public:
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
     size_t get_split_dim() const {return split_dim;};
 private:
+    // all_local_shape store local_shape of all ranks, so all_local_shape.size() == world_size
     std::vector< array_d > all_local_shape;
     size_t split_dim=0;
     void initialize();
@@ -86,12 +87,19 @@ void Contiguous1DMap<dimension>::initialize(){
     for (size_t i_rank=0; i_rank< this->world_size; i_rank++){
         auto tmp_local_shape = this->global_shape;
         tmp_local_shape[split_dim] =  this->global_shape[split_dim] / this->ranks_per_dim[split_dim];
-        tmp_local_shape[split_dim] += this->global_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0;
+        tmp_local_shape[split_dim] += this->global_shape[split_dim] % this->ranks_per_dim[split_dim] > i_rank ? 1 : 0; //{m+1,m+1,...,m+1,m,m,...,m}
 
         all_local_shape.push_back(tmp_local_shape);
     }
     this->local_shape = all_local_shape[this->my_rank];
     cumprod(this->local_shape, this->local_shape_mult);
+    /*
+    std::cout << "Rank " << this->my_rank << " : ";
+    for(int i=0;i<this->local_shape.size();i++){
+        std::cout << this->local_shape[i] << ", " << this->local_shape_mult[i] << " || ";
+    }
+    std::cout << this->local_shape_mult[this->local_shape.size()] << std::endl;
+    */
     return;
 }
 

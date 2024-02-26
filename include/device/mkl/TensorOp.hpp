@@ -15,19 +15,26 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
     const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL>& vec,
     TRANSTYPE trans)
 {
+    
     size_t m = mat.map.get_global_shape(0);
     size_t k = mat.map.get_global_shape(1);
+
+    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
+    size_t remained_dim = (trans==TRANSTYPE::N)? 0:1;
+    /*
     if(trans != TRANSTYPE::N){
         m= mat.map.get_global_shape(1);
         k= mat.map.get_global_shape(0);
     }
-    assert ( k == vec.map.get_global_shape(0) );
-    
-    std::array<size_t, 1> output_shape = {m};
+    */
+    assert ( mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
+    std::cout << "MKLDENSE, m : " << m << ", k : " << k << std::endl;
+    std::array<size_t, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
     Contiguous1DMap output_map(output_shape, 0,1);
     DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), output_map);
     //mby k * kby 1
-    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.map.get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
+    //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.map.get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
+    gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data, mat.map.get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
     return output;
 }
 

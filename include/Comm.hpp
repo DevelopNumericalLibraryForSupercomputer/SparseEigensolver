@@ -12,10 +12,10 @@ namespace SE{
 template<DEVICETYPE device>
 class Comm{
 public:
-    Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) { count+=1;};
-    Comm(){ count+=1; };
+    Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
+    Comm(){};
     ~Comm(){};
-
+    void finalize(){};
     //const size_t get_rank(){ return rank; };
     //const size_t get_world_size(){ return world_size; };
 

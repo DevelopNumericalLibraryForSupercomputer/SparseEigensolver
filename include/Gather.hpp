@@ -8,7 +8,7 @@
 
 namespace SE{
 
-template< typename MAPTYPE>
+template<typename MAPTYPE> 
 class Gather{
 public:
 template<typename DATATYPE, DEVICETYPE device>
@@ -30,8 +30,9 @@ template<typename DATATYPE, DEVICETYPE device>
 void Gather<Contiguous1DMap<1>>::gather_from_all(DATATYPE* src, const Contiguous1DMap<1>& map, const Comm<device>& comm, DATATYPE* trg){
     size_t start_idx=0;
     auto all_local_shape = map.get_all_local_shape();
-    std::for_each( all_local_shape.begin(), all_local_shape.begin()+comm.get_rank(), [&sum](std::array<size_t,1> array> ){start_idx+=array[0];} )
-    memcpy<DATATYPE,device>(trg, src+start_idx, all_local_shape[comm.get_rank()]  );
+    std::for_each( all_local_shape.begin(), all_local_shape.begin()+comm.get_rank(),
+                               [&start_idx](const std::array<size_t,1>& array) {start_idx+=array[0];} );
+    memcpy<DATATYPE,device>(trg, src+start_idx, all_local_shape[comm.get_rank()][0]  );
 
     return;
 }

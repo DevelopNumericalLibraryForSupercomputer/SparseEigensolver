@@ -1,284 +1,144 @@
-#include <vector>
-#include <array>
 #include <iostream>
-#include <iomanip>
-#include "ContiguousMap.hpp"
-//#include "device/MKL/TensorOp.hpp"
+#include <vector>
+#include "DenseTensor.hpp"
+//#include <mpi.h>
 #include "device/MPI/TensorOp.hpp"
 
 using namespace SE;
-/*
-int serial(int argc, char* argv[]){
-    std::cout << "TensorOp test, MKL" << std::endl;
-    
-    auto comm = createComm<SEMkl>(argc, argv);
-    //std::unique_ptr<Comm<SEMkl> > comm = createComm<SEMkl>(argc, argv);
-    std::cout << "SERIAL test" << std::endl;
-    std::cout << comm.get()->world_size << std::endl;
-    
-    std::array<size_t, 2> test_shape = {3,3};
-    //ContiguousMap<2>* map = new ContiguousMap(test_shape, 1);
-    
-    std::vector<double> data1 = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    std::vector<double> data2 = {0.0, 0.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0};
 
-    auto matrix1 = new Tensor<STORETYPE::Dense, double, 2, SEMkl>(comm.get(), test_shape, &data1[0]);
-    
-    auto matrix11 = matrix1->clone();
-    auto matrix2 = new Tensor<STORETYPE::Dense, double, 2, SEMkl>(comm.get(), test_shape, &data2[0]);
-    auto matrix3 = matmul(matrix1, matrix2);
-
-    
-    matrix1->print("mat1");
-    matrix11->print("mat11");
-    matrix2->print("mat2");
-    matrix3->print("mat3");
-
-    size_t N = 10;
-    std::array<size_t, 2> test_shape2 = {N,N};
-    //ContiguousMap<2>* big_map = new ContiguousMap(test_shape2, 1);
-    auto dense = new Tensor<STORETYPE::Dense, double, 2, SEMkl>(comm.get(), test_shape2);
-    auto sparse = new Tensor<STORETYPE::COO, double, 2, SEMkl>(comm.get(), test_shape2, N*3);
-    for(size_t i=0;i<N;i++){
-        for(size_t j=0;j<N;j++){
-            std::array<size_t,2> index = {i,j};
-            if(i == j){
-                sparse->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-                dense->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            }
-            if(i == j +2 || i == j -2){
-                sparse->insert_value(index, -1.0);
-                dense->insert_value(index, -1.0);
-            }
-            if(i == j +3 || i == j -3){
-                sparse->insert_value(index, 0.3);
-                dense->insert_value(index, 0.3); 
-            }
+template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+void fill_densetensor(DenseTensor<dimension, DATATYPE, MAPTYPE, device>* mat, const std::vector<DATATYPE> data){
+    assert(mat->map.get_num_global_elements() == data.size());
+    for(size_t index = 0; index<data.size() ; ++index){
+        if(mat->comm.get_rank() == mat->map.find_rank_from_global_index(index)){
+            mat->global_insert_value(index,data[index]);
         }
     }
-    sparse->complete();
-    std::cout << "matrix construction complete" << std::endl;
-    sparse->print("sparse");
-    dense->print("dense");
-
-    std::array<size_t, 1> shape_vec = {N};
-    //ContiguousMap<1>* vec_map = new ContiguousMap(shape_vec, 1);
-    double* vec_entity = malloc<double, SEMkl>(N);
-    memset<double, SEMkl>(vec_entity, 0, N);
-    vec_entity[3] = 1;
-    vec_entity[1] = 1;
-    auto onedvec = new Tensor<STORETYPE::Dense, double, 1, SEMkl, ContiguousMap<1> >(comm.get(), shape_vec, vec_entity);
-    auto coo_spmv_prod = spmv(sparse, onedvec, SE_transpose::NoTrans);
-    auto dense_spmv_prod = spmv(dense, onedvec, SE_transpose::NoTrans);
-    onedvec->print("onedvec");
-    coo_spmv_prod->print("coo_spmv_prod");
-    dense_spmv_prod->print("dense_spmv_prod");
-
-    std::array<size_t, 2> shape_three_vecs = {N, 3};
-    //ContiguousMap<2>* three_vecs_map = new ContiguousMap(shape_three_vecs, 1);
-    double* vecs_entity = malloc<double, SEMkl>(N*3);
-    memset<double, SEMkl>(vecs_entity, 0, N*3);
-    vecs_entity[0] = 1;
-    vecs_entity[N+1] = 1;
-    vecs_entity[2*N+2] = 1;
-    auto threevecs = new Tensor<STORETYPE::Dense, double, 2, SEMkl, ContiguousMap<2> >(comm.get(), shape_three_vecs, vecs_entity);
-    threevecs->print("threevecs");
-    auto dense_spmv_prod2 = spmv(dense, threevecs, SE_transpose::NoTrans);
-    dense_spmv_prod2->print("dense_spmv_prod2");
-    auto coo_spmv_prod2 = spmv(sparse, threevecs, SE_transpose::NoTrans);
-    coo_spmv_prod2->print("coo_spmv_prod2");
-    
-    return 0;
 }
 
-int MPI_noslice(int argc, char* argv[]){
-    std::cout << "TensorOp test, MPI" << std::endl;
-    
-    std::unique_ptr<Comm<SEMpi> > comm = createComm<SEMpi>(argc, argv);
-    std::cout << "MPI test" << std::endl;
-    std::cout << "myrank = " << comm.get()->rank << ", world_size : " << comm.get()->world_size << std::endl;
-
-    std::cout << "============== NO SLICE : SERIAL CALCUALATION! ==============" << std::endl;
-    std::array<size_t, 2> test_shape = {3,3};
-    //ContiguousMap<2>* map = new ContiguousMap(test_shape, comm.get()->world_size);
-    
-    std::vector<double> data1 = {1.0, 0.0, 2.0, 0.0, 1.0, 0.0, 2.0, 0.0, 1.0};
-    std::vector<double> data2 = {0.0, 0.0, 2.0, 1.0, 0.0, 0.0, 0.0, -1.0, 0.0};
-
-    auto matrix1 = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape, &data1[0]);
-    auto matrix11 = matrix1->clone();
-    auto matrix2 = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape, &data2[0]);
-    auto matrix3 = matmul(matrix1, matrix2);
-    comm.get()->barrier();
-    matrix1->print("mat1");
-    matrix11->print("mat11");
-    matrix2->print("mat2");
-    matrix3->print("mat3");
-    comm.get()->barrier();
-    size_t N = 10;
-    std::array<size_t, 2> test_shape2 = {N,N};
-    //ContiguousMap<2>* big_map = new ContiguousMap(test_shape2, comm.get()->world_size);
-    auto dense = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape2);
-    auto sparse = new Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape2, N*3);
-    for(size_t i=0;i<N;i++){
-        for(size_t j=0;j<N;j++){
-            std::array<size_t,2> index = {i,j};
-            if(i == j){
-                sparse->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-                dense->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            }
-            if(i == j +2 || i == j -2){
-                sparse->insert_value(index, -1.0);
-                dense->insert_value(index, -1.0);
-            }
-            if(i == j +3 || i == j -3){
-                sparse->insert_value(index, 0.3);
-                dense->insert_value(index, 0.3); 
-            }
-        }
-    }
-    sparse->complete();
-    std::cout << "matrix construction complete" << std::endl;
-    comm.get()->barrier();
-    sparse->print("sparse");
-    dense->print("dense");
-    comm.get()->barrier();
-    std::array<size_t, 1> shape_vec = {N};
-    //ContiguousMap<1>* vec_map = new ContiguousMap(shape_vec, comm.get()->world_size);
-    double* vec_entity = malloc<double, SEMpi>(N);
-    memset<double, SEMpi>(vec_entity, 0, N);
-    vec_entity[3] = 1;
-    vec_entity[1] = 1;
-    auto onedvec = new Tensor<STORETYPE::Dense, double, 1, SEMpi, ContiguousMap<1> >(comm.get(), shape_vec, vec_entity);
-    auto coo_spmv_prod = spmv(sparse, onedvec, SE_transpose::NoTrans);
-    auto dense_spmv_prod = spmv(dense, onedvec, SE_transpose::NoTrans);
-    comm.get()->barrier();
-    onedvec->print("onedvec");
-    coo_spmv_prod->print("coo_spmv_prod");
-    dense_spmv_prod->print("dense_spmv_prod");
-
-    std::array<size_t, 2> shape_three_vecs = {N, 3};
-    //ContiguousMap<2>* three_vecs_map = new ContiguousMap(shape_three_vecs, 1);
-    double* vecs_entity = malloc<double, SEMpi>(N*3);
-    memset<double, SEMpi>(vecs_entity, 0, N*3);
-    vecs_entity[0] = 1;
-    vecs_entity[N+1] = 1;
-    vecs_entity[2*N+2] = 1;
-    auto threevecs = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), shape_three_vecs, vecs_entity);
-    comm.get()->barrier();
-    threevecs->print("threevecs");
-    auto dense_spmv_prod2 = spmv(dense, threevecs, SE_transpose::NoTrans);
-    dense_spmv_prod2->print("dense_spmv_prod2");
-    auto coo_spmv_prod2 = spmv(sparse, threevecs, SE_transpose::NoTrans);
-    coo_spmv_prod2->print("coo_spmv_prod2");
-    free<double, SEMpi>(vec_entity);
-    free<double, SEMpi>(vecs_entity);
-    return 0;
-}
-*/
-int MPI_colslice(int argc, char* argv[]){
-    std::cout << "TensorOp test, MPI" << std::endl;
-    
-    std::unique_ptr<Comm<SEMpi> > comm = createComm<SEMpi>(argc, argv);
-    std::cout << "MPI test" << std::endl;
-    std::cout << "myrank = " << comm.get()->rank << ", world_size : " << comm.get()->world_size << std::endl;
-
-    std::cout << "============== SLICED by column index ==============" << std::endl;
-    
-    size_t N = 10;
-    std::array<size_t, 2> test_shape2 = {N,N};
-    //std::cout << comm.get()->rank << " aaa" << std::endl;
-    //ContiguousMap<2>* big_map = new ContiguousMap(test_shape2, comm.get()->world_size, 0);
-    comm.get()->barrier();    
-    auto dense = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape2, true, 0);
-    auto sparse = new Tensor<STORETYPE::COO, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), test_shape2, N*3, true, 0);
-    comm.get()->barrier();    
-    for(size_t i=0;i<N;i++){
-        for(size_t j=0;j<N;j++){
-            std::array<size_t,2> index = {i,j};
-            if(i == j){
-                sparse->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-                dense->insert_value(index, 2.0*((double)i+1.0-(double)N) );
-            }
-            if(i == j +2 || i == j -2){
-                sparse->insert_value(index, -1.0);
-                dense->insert_value(index, -1.0);
-            }
-            if(i == j +3 || i == j -3){
-                sparse->insert_value(index, 0.3);
-                dense->insert_value(index, 0.3); 
-            }
-            else{
-                continue;
-            }
-            std::cout << comm.get()->rank << ' ' << i  << ' ' << j << "before complete" << std::endl;
-        }
-    }
-    comm.get()->barrier();    
-    std::cout << "before complete" << std::endl;
-    sparse->complete();
-    std::cout << "matrix construction complete" << std::endl;
-    comm.get()->barrier();
-    sparse->print("sparse");
-    comm.get()->barrier();
-    dense->print("dense");
-    comm.get()->barrier();
-
-    
-    comm.get()->barrier();
-    std::cout << "std::====================================" << std::endl;
-    std::array<size_t, 1> shape_vec = {N};
-    //ContiguousMap<1>* vec_map = new ContiguousMap(shape_vec, comm.get()->world_size);
-    double* vec_entity = malloc<double, SEMpi>(N);
-    memset<double, SEMpi>(vec_entity, 0, N);
-    vec_entity[3] = 1;
-    vec_entity[1] = 1;
-    
-    comm.get()->barrier();
-    std::cout << "std::====================================" << std::endl;
-
-    auto onedvec = new Tensor<STORETYPE::Dense, double, 1, SEMpi, ContiguousMap<1> >(comm.get(), shape_vec, vec_entity);
-    std::cout << "1dvec construction complete" << std::endl;
-    comm.get()->barrier();
-    onedvec->print("onedvec");
-    comm.get()->barrier();
-    std::cout << "std::====================================" << std::endl;
-    //std::cout << (int)sparse->map.is_sliced << " " << (int)onedvec->map.is_sliced << std::endl;
-    auto coo_spmv_prod = spmv(sparse, onedvec, SE_transpose::NoTrans);
-    
-    comm.get()->barrier();
-    coo_spmv_prod->print("coo_spmv_prod");
-    comm.get()->barrier();
-    //std::cout << (int)dense->map.is_sliced << " " << (int)onedvec->map.is_sliced << std::endl;
-    auto dense_spmv_prod = spmv(dense, onedvec, SE_transpose::NoTrans);
-    comm.get()->barrier();
-    dense_spmv_prod->print("dense_spmv_prod");
-
-    std::array<size_t, 2> shape_three_vecs = {N, 3};
-    //ContiguousMap<2>* three_vecs_map = new ContiguousMap(shape_three_vecs, comm.get()->world_size);
-    double* vecs_entity = malloc<double, SEMpi>(N*3);
-    memset<double, SEMpi>(vecs_entity, 0, N*3);
-    vecs_entity[0] = 1;
-    vecs_entity[N+1] = 1;
-    vecs_entity[2*N+2] = 1;
-    auto threevecs = new Tensor<STORETYPE::Dense, double, 2, SEMpi, ContiguousMap<2> >(comm.get(), shape_three_vecs, vecs_entity);
-    
-    comm.get()->barrier();
-    threevecs->print("threevecs");
-    
-    // not implemented
-    //auto dense_spmv_prod2 = spmv(dense, threevecs, SE_transpose::NoTrans);
-    //dense_spmv_prod2->print("dense_spmv_prod2");
-    
-    auto coo_spmv_prod2 = spmv(sparse, threevecs, SE_transpose::NoTrans);
-    comm.get()->barrier();
-    coo_spmv_prod2->print("coo_spmv_prod2");
-    
-    return 0;
-}
 
 int main(int argc, char* argv[]){
-    //return serial(argc, argv);
-    //return MPI_noslice(argc,argv);
-    return MPI_colslice(argc, argv);
+    auto ptr_comm = create_comm<DEVICETYPE::MPI>(argc, argv);
+
+    std::array<size_t, 2> mat1_shape = {7,2};
+    std::array<size_t, 2> mat2_shape = {2,9};
+    std::array<size_t, 2> mat3_shape = {9,9};
+    std::array<size_t, 1> vec1_shape = {2};
+    std::array<size_t, 1> vec2_shape = {9};
+    std::array<size_t, 1> vec3_shape = {7};
+    
+    auto map_mat1 = Contiguous1DMap(mat1_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+    auto map_mat2 = Contiguous1DMap(mat2_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+    auto map_mat3 = Contiguous1DMap(mat3_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+    auto map_vec1 = Contiguous1DMap(vec1_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+    auto map_vec2 = Contiguous1DMap(vec2_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+    auto map_vec3 = Contiguous1DMap(vec3_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
+
+    std::vector<double> data_mat1 = {1,2,3,4,5,6,7,8,9,10,11,12,13,14};
+    std::vector<double> data_mat2 = {1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18};
+    std::vector<double> data_mat3 = {1,2,3,4,5,6,7,8,9,
+                                     0,0,0,0,0,0,1,0,1,
+                                     1,2,3,4,5,6,7,8,9,
+                                     1,2,3,4,5,6,7,8,9,
+                                     1,2,3,4,5,6,7,8,9,
+                                     0,0,1,0,0,0,0,1,0,
+                                     1,2,3,4,5,6,7,8,9,
+                                     1,2,3,4,5,6,7,8,9,
+                                     1,2,3,4,5,6,7,8,9 };
+    std::vector<double> data_vec1 = {1,2};
+    std::vector<double> data_vec2 = {1,2,3,4,5,6,7,8,9};
+    std::vector<double> data_vec3 = {1,2,3,4,5,6,7};
+
+    //std::cout << "asdf rank = " << ptr_comm->get_rank() << " " << map_mat1.get_all_local_shape()[0][0] << " " << map_mat1.get_all_local_shape()[0][1] << std::endl;
+    auto mat1 = DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>(*ptr_comm, map_mat1);
+    auto mat2 = DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>(*ptr_comm, map_mat2);
+    auto mat3 = DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>(*ptr_comm, map_mat3);
+    auto vec1 = DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>(*ptr_comm, map_vec1);
+    auto vec2 = DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>(*ptr_comm, map_vec2);
+    auto vec3 = DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>(*ptr_comm, map_vec3);
+
+    
+    //std::cout << *mat1;
+    fill_densetensor(&mat1,data_mat1);
+    fill_densetensor(&mat2,data_mat2);
+    fill_densetensor(&mat3,data_mat3);
+    fill_densetensor(&vec1,data_vec1);
+    fill_densetensor(&vec2,data_vec2);
+    fill_densetensor(&vec3,data_vec3);
+    //std::cout << *mat1;
+    //std::cout << mat1 << mat2 << mat3 << vec1 << vec2 << vec3 << std::endl;
+    std::cout << mat1 << mat2 << vec1 << vec2 << std::endl;
+
+/*
+mat1
+    //  1.00  2.00 
+    //  3.00  4.00 
+    //  5.00  6.00
+    //  7.00  8.00 
+    //  9.00 10.00
+    // 11.00 12.00
+    // 13.00 14.00
+
+vec1
+    //1.00
+    //2.00
+    
+mat2    
+// 1.00  2.00  3.00  4.00  5.00  6.00  7.00  8.00  9.00
+//10.00 11.00 12.00 13.00 14.00 15.00 16.00 17.00 18.00
+    
+vec2
+// 1.00
+// 2.00
+// 3.00 
+// 4.00  
+// 5.00 
+// 6.00  
+// 7.00  
+// 8.00 
+// 9.00
+*/ 
+
+    //mat1 * vec1
+    //  1.00  2.00    1.00     5.00
+    //  3.00  4.00    2.00    11.00
+    //  5.00  6.00            17.00
+    //  7.00  8.00 x       =  23.00 
+    //  9.00 10.00            29.00  
+    // 11.00 12.00            35.00  
+    // 13.00 14.00            41.00 
+
+    std::cout << "\n\nmat1 X vec1\n" << TensorOp::matmul(mat1,vec1) << std::endl;
+
+// 1.00  2.00  3.00  4.00  5.00  6.00  7.00  8.00  9.00  X  1.00 = 285.00
+//10.00 11.00 12.00 13.00 14.00 15.00 16.00 17.00 18.00     2.00   690.00
+//                                                          3.00  
+//                                                          4.00  
+//                                                          5.00  
+//                                                          6.00  
+//                                                          7.00  
+//                                                          8.00  
+//                                                          9.00  
+    //std::cout << "\n\nmat2 X vec2\n" << TensorOp::matmul(mat2,vec2) << std::endl;
+
+// 1.00 10.00 x 1.00 = 21.00  
+// 2.00 11.00   2.00   24.00
+// 3.00 12.00          27.00
+// 4.00 13.00          30.00
+// 5.00 14.00          33.00
+// 6.00 15.00          36.00
+// 7.00 16.00          39.00
+// 8.00 17.00          42.00
+// 9.00 18.00          45.00
+
+    //std::cout << "\n\n mat2T*vec1" << TensorOp::matmul(mat2,vec1,TRANSTYPE::T) << std::endl;
+/*
+    std::cout << "\n\n mat1T*vec3" << TensorOp::matmul(mat1,vec3,TRANSTYPE::T) << std::endl;
+    std::cout << "\n\n mat3 *vec2" << TensorOp::matmul(mat3,vec2,TRANSTYPE::N) << std::endl;
+    std::cout << "\n\n mat3T*vec2" << TensorOp::matmul(mat3,vec2,TRANSTYPE::T) << std::endl;
+    std::cout << "\n\n mat1 *mat2" << TensorOp::matmul(mat1,mat2) << std::endl;
+    std::cout << "\n\n mat3 *mat2T" << TensorOp::matmul(mat3,mat2,TRANSTYPE::N,TRANSTYPE::T) << std::endl;
+*/
+    ptr_comm->finalize();
+    return 0;
 }

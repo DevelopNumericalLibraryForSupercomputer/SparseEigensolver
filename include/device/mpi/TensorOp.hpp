@@ -13,51 +13,76 @@ DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
     const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
     TRANSTYPE trans=TRANSTYPE::N)
 {
-    auto world_size = mat.comm.world_size;
-    auto rank = mat.comm.rank;
+    auto world_size = mat.comm.get_world_size();
+    auto rank = mat.comm.get_rank();
 
-    assert (world_size == vec.comm.world_size);
-    assert (rank == vec.comm.rank);
+    assert (world_size == vec.comm.get_world_size());
+    assert (rank == vec.comm.get_rank());
 
     size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
-
+    size_t remained_dim = (trans==TRANSTYPE::N)? 0:1;
+    
     assert (  mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
-
+    std::cout << "=============" << std::endl;
+    std::cout << "contract dim  = " << contract_dim << std::endl;
+    std::cout << "mat.global_shape(0) = " << mat.map.get_global_shape(0) << std::endl;
+    std::cout << "mat.global_shape(1) = " << mat.map.get_global_shape(1) << std::endl;
+    std::cout << "vec.global_shape(0) = " << vec.map.get_global_shape(0) << std::endl;
+    std::cout << "=============" << std::endl;
     
-    DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(*vec.copy_comm(), *vec.copy_map());
-    
-    int m = mat.map.get_global_shape(0);
-    int n = mat.map.get_global_shape(1);
+    std::array<size_t, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
+    Contiguous1DMap output_map(output_shape, rank, world_size);
+    DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> output ( *vec.copy_comm(), output_map);
 
+    //DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI> output(*vec.copy_comm(), *vec.copy_map());
+    
+    int m = mat.map.get_local_shape(remained_dim);
+    int n = mat.map.get_local_shape(contract_dim);
+    std::cout << "m : " << m << " , n : " << n << "vec.map.get_local_shape(0) = " << vec.map.get_local_shape(0) << std::endl;
     double* buffer1;
     double* buffer2;
-    if ( mat.map.get_local_shape(dim) == vec.map.get_local_shape(0) ){
-        buffer1 = malloc<double>(vec.map.get_local_shape(0));
-        buffer2 = malloc<double>(vec.map.get_local_shape(0));
-        gemv<double, DEVICETYPE::MPI>( ORDERTYPE::ROW, trans, m,n, 1.0, mat.data, m, vec.data, 1, 0.0, buffer1 ); 
-        output.comm.allreduce(buffer1,  vec.map.get_local_shape(0), buffer2, OPTYPE::SUM);
-        Gather::gather_from_all(buffer2, output);
+    if ( trans==TRANSTYPE::T && n == vec.map.get_local_shape(0) ){
+        std::cout << "CASE1: multiply and allreduce" << std::endl;
+        buffer1 = malloc<double>(m);
+        buffer2 = malloc<double>(m);
+        
+        gemv<double, DEVICETYPE::MPI>(ORDERTYPE::ROW, trans, n,m, 1.0, mat.data, m, vec.data, 1, 0.0, buffer1, 1); 
+        
+        std::cout << "buffer1 : ";
+        for(int i=0;i<m;i++){std::cout << buffer1[i] << ' ';}
+        std::cout << std::endl;
+        
+        output.comm.allreduce(buffer1, m, buffer2, OPTYPE::SUM);
+        
+        std::cout << "buffer2 : ";
+        for(int i=0;i<m;i++){std::cout << buffer2[i] << ' ';}
+        std::cout << std::endl;
+        
+        Gather<Contiguous1DMap<1>>::gather_from_all(buffer2, output);
         free<>(buffer1);
         free<>(buffer2);
     }
-    else if (mat.map.get_local_shape(dim) == vec.map.get_global_shape(0) ){
+    else if ( trans==TRANSTYPE::N && n == vec.map.get_global_shape(0) ){
+        std::cout << "CASE2: broadcast vector" << std::endl;
         buffer1 = malloc<double>(vec.map.get_global_shape(0));
 
         auto all_local_shape = vec.map.get_all_local_shape();
-
+        std::cout << "all_local_shape[i][0] : ";
         size_t recv_counts[world_size];
         for (size_t i=0; i<world_size; i++){
             recv_counts[i] = all_local_shape[i][0];
+            std::cout << all_local_shape[i][0] << ' ';
         }
-
+        std::cout << std::endl;
 
         output.comm.allgatherv(vec.data, all_local_shape[rank][0], buffer1, recv_counts );
-        gemv<double, DEVICETYPE::MPI> (ORDERTYPE::ROW, trans, m, n, 1.0, mat.data, m, buffer1, 1, 0.0, output.data );
+
+        gemv<double, DEVICETYPE::MPI> (ORDERTYPE::ROW, trans, m, n, 1.0, mat.data, n, buffer1, 1, 0.0, output.data, 1);
 
     }
     else{
         std::cout << "???" <<std::endl;
-        exit(-1)
+        //exit(-1);
     }
     return output;
 }
@@ -75,15 +100,15 @@ DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
     assert (world_size == mat2.comm.world_size);
     assert (rank == mat2.comm.rank);
 
-    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
+    size_t contract_dim = (trans1==TRANSTYPE::N)? 1:0;
 
     assert (  mat1.map.get_global_shape(contract_dim) == mat2.map.get_global_shape(0) );
 
-    std::array<size_t, 2> output_shape = { mat1.map.get_global_size(1-contract_dim)   , mat2.map.get_global_size(1) }
+    std::array<size_t, 2> output_shape = { mat1.map.get_global_size(1-contract_dim)   , mat2.map.get_global_size(1) };
     std::array<bool, 2> is_parallel = {};
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI> output(*mat2.copy_comm(), 
                                                                        Contiguous1DMap<2>( output_shape, rank, world_size) );
-    
+/*    
     int m = mat1.map.get_global_shape(0);
     int n = mat1.map.get_global_shape(1);
 
@@ -96,7 +121,7 @@ DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
     else{
         assert(false); //not implemented yet.
     }
-
+*/
     return output;
 }
 ////spmv
