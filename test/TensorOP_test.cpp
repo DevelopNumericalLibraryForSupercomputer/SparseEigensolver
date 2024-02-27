@@ -2,7 +2,8 @@
 #include <vector>
 #include "DenseTensor.hpp"
 //#include <mpi.h>
-#include "device/MPI/TensorOp.hpp"
+#include "device/mpi/TensorOp.hpp"
+
 
 using namespace SE;
 

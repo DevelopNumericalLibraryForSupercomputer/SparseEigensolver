@@ -7,11 +7,11 @@ namespace SE{
 // function declaration is in device/TensorOp.hpp
 
 //dense mv 
-template <typename DATATYPE>
-DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
-    const DenseTensor<1, DATATYPE, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
-    TRANSTYPE trans=TRANSTYPE::N)
+template <>
+DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat,
+    const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MPI>& vec,
+    TRANSTYPE trans)
 {
     auto world_size = mat.comm.get_world_size();
     auto rank = mat.comm.get_rank();
@@ -82,18 +82,19 @@ DenseTensor<1,DATATYPE,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
     }
     else{
         std::cout << "???" <<std::endl;
-        //exit(-1);
+        exit(-1);
     }
     return output;
 }
 
-template <typename DATATYPE>
-DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat1,
-    const DenseTensor<2, DATATYPE, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat2,
-    TRANSTYPE trans1=TRANSTYPE::N,
-    TRANSTYPE trans2=TRANSTYPE::N)
+template <>
+DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat1,
+    const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI>& mat2,
+    TRANSTYPE trans1,
+    TRANSTYPE trans2)
 {
+    /*
     auto world_size = mat1.comm.world_size;
     auto rank = mat1.comm.rank;
 
@@ -108,7 +109,7 @@ DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
     std::array<bool, 2> is_parallel = {};
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI> output(*mat2.copy_comm(), 
                                                                        Contiguous1DMap<2>( output_shape, rank, world_size) );
-/*    
+    
     int m = mat1.map.get_global_shape(0);
     int n = mat1.map.get_global_shape(1);
 
@@ -122,7 +123,7 @@ DenseTensor<2,DATATYPE,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
         assert(false); //not implemented yet.
     }
 */
-    return output;
+    exit(-1);
 }
 ////spmv
 //template <>
