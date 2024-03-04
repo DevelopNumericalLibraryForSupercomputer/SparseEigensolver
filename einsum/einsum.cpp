@@ -7,10 +7,8 @@
 
 // row major
 template <size_t A_dim, size_t B_dim, size_t C_dim>
-void einsum(const char* input_string, const double* a, const double* b,
-            std::unique_ptr<double[]>& c, 
-            const std::array<size_t, A_dim> a_size, const std::array<size_t, B_dim> b_size,
-            std::array<size_t, C_dim>* c_size) {
+void einsum(const char* input_string, const double* a, const double* b, std::unique_ptr<double[]>& c, 
+            const std::array<size_t, A_dim> a_size, const std::array<size_t, B_dim> b_size, std::array<size_t, C_dim>* c_size) {
 
     //input_string에서 index 번호 추출, input tensor 2개 output tensor 1개
     std::string input_str(input_string); // 문자열 리터럴을 std::string으로 변환
@@ -33,8 +31,7 @@ void einsum(const char* input_string, const double* a, const double* b,
     } else {
         std::cerr << "Arrow (->) not found in the input string." << std::endl;
     }
-    
-    
+
     // 결과 출력
     std::cout << "Result Index: " << result_index << std::endl;
     std::cout << "Input Indices: ";
@@ -43,11 +40,10 @@ void einsum(const char* input_string, const double* a, const double* b,
     }
     std::cout << std::endl;
     
-
     //각 index letter별 tensor size 저장.
     std::map<std::string, size_t> total_iter_sizes;
     //sizes stores size of each index, using key as single letter string.
-    // k: 5, l: 4, and so on.
+    // For example, i: 5, j: 4, and so on.
     for (size_t j = 0; j < inputs_exprs[0].size(); ++j) {
         std::string key(1, inputs_exprs[0][j]);
         size_t size = a_size[j];
@@ -173,8 +169,19 @@ int main() {
     std::array<size_t, 2> b_size = {4,2};
 
     std::unique_ptr<double[]> c;
-    std::array<size_t, 3>* c_size = new std::array<size_t,3>{0,0,0};
+    std::array<size_t, 3>* c_size = new std::array<size_t,3>;
 
+/*
+    const char* input_string = "ij,ij->ij";
+    double a[2*2] = {1,2,3,4};
+    double b[2*2] = {2,3,4,5};
+    
+    std::array<size_t, 2> a_size = {2,2};
+    std::array<size_t, 2> b_size = {2,2};
+
+    std::unique_ptr<double[]> c;
+    std::array<size_t, 2>* c_size = new std::array<size_t,2>{2,2};
+*/
     einsum(input_string, a, b, c, a_size, b_size, c_size);
     std::cout << "==================RESULT===============" << std::endl;
     for(int i=0;i<3;i++){
