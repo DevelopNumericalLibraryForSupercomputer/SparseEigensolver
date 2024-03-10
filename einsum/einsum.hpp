@@ -68,8 +68,6 @@ void einsum(const char* input_string, const double* a, const double* b, std::uni
             std::cout << c_size->at(tmp_index)  << std::endl;
             tmp_index++;
         }
-        
-        
     }
     
     //c 초기화
@@ -99,44 +97,44 @@ void einsum(const char* input_string, const double* a, const double* b, std::uni
         indices[kv.first] = 0;
         total_combinations *= kv.second;
         // 결과 출력
-        //std::cout << "Key: " << kv.first << ", Size: " << kv.second << std::endl;
+        std::cout << "Key: " << kv.first << ", Size: " << kv.second << std::endl;
     }
     //one large loop
     for (size_t combination = 0; combination < total_combinations; ++combination) {
         //검증
-        /*
+        
         for (const auto& kv : indices){
             std::cout << kv.first << " : " << kv.second << " ";
         }
         std::cout << '\t';
-        */
+        
         //tensor index 확인
         std::array<size_t, A_dim> a_index;
-        //std::cout << "a : (";
+        std::cout << "a : (";
         for (size_t j = 0; j < inputs_exprs[0].size(); ++j) {
             std::string key(1, inputs_exprs[0][j]);
             a_index[j] = indices[key];
-            //std::cout << key << " : " << a_index[j] << ' ';
+            std::cout << key << " : " << a_index[j] << ' ';
         }
-        //std::cout << ")\t";
+        std::cout << ")\t";
 
         std::array<size_t, B_dim> b_index;
-        //std::cout << "b : (";
+        std::cout << "b : (";
         for (size_t j = 0; j < inputs_exprs[1].size(); ++j) {
             std::string key(1, inputs_exprs[1][j]);
             b_index[j] = indices[key];
-            //std::cout << key << " : " << b_index[j] << ' ';
+            std::cout << key << " : " << b_index[j] << ' ';
         }
-        //std::cout << ")\t";
+        std::cout << ")\t";
         
         std::array<size_t, C_dim> c_index;
-        //std::cout << "c : (";
+        std::cout << "c : (";
         for (size_t j = 0; j < result_index.size(); ++j) {
             std::string key(1, result_index[j]);
             c_index[j] = indices[key];
-            //std::cout << key << " : " << c_index[j] << ' ';
+            std::cout << key << " : " << c_index[j] << ' ';
         }
-        //std::cout << ")" << std::endl;
+        std::cout << ")" << std::endl;
 
         c[c_map.unpack_global_array_index(c_index)] += a[a_map.unpack_global_array_index(a_index)] * b[b_map.unpack_global_array_index(b_index)];
 
@@ -152,57 +150,4 @@ void einsum(const char* input_string, const double* a, const double* b, std::uni
         }
     }
 
-}
-
-
-
-int main() {
-    const char* input_string = "ijl,jk->kli";
-    double a[3*4*5] = 
-    {1.0, 0.0, 0.0, 0.0, 0.0,  0.0, 0.0, 1.0, 0.0, 0.0,  0.0, 0.0, 0.0, 1.0, 0.0,  0.0, 1.0, 0.0, 0.0, 0.0, 
-0.0, 2.0, 0.0, 0.0, 0.0,  0.0, 0.0, 2.0, 0.0, 0.0,  0.0, 0.0, 0.0, 2.0, 0.0,  0.0, 0.0, 0.0, 0.0, 2.0,
-0.0, 0.0, 0.0, 0.0, 3.0,  0.0, 0.0, 0.0, 3.0, 0.0,  0.0, 0.0, 3.0, 0.0, 0.0,  0.0, 3.0, 0.0, 0.0, 0.0};
-
-    double b[2*4] = {2,5, 0,1, 5,7, 9,2};
-    
-    std::array<size_t, 3> a_size = {3,4,5};
-    std::array<size_t, 2> b_size = {4,2};
-
-    std::unique_ptr<double[]> c;
-    std::array<size_t, 3>* c_size = new std::array<size_t,3>;
-
-/*
-    const char* input_string = "ij,ij->ij";
-    double a[2*2] = {1,2,3,4};
-    double b[2*2] = {2,3,4,5};
-    
-    std::array<size_t, 2> a_size = {2,2};
-    std::array<size_t, 2> b_size = {2,2};
-
-    std::unique_ptr<double[]> c;
-    std::array<size_t, 2>* c_size = new std::array<size_t,2>{2,2};
-*/
-    einsum(input_string, a, b, c, a_size, b_size, c_size);
-    std::cout << "==================RESULT===============" << std::endl;
-    for(int i=0;i<3;i++){
-        std::cout << c_size->at(i) << ' ';
-    }
-    std::cout << std::endl;
-    
-    auto c_map = SE::Contiguous1DMap(*c_size, 0, 1);
-
-    for(size_t i=0;i<c_size->at(0);++i){
-        std::cout << "[";
-        for(size_t j=0;j<c_size->at(1);++j){
-            std::cout << "[";
-            for(size_t k=0;k<c_size->at(2);++k){
-                //std::cou
-                std::array<size_t,3> index = {i,j,k};
-                std::cout << c[c_map.unpack_global_array_index(index)] << ", ";
-            }
-            std::cout << "]," << std::endl;
-        }
-        std::cout << "]," << std::endl;
-    }
-    return 0;
 }
