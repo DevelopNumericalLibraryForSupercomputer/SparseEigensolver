@@ -1,6 +1,7 @@
 #pragma once
 
 #include "../DenseTensor.hpp"
+#include "../Utility2.hpp"
 #include <memory>
 
 namespace SE{

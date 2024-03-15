@@ -60,11 +60,11 @@ public:
     }
 
 protected:
-    array_d ranks_per_dim;
     array_d global_shape;
     array_d local_shape;
     size_t my_rank;
     size_t world_size;
+    array_d ranks_per_dim;
     std::array<size_t, dimension+1> global_shape_mult;
     std::array<size_t, dimension+1> local_shape_mult;
 

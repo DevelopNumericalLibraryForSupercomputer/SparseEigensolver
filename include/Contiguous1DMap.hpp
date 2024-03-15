@@ -10,6 +10,7 @@ class Contiguous1DMap: public Map<dimension,MTYPE::Contiguous1D> {
 
 public:
     // constructor
+    Contiguous1DMap();
     Contiguous1DMap( const array_d global_shape, const size_t my_rank=0, const size_t world_size=1);
     Contiguous1DMap( const array_d global_shape, const size_t my_rank, const size_t world_size, const std::array<bool, dimension> is_parallel );
     Contiguous1DMap( const array_d global_shape, const size_t my_rank, const size_t world_size, const array_d ranks_per_dim );
