@@ -8,10 +8,10 @@ from libcpp cimport bool
 
 cdef extern from "../include/Contiguous1DMap.hpp" namespace "SE":
     cppclass Contiguous1DMap[dimension]:
-        Contiguous1DMap()
-        Contiguous1DMap(array[size_t, dimension] global_shape, size_t my_rank=0, size_t world_size=1) except+
-        Contiguous1DMap(array[size_t, dimension] global_shape, size_t my_rank, size_t world_size, array[bool, dimension] is_parallel ) except+
-        Contiguous1DMap(array[size_t, dimension] global_shape, size_t my_rank, size_t world_size, array[size_t, dimension] ranks_per_dim ) except+
+        Contiguous1DMap() except+
+        Contiguous1DMap(const array[size_t, dimension] global_shape, const size_t my_rank, const size_t world_size) except+
+        Contiguous1DMap(const array[size_t, dimension] global_shape, const size_t my_rank, const size_t world_size, const array[bool, dimension] is_parallel ) except+
+        Contiguous1DMap(const array[size_t, dimension] global_shape, const size_t my_rank, const size_t world_size, const array[size_t, dimension] ranks_per_dim ) except+
 
         Contiguous1DMap[dimension]* clone()
     
@@ -33,8 +33,8 @@ cdef extern from "../include/Contiguous1DMap.hpp" namespace "SE":
         size_t find_rank_from_global_array_index(array[size_t, dimension] global_array_index) 
 
         #vector[array[size_t, dimension]] get_all_local_shape() 
-        #size_t get_split_dim() 
+        size_t get_split_dim() 
 
         vector[array[size_t, dimension]] all_local_shape
         size_t split_dim
-        #initialize()
+        initialize()

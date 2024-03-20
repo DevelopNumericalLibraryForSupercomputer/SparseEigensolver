@@ -5,7 +5,7 @@
 
 #include "Comm.hpp"
 #include "Map.hpp"
-#include "Contiguous1DMap.hpp"
+//#include "Contiguous1DMap.hpp"
 //#include "decomposition/DecomposeResult.hpp"
 
 namespace SE{
@@ -23,6 +23,10 @@ public:
     INTERNALTYPE data; 
 
     // constructor
+    Tensor(){
+        filled=false;
+    }
+
     Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
         filled=false;
     }

@@ -2,6 +2,7 @@
 #include "Tensor.hpp"
 #include "Type.hpp"
 #include "device/LinearOp.hpp"
+#include "Contiguous1DMap.hpp"
 #include <algorithm>
 
 namespace SE{
@@ -16,6 +17,7 @@ using INTERNALTYPE =  std::vector<std::pair<array_d, DATATYPE> >;
 //template <size_t I,typename U,typename T>  using TUPLEDATA = typename tuple_n<I,U,T>::template type<U>;
 
 public:
+    SparseTensor();
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map);
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, size_t reserve_size);
     SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, INTERNALTYPE data);

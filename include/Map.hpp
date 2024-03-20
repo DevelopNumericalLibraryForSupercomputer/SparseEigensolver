@@ -16,6 +16,7 @@ public:
     //std::array<size_t, dimension+1> global_shape_mult;
 
     //Constructor 
+    Map(){};
     Map(array_d global_shape, size_t my_rank, size_t world_size): global_shape(global_shape), my_rank(my_rank), world_size(world_size){};
     //Map(array_d global_shape, size_t my_rank, size_t world_size, std::array<bool, dimension> is_parallel );
     Map(array_d global_shape, size_t my_rank, size_t world_size, array_d ranks_per_dim ): global_shape(global_shape), my_rank(my_rank), world_size(world_size), ranks_per_dim(ranks_per_dim){};

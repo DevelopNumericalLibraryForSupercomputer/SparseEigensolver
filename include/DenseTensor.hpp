@@ -1,5 +1,6 @@
 #pragma once
 #include "Tensor.hpp"
+#include "Contiguous1DMap.hpp"
 #include "device/LinearOp.hpp"
 
 namespace SE{
@@ -13,6 +14,7 @@ using array_d = std::array<size_t, dimension>;
 using INTERNALTYPE = DATATYPE*;
 
 public:
+    DenseTensor();
     DenseTensor(const Comm<device>& comm, const MAPTYPE& map);
     DenseTensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor);
