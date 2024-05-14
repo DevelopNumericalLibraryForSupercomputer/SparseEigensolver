@@ -14,8 +14,8 @@ DenseTensor<2, DATATYPE, MAPTYPE1, device> calculate_residual( // return residua
     DenseTensor<2, DATATYPE, MAPTYPE1, device> sub_eigvec,  //block_size by block_size
     DenseTensor<2, DATATYPE, MAPTYPE1, device> ritz_vec)    //vec_size by block_size
 {
-    //size_t block_size = sub_eigvec.map.get_global_shape()[0];
-    //size_t vec_size = ritz_vec.map.get_global_shape()[0];
+    //int block_size = sub_eigvec.map.get_global_shape()[0];
+    //int vec_size = ritz_vec.map.get_global_shape()[0];
     //residual, r_ki =  W_iterk y_ki - lambda_ki x_ki
     //lambda_ki x_ki
     DenseTensor<2, DATATYPE, MAPTYPE1, device> scaled_ritz(ritz_vec);
@@ -27,11 +27,11 @@ DenseTensor<2, DATATYPE, MAPTYPE1, device> calculate_residual( // return residua
 }
 
 template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-bool check_convergence(DenseTensor<2, DATATYPE, MAPTYPE, device> residual, size_t num_eigenvalues, double tolerance){
+bool check_convergence(DenseTensor<2, DATATYPE, MAPTYPE, device> residual, int num_eigenvalues, double tolerance){
     //convergence check
     double* norm = malloc<DATATYPE, device>(num_eigenvalues);
     TensorOp::get_norm_of_vectors(residual, norm, num_eigenvalues);
-    for(size_t i=0;i<num_eigenvalues;i++){
+    for(int i=0;i<num_eigenvalues;i++){
         if(norm[i] > tolerance){
             free<device>(norm);
             return false;
@@ -50,20 +50,20 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> preconditioner(
                                                                         //return new guess = vec_size * new_block_size
                     DATATYPE* sub_eigval,                               //block_size
                     DecomposeOption option){
-    size_t vec_size = residual.map.get_global_shape()[0];
-    //size_t block_size = residual.map.get_global_shape()[1];
-    size_t num_eig = option.num_eigenvalues;
-    //size_t new_block_size = block_size + num_eig;
+    int vec_size = residual.map.get_global_shape()[0];
+    //int block_size = residual.map.get_global_shape()[1];
+    int num_eig = option.num_eigenvalues;
+    //int new_block_size = block_size + num_eig;
     
-    std::array<size_t, 2> new_guess_shape = {vec_size, num_eig};
+    std::array<int, 2> new_guess_shape = {vec_size, num_eig};
 
     auto new_guess_map = MAPTYPE(new_guess_shape, residual.comm.get_rank(), residual.comm.get_world_size());
     DenseTensor<2, DATATYPE, MAPTYPE, device> additional_guess(*residual.copy_comm(), new_guess_map);
     if(option.preconditioner == PRECOND_TYPE::Diagonal){
-        //std::array<size_t, 2> array_index;
+        //std::array<int, 2> array_index;
         TensorOp::copy_vectors(additional_guess, residual, num_eig);
         DATATYPE* scale_factor = malloc<DATATYPE, device>(num_eig);
-        for(size_t index=0; index< num_eig; index++){
+        for(int index=0; index< num_eig; index++){
 //            array_index = {index, index};
             //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
             DATATYPE coeff_i = sub_eigval[index] - operations->get_diag_element(index);
@@ -100,7 +100,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations* operation
     //auto shape = tensor.map.get_global_shape();
     auto shape = operations->get_global_shape();
     assert (shape[0] == shape[1]);
-    //const size_t vec_size = shape[0];
+    //const int vec_size = shape[0];
 
     //auto current_comm = tensor.copy_comm();
     //auto rank = tensor.comm.get_rank();
@@ -111,12 +111,12 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations* operation
 
 /*
     // initialization of gusss vector(s), V
-    std::array<size_t, 2> guess_shape = {vec_size,option.num_eigenvalues};
+    std::array<int, 2> guess_shape = {vec_size,option.num_eigenvalues};
     auto guess_map = MAPTYPE(guess_shape, rank, world_size);
     DenseTensor<2, DATATYPE, MAPTYPE, device> guess(*current_comm, guess_map);
     // guess : unit vector
-    for(size_t i=0;i<option.num_eigenvalues;i++){
-        std::array<size_t, 2> tmp_index = {i,i};
+    for(int i=0;i<option.num_eigenvalues;i++){
+        std::array<int, 2> tmp_index = {i,i};
         guess.global_set_value(tmp_index, 1.0);
     }
     // univ vector guess : do not need orthonormalize.
@@ -124,14 +124,14 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations* operation
     //eigvec is guess.
 
     bool return_result = false;
-    size_t iter = 0;
+    int iter = 0;
     while(iter < option.max_iterations){
         DenseTensor<2, DATATYPE, MAPTYPE, device>* new_guess = new DenseTensor<2, DATATYPE, MAPTYPE, device>(*eigvec);
         //block expansion loop
-        size_t i_block = 0;
+        int i_block = 0;
         
         while(true){
-            size_t block_size = option.num_eigenvalues*(i_block+1);
+            int block_size = option.num_eigenvalues*(i_block+1);
             // W_iterk = A V_k
             //auto w_iter = TensorOp::matmul(tensor, *new_guess, TRANSTYPE::N, TRANSTYPE::N);
             auto w_iter = operations->matvec(*new_guess);
@@ -187,8 +187,8 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations* operation
         std::cout << "NOT CONVERGED!" << std::endl;
         exit(-1);
     }
-    //std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const size_t) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
-    std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const size_t) option.num_eigenvalues,real_eigvals,imag_eigvals));
+    //std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
+    std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,real_eigvals,imag_eigvals));
  
     return std::move(return_val);
 }

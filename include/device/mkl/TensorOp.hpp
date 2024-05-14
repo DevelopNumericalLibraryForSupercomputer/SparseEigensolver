@@ -16,11 +16,11 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
     TRANSTYPE trans)
 {
     
-    size_t m = mat.map.get_global_shape(0);
-    size_t k = mat.map.get_global_shape(1);
+    int m = mat.map.get_global_shape(0);
+    int k = mat.map.get_global_shape(1);
 
-    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
-    size_t remained_dim = (trans==TRANSTYPE::N)? 0:1;
+    int contract_dim = (trans==TRANSTYPE::N)? 1:0;
+    int remained_dim = (trans==TRANSTYPE::N)? 0:1;
     /*
     if(trans != TRANSTYPE::N){
         m= mat.map.get_global_shape(1);
@@ -29,7 +29,7 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
     */
     assert ( mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
     std::cout << "MKLDENSE, m : " << m << ", k : " << k << std::endl;
-    std::array<size_t, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
+    std::array<int, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
     Contiguous1DMap output_map(output_shape, 0,1);
     DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), output_map);
     //mby k * kby 1
@@ -47,21 +47,21 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
     TRANSTYPE trans1,
     TRANSTYPE trans2)
 {
-    size_t m = mat1.map.get_global_shape(0);
-    size_t k = mat1.map.get_global_shape(1);
+    int m = mat1.map.get_global_shape(0);
+    int k = mat1.map.get_global_shape(1);
     if(trans1 != TRANSTYPE::N){
         m= mat1.map.get_global_shape(1);
         k= mat1.map.get_global_shape(0);
     }
-    size_t k2 = mat2.map.get_global_shape(0);
-    size_t n = mat2.map.get_global_shape(1);
+    int k2 = mat2.map.get_global_shape(0);
+    int n = mat2.map.get_global_shape(1);
     if(trans2 != TRANSTYPE::N){
         k2 = mat2.map.get_global_shape(1);
         n = mat2.map.get_global_shape(0);
     }
     
     assert(k == k2);
-    std::array<size_t, 2> output_shape = {m,n};
+    std::array<int, 2> output_shape = {m,n};
     Contiguous1DMap output_map (output_shape, 0,1);
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat2.copy_comm(), output_map );
     //mby k * kby n
@@ -103,7 +103,7 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> SE::TensorOp::matmul
     auto p_comm=vec.copy_comm();
 
     assert (num_col==vec.map.get_global_shape(0));
-    std::array<size_t, 1> output_shape = {static_cast<unsigned long>(num_row)};
+    std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
     Contiguous1DMap output_map (output_shape, 0,1);
 
     DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> output(*p_comm, output_map );
@@ -171,7 +171,7 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     auto p_comm=mat2.copy_comm();
     
     assert (num_col==mat2.map.get_global_shape(0));
-    std::array<size_t, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.map.get_global_shape(1)};
+    std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.map.get_global_shape(1)};
     Contiguous1DMap output_map (output_shape, 0,1);
 
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> output(*p_comm, output_map );
@@ -238,7 +238,7 @@ void SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>(
 
         auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
-        for(size_t i=0; i<number_of_vectors; i++){
+        for(int i=0; i<number_of_vectors; i++){
             double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output.data[i], number_of_vectors);
             assert(norm != 0.0);
             scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);
@@ -251,8 +251,8 @@ void SE::TensorOp::orthonormalize<double, Contiguous1DMap<2>, DEVICETYPE::MKL>(
 template <>
 void SE::TensorOp::scale_vectors<double, Contiguous1DMap<2>, DEVICETYPE::MKL>(
             DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat, double* scale_coeff){
-    size_t vec_size = mat.map.get_global_shape()[0];
-    size_t block_size = mat.map.get_global_shape()[1];
+    int vec_size = mat.map.get_global_shape()[0];
+    int block_size = mat.map.get_global_shape()[1];
     for(int index = 0; index < block_size; index++){
         scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], block_size);
     }
@@ -272,7 +272,7 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::add<do
 }
 
 template <>
-void SE::TensorOp::get_norm_of_vectors(DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat, double* norm, size_t norm_size){
+void SE::TensorOp::get_norm_of_vectors(DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat, double* norm, int norm_size){
     assert(mat.map.get_global_shape()[1] >= norm_size);
     for(int i=0;i<norm_size;i++){
         norm[i] = nrm2<double, DEVICETYPE::MKL>(mat.map.get_global_shape()[0], &mat.data[i], mat.map.get_global_shape()[1]);
@@ -283,11 +283,11 @@ void SE::TensorOp::get_norm_of_vectors(DenseTensor<2, double, Contiguous1DMap<2>
 template <>
 void SE::TensorOp::copy_vectors(
         DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat1,
-        DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat2, size_t new_size){
+        DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat2, int new_size){
     assert(mat1.map.get_global_shape()[1] >= new_size);
     assert(mat1.map.get_global_shape()[0] == mat2.map.get_global_shape()[0]);
-    size_t vec_size = mat1.map.get_global_shape()[0];
-    for(size_t i=0;i<new_size;i++){
+    int vec_size = mat1.map.get_global_shape()[0];
+    for(int i=0;i<new_size;i++){
         copy<double, DEVICETYPE::MKL>(vec_size, &mat2.data[i], mat2.map.get_global_shape()[1], &mat1.data[i], mat1.map.get_global_shape()[1]);
     }
     return;
@@ -299,13 +299,13 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::append
         DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat2){
     assert(mat1.map.get_global_shape()[0] == mat2.map.get_global_shape()[0]);
 
-    std::array<size_t, 2> new_shape = {mat1.map.get_global_shape()[0], mat1.map.get_global_shape()[1] + mat2.map.get_global_shape()[1]};
+    std::array<int, 2> new_shape = {mat1.map.get_global_shape()[0], mat1.map.get_global_shape()[1] + mat2.map.get_global_shape()[1]};
     auto new_map = Contiguous1DMap<2>(new_shape, mat1.comm.get_rank(), mat1.comm.get_world_size());
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> return_mat(*mat1.copy_comm(), new_map);
-    for(size_t i=0;i<mat1.map.get_global_shape()[1];i++){
+    for(int i=0;i<mat1.map.get_global_shape()[1];i++){
         copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.map.get_global_shape()[1], &return_mat.data[i], new_shape[1]);
     }
-    for(size_t i=0;i<mat2.map.get_global_shape()[1];i++){
+    for(int i=0;i<mat2.map.get_global_shape()[1];i++){
         copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.map.get_global_shape()[1], &return_mat.data[i+mat1.map.get_global_shape()[1]], new_shape[1]);
     }
     return return_mat;
@@ -317,7 +317,7 @@ template <>
 DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::diagonalize(
         DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& mat, double* eigval){
     assert(mat.map.get_global_shape()[0] == mat.map.get_global_shape()[1]);
-    size_t block_size = mat.map.get_global_shape()[0];
+    int block_size = mat.map.get_global_shape()[0];
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> eigvec(mat);
     int info = syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', block_size, eigvec.data, block_size, eigval);
     if(info !=0){

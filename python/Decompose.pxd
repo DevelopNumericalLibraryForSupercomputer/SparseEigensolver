@@ -8,11 +8,11 @@ from DecomposeResult cimport DecomposeResult
 from libcpp.string cimport string
 
 #cdef extern from *:
-#    ctypedef size_t BASE    "0"
-#    ctypedef size_t MKL     "1"
-#    ctypedef size_t MPI     "2"
-#    ctypedef size_t CUDA    "11"
-#    ctypedef size_t NCCL    "12"
+#    ctypedef int BASE    "0"
+#    ctypedef int MKL     "1"
+#    ctypedef int MPI     "2"
+#    ctypedef int CUDA    "11"
+#    ctypedef int NCCL    "12"
 
 #cdef extern from "../include/decomposition/IterativeSolver.hpp" namespace "SE":
 #    cdef unique_ptr[DecomposeResult[datatype]] davidson[datatype, maptype, devicetype](TensorOperations* operations, DenseTensor2D* eigvec) except+

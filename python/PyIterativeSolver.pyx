@@ -19,7 +19,7 @@ np.import_array()
 cdef call_decompose(TensorOperations* operations, np.ndarray[double, ndim=2] vecs):
     #ndarray to DenseTensor2D
     print("start call_decompose")
-    cdef array[size_t, two] global_shape
+    cdef array[int, two] global_shape
     cdef array[bool, two] is_parallel
     is_parallel[0] = True
     is_parallel[1] = False
@@ -27,8 +27,8 @@ cdef call_decompose(TensorOperations* operations, np.ndarray[double, ndim=2] vec
     global_shape[1] = vecs.shape[1]
     print("MKLCOMM")
     cdef MKLComm comm = MKLComm(0,1)
-    cdef size_t my_rank = comm.get_rank()
-    cdef size_t global_size = comm.get_world_size()
+    cdef int my_rank = comm.get_rank()
+    cdef int global_size = comm.get_world_size()
     cdef Contiguous1DMap[two] map = Contiguous1DMap[two](global_shape, my_rank, global_size, is_parallel)
     cdef DenseTensor2D* c_vecs = new DenseTensor2D(comm, map, &vecs[0,0])
     print("before decompose")
@@ -37,7 +37,7 @@ cdef call_decompose(TensorOperations* operations, np.ndarray[double, ndim=2] vec
     cdef unique_ptr[DecomposeResult[double]] c_result = decompose(operations, c_vecs, "davidson")
     print("after decompose")
     #process DenseTensorResult
-    #cdef size_t num_eig = c_result.get().num_eig
+    #cdef int num_eig = c_result.get().num_eig
     #cdef new_real_eigvals = np.zeros(num_eig)
     #print(num_eig)
     cdef vector[double] c_real_eigvals = c_result.get().real_eigvals
@@ -46,12 +46,12 @@ cdef call_decompose(TensorOperations* operations, np.ndarray[double, ndim=2] vec
 cdef extern from "../include/decomposition/TestOperations.hpp" namespace "SE":
     cdef cppclass TestTensorOperations(TensorOperations):
         TestTensorOperations() except +
-        TestTensorOperations(size_t n) except +
+        TestTensorOperations(int n) except +
 
         DenseTensor1D matvec(const DenseTensor1D& vec)
         DenseTensor2D matvec(const DenseTensor2D& vec)
-        double get_diag_element(const size_t index)
-        array[size_t,two] get_global_shape()
+        double get_diag_element(const int index)
+        array[int,two] get_global_shape()
 
 
 def testrun(np.ndarray[double, ndim=2] vecs):

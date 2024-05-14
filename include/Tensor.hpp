@@ -11,9 +11,9 @@
 namespace SE{
 
 
-template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
 class Tensor{
-using array_d = std::array<size_t, dimension>;
+using array_d = std::array<int, dimension>;
 using INTERNALTYPE = typename std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
@@ -30,7 +30,7 @@ public:
     Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
         filled=false;
     }
-    //Tensor(const Comm<device>& comm, const MAPTYPE& map, size_t reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
+    //Tensor(const Comm<device>& comm, const MAPTYPE& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
     Tensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE& data): comm(comm), map(map), data(data){
         filled=false;
     } 
@@ -71,18 +71,18 @@ public:
     // insert function (add value ) 
     virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;
     virtual void local_insert_value (const array_d local_array_index,  const DATATYPE value)=0;
-    virtual void global_insert_value(const size_t global_index,        const DATATYPE value)=0;
-    virtual void local_insert_value (const size_t local_index,         const DATATYPE value)=0;
+    virtual void global_insert_value(const int global_index,        const DATATYPE value)=0;
+    virtual void local_insert_value (const int local_index,         const DATATYPE value)=0;
 
     // set function 
     virtual void global_set_value(const array_d global_array_index, const DATATYPE value)=0;
     virtual void local_set_value (const array_d local_array_index,  const DATATYPE value)=0;
-    virtual void global_set_value(const size_t global_index,        const DATATYPE value)=0;
-    virtual void local_set_value (const size_t local_index,         const DATATYPE value)=0;
+    virtual void global_set_value(const int global_index,        const DATATYPE value)=0;
+    virtual void local_set_value (const int local_index,         const DATATYPE value)=0;
 
 
     // access function, it works only when filled==false
-    DATATYPE operator()(const size_t local_index) const {
+    DATATYPE operator()(const int local_index) const {
         assert(this->filled==false);
         return this->data[local_index];
     }
@@ -126,6 +126,6 @@ public:
 
 protected:
     bool filled = false;
-    //size_t calculate_column( array_d index, size_t dim){return index[dim];};
+    //int calculate_column( array_d index, int dim){return index[dim];};
 };
 }

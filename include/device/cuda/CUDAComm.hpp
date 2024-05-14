@@ -18,7 +18,7 @@ std::unique_ptr<Comm<DEVICETYPE::CUDA> > create_comm(int argc, char *argv[]){
 }
 
 template<>
-Comm<DEVICETYPE::CUDA>::Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size)
+Comm<DEVICETYPE::CUDA>::Comm(int rank, int world_size): rank(rank), world_size(world_size)
 {
     if (handle ==NULL){
         auto status1 =cublasCreate(&SE::handle);
@@ -51,14 +51,14 @@ Comm<DEVICETYPE::CUDA>::~Comm(){
 
 template<>
 template <typename DATATYPE>
-void Comm<DEVICETYPE::CUDA>::allreduce(const DATATYPE *src, size_t count, DATATYPE *trg, OPTYPE op) const{
+void Comm<DEVICETYPE::CUDA>::allreduce(const DATATYPE *src, int count, DATATYPE *trg, OPTYPE op) const{
     memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,count,COPYTYPE::DEVICE2DEVICE);
     return;
 }
 
 template<>
 template <typename DATATYPE>
-void Comm<DEVICETYPE::CUDA>::alltoall(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::CUDA>::alltoall(DATATYPE *src, int sendcount, DATATYPE *trg, int recvcount) const{
     assert(sendcount == recvcount);
     memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,sendcount,COPYTYPE::DEVICE2DEVICE);
     return ;
@@ -66,7 +66,7 @@ void Comm<DEVICETYPE::CUDA>::alltoall(DATATYPE *src, size_t sendcount, DATATYPE 
 
 template<>
 template <typename DATATYPE>
-void Comm<DEVICETYPE::CUDA>::allgather(DATATYPE *src, size_t sendcount, DATATYPE *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::CUDA>::allgather(DATATYPE *src, int sendcount, DATATYPE *trg, int recvcount) const{
     assert(sendcount == recvcount);
     memcpy<DATATYPE, DEVICETYPE::CUDA> (trg,src,sendcount,COPYTYPE::DEVICE2DEVICE);
   

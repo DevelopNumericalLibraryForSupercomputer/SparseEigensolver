@@ -55,13 +55,13 @@ DenseTensor<2, DATATYPE, MAPTYPE, device> add(
 //norm_i = ||mat_i|| (i=0~norm_size-1)
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 void get_norm_of_vectors(DenseTensor<2, DATATYPE, MAPTYPE, device>& mat,
-                         DATATYPE* norm, size_t norm_size);
+                         DATATYPE* norm, int norm_size);
 
 //mat1_i = mat2_i (i=0~new-1)
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
 void copy_vectors(
         DenseTensor<2, DATATYPE, MAPTYPE, device>& mat1,
-        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat2, size_t new_size);
+        DenseTensor<2, DATATYPE, MAPTYPE, device>& mat2, int new_size);
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template <typename DATATYPE, typename MAPTYPE, DEVICETYPE device>

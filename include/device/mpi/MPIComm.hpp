@@ -17,7 +17,7 @@ std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
     std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
     assert(world_size>0);
     assert(rank>=0);
-    return std::make_unique< Comm<DEVICETYPE::MPI> >( (size_t) rank, (size_t) world_size );
+    return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size );
 }
 
 template<>
@@ -47,7 +47,7 @@ void Comm<DEVICETYPE::MPI>::barrier() const{
 
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::allreduce(const double *src, size_t count, double *trg, OPTYPE op) const{
+void Comm<DEVICETYPE::MPI>::allreduce(const double *src, int count, double *trg, OPTYPE op) const{
     switch (op){
         case OPTYPE::SUM:  MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_SUM,  mpi_comm); break;
         case OPTYPE::PROD: MPI_Allreduce(src, trg, count, MPI_DOUBLE, MPI_PROD, mpi_comm); break;
@@ -58,13 +58,13 @@ void Comm<DEVICETYPE::MPI>::allreduce(const double *src, size_t count, double *t
 }
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::alltoall(double *src, size_t sendcount, double *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::MPI>::alltoall(double *src, int sendcount, double *trg, int recvcount) const{
     MPI_Alltoall(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::alltoallv(double *src, size_t* sendcounts, double *trg, size_t* recvcounts) const{
+void Comm<DEVICETYPE::MPI>::alltoallv(double *src, int* sendcounts, double *trg, int* recvcounts) const{
     // displs are automatically generated
     int sdispls[world_size];
     int int_sendcounts[world_size];
@@ -86,13 +86,13 @@ void Comm<DEVICETYPE::MPI>::alltoallv(double *src, size_t* sendcounts, double *t
 
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::allgather(double *src, size_t sendcount, double *trg, size_t recvcount) const{
+void Comm<DEVICETYPE::MPI>::allgather(double *src, int sendcount, double *trg, int recvcount) const{
     MPI_Allgather(src, (int)sendcount, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, mpi_comm);
 }
 
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::allgatherv(double *src, size_t sendcount, double *trg, size_t* recvcounts) const{
+void Comm<DEVICETYPE::MPI>::allgatherv(double *src, int sendcount, double *trg, int* recvcounts) const{
     // displs are automatically generated using recvcount
     int displs[world_size];
     int int_recvcounts[world_size];
@@ -107,7 +107,7 @@ void Comm<DEVICETYPE::MPI>::allgatherv(double *src, size_t sendcount, double *tr
 
 template <> 
 template <> 
-void Comm<DEVICETYPE::MPI>::scatterv(double *src, size_t* sendcounts, double *trg, size_t recvcount, size_t root) const{
+void Comm<DEVICETYPE::MPI>::scatterv(double *src, int* sendcounts, double *trg, int recvcount, int root) const{
     // displs are automatically generated using recvcount
     int displs[world_size];
     int int_sendcounts[world_size];

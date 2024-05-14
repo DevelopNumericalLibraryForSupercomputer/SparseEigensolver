@@ -7,5 +7,5 @@ cdef extern from "../include/decomposition/TensorOperations.hpp" namespace "SE":
 
         DenseTensor1D matvec(const DenseTensor1D& vec)
         DenseTensor2D matvec(const DenseTensor2D& vec)
-        double get_diag_element(const size_t index)
-        array[size_t,two] get_global_shape()
+        double get_diag_element(const int index)
+        array[int,two] get_global_shape()

@@ -14,7 +14,7 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 */
 //std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(DenseTensor<DATATYPE,2,comm,map>& tensor, std::string method)
 
-//template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+//template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
 //std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor, std::string method);
 
 template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 

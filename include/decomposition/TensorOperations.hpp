@@ -16,8 +16,8 @@ public:
 
     virtual DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> matvec(const DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL>& vec)=0;
     virtual DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> matvec(const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& vec)=0;
-    virtual double get_diag_element(const size_t index)=0;
-    virtual std::array<size_t, 2> get_global_shape()=0;
+    virtual double get_diag_element(const int index)=0;
+    virtual std::array<int, 2> get_global_shape()=0;
 
 };
 
@@ -32,12 +32,12 @@ public:
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> matvec(const DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>& vec) override{
         return TensorOp::matmul(this->tensor, vec);
     };
-    double get_diag_element(const size_t index) override{
-        std::array<size_t, 2> array_index = {index, index};
+    double get_diag_element(const int index) override{
+        std::array<int, 2> array_index = {index, index};
         return tensor.operator()(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
     };
 
-    std::array<size_t, 2> get_global_shape() override{
+    std::array<int, 2> get_global_shape() override{
         return tensor.map.get_global_shape();
     };
 
@@ -57,12 +57,12 @@ public:
         return TensorOp::matmul(this->tensor, vec);
     };
 
-    double get_diag_element(const size_t index) override{
+    double get_diag_element(const int index) override{
         std::cout << "SPARSETENSOR does not have get method." << std::endl;
         exit(-1);
     };
 
-    std::array<size_t, 2> get_global_shape() override{
+    std::array<int, 2> get_global_shape() override{
         return tensor.map.get_global_shape();
     };
 

@@ -3,6 +3,13 @@
 #include "../TensorOp.hpp"
 #include "MPIComm.hpp"
 #include "../../Gather.hpp"
+
+typedef MKL_INT MDESC[ 9 ];
+const MKL_INT i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+MKL_INT ictxt;
+MKL_INT info;
+blacs_get( &i_negone, &i_zero, &ictxt );
+
 namespace SE{
 // function declaration is in device/TensorOp.hpp
 
@@ -19,9 +26,32 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
     assert (world_size == vec.comm.get_world_size());
     assert (rank == vec.comm.get_rank());
 
-    size_t contract_dim = (trans==TRANSTYPE::N)? 1:0;
-    size_t remained_dim = (trans==TRANSTYPE::N)? 0:1;
-    
+	char trans_=transtype_to_char(trans);
+	int m = matrix.map.get_global_shape(0);
+	int n = matrix.map.get_global_shape(1);
+	const double one = 1.0;
+	std::array<int, 2> origin = {0,0};
+	auto init_index = matrix.map.local_to_global(origin);
+    int ia = init_index[0];
+    int ja = init_index[1];
+
+	MDESC desca, descx, descy;
+	// block size 
+	int nb = vector.map.get_global_shape(0) / vector.comm.get_world_size();
+
+    descinit_( descA, &n, &n, &nb, &nb, &i_zero, &i_zero, &ictxt, &lld, &info );
+	pdgemv(&trans_, &m, &n, &one, mat.data, &ia, &ja, desca  );
+
+
+
+
+
+
+
+
+
+
+
     assert (  mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
     std::cout << "=============" << std::endl;
     std::cout << "contract dim  = " << contract_dim << std::endl;
@@ -30,7 +60,7 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
     std::cout << "vec.global_shape(0) = " << vec.map.get_global_shape(0) << std::endl;
     std::cout << "=============" << std::endl;
     
-    std::array<size_t, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
+    std::array<int, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
     Contiguous1DMap output_map(output_shape, rank, world_size);
     DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> output ( *vec.copy_comm(), output_map);
 
@@ -68,8 +98,8 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MPI> TensorOp::matmul(
 
         auto all_local_shape = vec.map.get_all_local_shape();
         std::cout << "all_local_shape[i][0] : ";
-        size_t recv_counts[world_size];
-        for (size_t i=0; i<world_size; i++){
+        int recv_counts[world_size];
+        for (int i=0; i<world_size; i++){
             recv_counts[i] = all_local_shape[i][0];
             std::cout << all_local_shape[i][0] << ' ';
         }
@@ -101,11 +131,11 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
     assert (world_size == mat2.comm.world_size);
     assert (rank == mat2.comm.rank);
 
-    size_t contract_dim = (trans1==TRANSTYPE::N)? 1:0;
+    int contract_dim = (trans1==TRANSTYPE::N)? 1:0;
 
     assert (  mat1.map.get_global_shape(contract_dim) == mat2.map.get_global_shape(0) );
 
-    std::array<size_t, 2> output_shape = { mat1.map.get_global_size(1-contract_dim)   , mat2.map.get_global_size(1) };
+    std::array<int, 2> output_shape = { mat1.map.get_global_size(1-contract_dim)   , mat2.map.get_global_size(1) };
     std::array<bool, 2> is_parallel = {};
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MPI> output(*mat2.copy_comm(), 
                                                                        Contiguous1DMap<2>( output_shape, rank, world_size) );
@@ -115,7 +145,7 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MPI> TensorOp::matmul(
 
     if (mat2.map.get_split_dim()==0){
         assert (mat2.map.get_global_shape(1)==mat2.map.get_local_shape(1) );
-        for (size_t i =0; i<mat2.map.get_global_shape(1); i++){
+        for (int i =0; i<mat2.map.get_global_shape(1); i++){
             TensorOp::matmul<>();
         }
     }
@@ -142,23 +172,23 @@ template <typename MAPTYPE1, typename MAPTYPE2>
 Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE1>* a, 
                                                          Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
                                                          SE_transpose transa){
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
+    int m = a->shape[0];
+    int k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
         m = a->shape[1]; k = a->shape[0];
     }
     assert (v->shape[0] == k);
-    std::array<size_t,1> return_size = {m};
+    std::array<int,1> return_size = {m};
 
     if(v->map.is_sliced){
         double* vector = malloc<double, SEMpi>(k);
-        size_t* recvcounts = v->map.get_partition_size_array();
+        int* recvcounts = v->map.get_partition_size_array();
         v->comm->allgatherv(v->data, recvcounts[v->comm->rank], vector, recvcounts);
         if(a->map.is_sliced){
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size);
                 gemm<double, SEMpi>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, my_size, 1, k, 1.0, a->data, my_size, vector, k, 0.0, return_data, my_size);
                 //MAPTYPE2* return_map = new MAPTYPE2(return_size, a->comm->world_size, 0);
@@ -182,8 +212,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::Den
         if(a->map.is_sliced){
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size);
                 
                 gemm<double, SEMpi>(SE_layout::ColMajor, SE_transpose::NoTrans, SE_transpose::NoTrans, my_size, 1, k, 1.0, a->data, my_size, v->data, k, 0.0, return_data, my_size);
@@ -220,24 +250,24 @@ template <typename MAPTYPE1, typename MAPTYPE2>
 Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, MAPTYPE1>* a, 
                                                         Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* v,
                                                         SE_transpose transa){
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
+    int m = a->shape[0];
+    int k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
         m = a->shape[1]; k = a->shape[0];
     }
     assert (v->shape[0] == k);
-    std::array<size_t,1> return_size = {m};
+    std::array<int,1> return_size = {m};
 
 
     if(v->map.is_sliced){
         double* vector = malloc<double, SEMpi>(k);
-        size_t* recvcounts = v->map.get_partition_size_array();
+        int* recvcounts = v->map.get_partition_size_array();
         v->comm->allgatherv(v->data, recvcounts[v->comm->rank], vector, recvcounts);
         if(a->map.is_sliced){
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size);
                 memset<double, SEMpi>(return_data, 0, my_size);
                 
@@ -279,8 +309,8 @@ Tensor<STORETYPE::Dense, double, 1, SEMpi, MAPTYPE2>* spmv(Tensor<STORETYPE::COO
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size);
                 memset<double, SEMpi>(return_data, 0, my_size);
                 a->comm->barrier();
@@ -321,26 +351,26 @@ template <typename MAPTYPE>
 Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* spmv(Tensor<STORETYPE::COO, double, 2, SEMpi, MAPTYPE>* a, 
                                                         Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* v,
                                                         SE_transpose transa){
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
+    int m = a->shape[0];
+    int k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
         m = a->shape[1]; k = a->shape[0];
     }
     assert (v->shape[0] == k);
-    size_t number_of_vec = v->shape[1];
-    std::array<size_t,2> return_size = {m, number_of_vec};
+    int number_of_vec = v->shape[1];
+    std::array<int,2> return_size = {m, number_of_vec};
 
     if(v->map.is_sliced){
         double* vector = malloc<double, SEMpi>(k*number_of_vec);
-        size_t* recvcounts = v->map.get_partition_size_array();
+        int* recvcounts = v->map.get_partition_size_array();
         for(int n=0; n<number_of_vec ; n++){
             v->comm->allgatherv(&v->data[n*recvcounts[v->comm->rank]], recvcounts[v->comm->rank], &vector[n*k], recvcounts);
         }
         if(a->map.is_sliced){
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size*number_of_vec);
                 memset<double, SEMpi>(return_data, 0, my_size*number_of_vec);
 
@@ -387,8 +417,8 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* spmv(Tensor<STORETYPE::COO,
         if(a->map.is_sliced){
             if(transa == SE_transpose::NoTrans && a->map.sliced_dimension == 0){
                 //case 1
-                size_t rank = a->comm->rank;
-                size_t my_size = a->map.get_my_partition_size(rank);
+                int rank = a->comm->rank;
+                int my_size = a->map.get_my_partition_size(rank);
                 double* return_data = malloc<double, SEMpi>(my_size*number_of_vec);
                 memset<double, SEMpi>(return_data, 0, my_size*number_of_vec);
 
@@ -439,12 +469,12 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* matmul(Tensor<STORETYPE::De
                                                           Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* b,
                                                           SE_transpose transa = SE_transpose::NoTrans,
                                                           SE_transpose transb = SE_transpose::NoTrans){
-    size_t m = a->shape[0];
-    size_t k = a->shape[1];
+    int m = a->shape[0];
+    int k = a->shape[1];
     if(transa != SE_transpose::NoTrans){
         m = a->shape[1]; k = a->shape[0];
     }
-    size_t n = b->shape[1];
+    int n = b->shape[1];
     if(transb != SE_transpose::NoTrans){
         n = b->shape[0];
         assert(k == b->shape[1]);    
@@ -452,7 +482,7 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* matmul(Tensor<STORETYPE::De
     else{
         assert(k == b->shape[0]);
     }
-    std::array<size_t,2> return_size = {m,n};
+    std::array<int,2> return_size = {m,n};
     if( (!a->map.is_sliced) && (!b->map.is_sliced)){
         double* return_data = malloc<double, SEMpi>(m*n);
 
@@ -471,7 +501,7 @@ Tensor<STORETYPE::Dense, double, 2, SEMpi, MAPTYPE>* matmul(Tensor<STORETYPE::De
 /*
 //QR
 template <>
-void orthonormalize<double, SEMpi>(double* eigvec, size_t vector_size, size_t number_of_vectors, std::string method)
+void orthonormalize<double, SEMpi>(double* eigvec, int vector_size, int number_of_vectors, std::string method)
 {
     if(method == "qr"){
         std::cout << "qr decomposition for MPI parallelization is not available" << std::endl;

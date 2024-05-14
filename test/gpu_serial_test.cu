@@ -108,147 +108,147 @@ int main(int argc, char* argv[]){
 //    comm->barrier();
 //    std::cout << "ContiguousMap test" << std::endl;
 //    
-//    std::array<size_t,3> shape3 = {8,7,17}; 
+//    std::array<int,3> shape3 = {8,7,17}; 
 //    
 //    ContiguousMap<3> cont_map = ContiguousMap<3>(shape3);
 //    //nproc = 3
-//    std::array<size_t,3> test_index1 = {1,3,14}; // 1+ 3*8 + 14*8*7 = 809
-//    size_t test_index1_ = 809;
+//    std::array<int,3> test_index1 = {1,3,14}; // 1+ 3*8 + 14*8*7 = 809
+//    int test_index1_ = 809;
 //    if(comm->rank == 0){
 //        int slice_dimension = comm->rank;
 //        //array G -> array L
-//        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
-//        //array G -> size_t L
-//        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
-//        //size_t G -> array L
-//        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
-//        //size_t G -> size_t L
-//        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
+//        std::array<int,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
+//        //array G -> int L
+//        int local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
+//        //int G -> array L
+//        std::array<int,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
+//        //int G -> int L
+//        int local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 3*2 + 14*2*7 = 203
 //        ////std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 0 : (1 3 14 ) = 203std::endl; // rank 0 : (1 3 14 ) = 203
 //        
 //        //array L -> array G
-//        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-//        //size_t L -> array G
-//        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-//        //array L -> size_t G
-//        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-//        //size_t L -> size_t G
-//        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
+//        std::array<int, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
+//        //int L -> array G
+//        std::array<int, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
+//        //array L -> int G
+//        int restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
+//        //int L -> int G
+//        int restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 //        ////std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 //    }
 ////    if(comm->rank == 1){
 ////        int slice_dimension = comm->rank;
 ////        //array G -> array L
-////        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
-////        //array G -> size_t L
-////        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 1*8 + 14*8*2 = 233
-////        //size_t G -> array L
-////        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t G -> size_t L
-////        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 1*8 + 14*8*2 = 233
+////        std::array<int,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
+////        //array G -> int L
+////        int local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 1*8 + 14*8*2 = 233
+////        //int G -> array L
+////        std::array<int,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
+////        //int G -> int L
+////        int local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 1*8 + 14*8*2 = 233
 ////        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 1 : (1 1 14 ) = 233
 ////        
 ////        //array L -> array G
-////        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> array G
-////        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-////        //array L -> size_t G
-////        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> size_t G
-////        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
+////        std::array<int, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> array G
+////        std::array<int, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
+////        //array L -> int G
+////        int restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> int G
+////        int restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 ////        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 ////    }
 ////    if(comm->rank == 2){
 ////        int slice_dimension = comm->rank;
 ////        //array G -> array L
-////        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
-////        //array G -> size_t L
-////        size_t local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 3*8 + 4*8*7 = 249
-////        //size_t G -> array L
-////        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t G -> size_t L
-////        size_t local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 3*8 + 4*8*7 = 249
+////        std::array<int,3> sliced = cont_map.get_local_array_index(test_index1, slice_dimension, comm->rank, comm->world_size);
+////        //array G -> int L
+////        int local = cont_map.get_local_index(test_index1, slice_dimension, comm->rank, comm->world_size); // 1+ 3*8 + 4*8*7 = 249
+////        //int G -> array L
+////        std::array<int,3> sliced_ = cont_map.get_local_array_index(test_index1_, slice_dimension, comm->rank, comm->world_size);
+////        //int G -> int L
+////        int local_ = cont_map.get_local_index(test_index1_, slice_dimension, comm->rank, comm->world_size); // 1+ 3*8 + 4*8*7 = 249
 ////        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 2 : (1 3 4 ) = 249
 ////        
 ////        //array L -> array G
-////        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> array G
-////        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-////        //array L -> size_t G
-////        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> size_t G
-////        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
+////        std::array<int, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> array G
+////        std::array<int, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
+////        //array L -> int G
+////        int restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> int G
+////        int restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 ////        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 ////    }
 ////    comm->barrier();
 ////
-////    std::array<size_t,3> test_index2 = {7,6,16}; // 7+ 6*8 + 16*8*7 = 951
-////    size_t test_index2_ = 951;
+////    std::array<int,3> test_index2 = {7,6,16}; // 7+ 6*8 + 16*8*7 = 951
+////    int test_index2_ = 951;
 ////    if(comm->rank == 2){
 ////        ////////////////////////////////////
 ////        int slice_dimension = 0;
 ////        //array G -> array L
-////        std::array<size_t,3> sliced = cont_map.get_local_array_index(test_index2, slice_dimension, comm->rank, comm->world_size);
-////        //array G -> size_t L
-////        size_t local = cont_map.get_local_index(test_index2, slice_dimension, comm->rank, comm->world_size); // 3+ 6*4 + 16*4*7 = 475
-////        //size_t G -> array L
-////        std::array<size_t,3> sliced_ = cont_map.get_local_array_index(test_index2_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t G -> size_t L
-////        size_t local_ = cont_map.get_local_index(test_index2_, slice_dimension, comm->rank, comm->world_size); // 3+ 6*4 + 16*4*7 = 475
+////        std::array<int,3> sliced = cont_map.get_local_array_index(test_index2, slice_dimension, comm->rank, comm->world_size);
+////        //array G -> int L
+////        int local = cont_map.get_local_index(test_index2, slice_dimension, comm->rank, comm->world_size); // 3+ 6*4 + 16*4*7 = 475
+////        //int G -> array L
+////        std::array<int,3> sliced_ = cont_map.get_local_array_index(test_index2_, slice_dimension, comm->rank, comm->world_size);
+////        //int G -> int L
+////        int local_ = cont_map.get_local_index(test_index2_, slice_dimension, comm->rank, comm->world_size); // 3+ 6*4 + 16*4*7 = 475
 ////        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 0 : (3 6 16 ) = 475
 ////        //array L -> array G
-////        std::array<size_t, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> array G
-////        std::array<size_t, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-////        //array L -> size_t G
-////        size_t restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> size_t G
-////        size_t restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
+////        std::array<int, 3> restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> array G
+////        std::array<int, 3> restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
+////        //array L -> int G
+////        int restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
+////        //int L -> int G
+////        int restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 ////        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 ////        ////////////////////////////////////
 ////        slice_dimension = 1;
 ////        //array G -> array L
 ////        sliced = cont_map.get_local_array_index(test_index2, slice_dimension, comm->rank, comm->world_size);
-////        //array G -> size_t L
+////        //array G -> int L
 ////        local = cont_map.get_local_index(test_index2, slice_dimension, comm->rank, comm->world_size); // 7+ 2*8 + 16*8*3 = 407
-////        //size_t G -> array L
+////        //int G -> array L
 ////        sliced_ = cont_map.get_local_array_index(test_index2_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t G -> size_t L
+////        //int G -> int L
 ////        local_ = cont_map.get_local_index(test_index2_, slice_dimension, comm->rank, comm->world_size); // 7+ 2*8 + 16*8*3 = 407
 ////        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 1 : (7 2 16 ) = 407
 ////        //array L -> array G
 ////        restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> array G
+////        //int L -> array G
 ////        restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-////        //array L -> size_t G
+////        //array L -> int G
 ////        restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> size_t G
+////        //int L -> int G
 ////        restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 ////        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 ////        ////////////////////////////////////
 ////        slice_dimension = 2;
 ////        //array G -> array L
 ////        sliced = cont_map.get_local_array_index(test_index2, slice_dimension, comm->rank, comm->world_size);
-////        //array G -> size_t L
+////        //array G -> int L
 ////        local = cont_map.get_local_index(test_index2, slice_dimension, comm->rank, comm->world_size); // 7+ 6*8 + 6*8*7 = 391
-////        //size_t G -> array L
+////        //int G -> array L
 ////        sliced_ = cont_map.get_local_array_index(test_index2_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t G -> size_t L
+////        //int G -> int L
 ////        local_ = cont_map.get_local_index(test_index2_, slice_dimension, comm->rank, comm->world_size); // 7+ 6*8 + 6*8*7 = 391
 ////        std::cout << "rank " << comm->rank << " : " << sliced << " = " << local << ", " << sliced_ << " = " << local_ << std::endl; // rank 2 : (7 6 6 ) = 391
 ////        //array L -> array G
 ////        restored1 = cont_map.get_global_array_index(sliced, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> array G
+////        //int L -> array G
 ////        restored2 = cont_map.get_global_array_index(local, slice_dimension, comm->rank, comm->world_size);
-////        //array L -> size_t G
+////        //array L -> int G
 ////        restored1_ = cont_map.get_global_index(sliced_, slice_dimension, comm->rank, comm->world_size);
-////        //size_t L -> size_t G
+////        //int L -> int G
 ////        restored2_ = cont_map.get_global_index(local_, slice_dimension, comm->rank, comm->world_size);
 ////        std::cout << "rank " << comm->rank << " : " << restored1 << ", " << restored2 << ", " << restored1_ << ", " << restored2_ << std::endl; 
 ////    }
 ////    comm->barrier();
     
-    std::array<size_t, 2> test_shape = {3,3};
+    std::array<int, 2> test_shape = {3,3};
     auto test_data_ = malloc<double>(test_shape[0]*test_shape[1]);
     auto test_data = malloc<double, DEVICETYPE::CUDA>(test_shape[0]*test_shape[1]);
     test_data_[0]=1.0;

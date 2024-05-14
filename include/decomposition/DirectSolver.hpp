@@ -9,7 +9,7 @@ namespace SE{
 template <typename DATATYPE, typename MAPTYPE>
 std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, DEVICETYPE::MKL>* eigvec){
     assert(tensor.map.get_global_shape()[0] == tensor.map.get_global_shape()[1]);
-    const size_t n = tensor.map.get_global_shape()[1];
+    const int n = tensor.map.get_global_shape()[1];
 
     std::unique_ptr<DATATYPE[]> real_eigvals_ptr(new DATATYPE[n]);
     std::unique_ptr<DATATYPE[]> imag_eigvals_ptr(new DATATYPE[n]);
@@ -31,10 +31,10 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,D
     std::vector<DATATYPE> real_eigvals(real_eigvals_ptr.get(), real_eigvals_ptr.get()+n);
     std::vector<DATATYPE> imag_eigvals(imag_eigvals_ptr.get(), imag_eigvals_ptr.get()+n);
     
-    std::unique_ptr<DecomposeResult<DATATYPE> > return_val = std::make_unique< DecomposeResult<DATATYPE> >( (size_t) n, real_eigvals,imag_eigvals);
+    std::unique_ptr<DecomposeResult<DATATYPE> > return_val = std::make_unique< DecomposeResult<DATATYPE> >( (int) n, real_eigvals,imag_eigvals);
     
     //eigvec = std::move(eigvec_0);
-    const size_t num_guess = eigvec->map.get_global_shape()[1];
+    const int num_guess = eigvec->map.get_global_shape()[1];
     for(int i=0;i<num_guess;i++){
         copy<DATATYPE, DEVICETYPE::MKL>(n,&eigvec_0.get()[i],n,&eigvec->data[i],num_guess);
     }

@@ -13,7 +13,7 @@
 #include "decomposition/TestOperations.hpp"
 #include "decomposition/Decompose.hpp"
 
-std::ostream& operator<<(std::ostream& os, std::array<size_t,3> &A){
+std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
     os << "(";
     for(int i = 0; i<3; i++){
         os << A[i] << " ";
@@ -29,7 +29,7 @@ int main(int argc, char* argv[]){
     std::cout << "SERIAL test" << std::endl;
     std::cout << *ptr_comm <<std::endl;    
     
-    std::array<size_t, 2> test_shape = {4,3};
+    std::array<int, 2> test_shape = {4,3};
     Contiguous1DMap map (test_shape,  0,1);
     std::vector<double> test_data = {1,0,0,1,1,0,1,1,1,0,0,0};
 
@@ -48,7 +48,7 @@ int main(int argc, char* argv[]){
     TensorOp::orthonormalize(generalortho,"normal");
     std::cout << generalortho << std::endl;
 
-    std::array<size_t, 1> vector_shape = {3};
+    std::array<int, 1> vector_shape = {3};
     Contiguous1DMap map1d (vector_shape,  0,1);
     SE::DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> test_vector(*ptr_comm,map1d);
     //std::cout << test_vector << std::endl;
@@ -61,20 +61,20 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 6000;
-    const size_t num_eig = 3;
+    int N = 6000;
+    const int num_eig = 3;
 
 
-    std::array<size_t, 2> test_shape2 = {N,N};
+    std::array<int, 2> test_shape2 = {N,N};
     Contiguous1DMap map2 (test_shape2,  0,1);
-    std::array<size_t, 1> test_shape2_vec = {N};
+    std::array<int, 1> test_shape2_vec = {N};
     Contiguous1DMap map2_vec (test_shape2_vec,  0,1);
     
     // local potnetial v(x) = 2.0*(std::abs(0.5*(double)N-(double)i)) + spacing 1.0, 3th order kinetic energy matrix
     double invh2 = 1.0;
     double* test_data2 = malloc<double, DEVICETYPE::MKL>(N*N);
-    for(size_t i=0;i<N;i++){
-        for(size_t j=0;j<N;j++){
+    for(int i=0;i<N;i++){
+        for(int j=0;j<N;j++){
             test_data2[i+j*N] = 0;
             if(i == j)                  test_data2[i+j*N] += 2.0*((double)i-(double)N)   - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
             if(i == j +1 || i == j -1)  test_data2[i+j*N] += invh2*4.0/3.0;
@@ -103,12 +103,12 @@ int main(int argc, char* argv[]){
 
     
 
-    std::array<size_t, 2> guess_shape = {N,num_eig};
+    std::array<int, 2> guess_shape = {N,num_eig};
     auto guess_map = Contiguous1DMap<2>(guess_shape, 0, 1);
     auto guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
     // guess : unit vector
-    for(size_t i=0;i<num_eig;i++){
-        std::array<size_t, 2> tmp_index = {i,i};
+    for(int i=0;i<num_eig;i++){
+        std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
 
@@ -123,15 +123,15 @@ int main(int argc, char* argv[]){
     free(guess);
     guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
     // guess : unit vector
-    for(size_t i=0;i<num_eig;i++){
-        std::array<size_t, 2> tmp_index = {i,i};
+    for(int i=0;i<num_eig;i++){
+        std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
     
     SE::SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> test_sparse( *ptr_comm, map2, N*9);
-    for(size_t i=0;i<N;i++){
-        for(size_t j=0;j<N;j++){
-            std::array<size_t,2> index = {i,j};
+    for(int i=0;i<N;i++){
+        for(int j=0;j<N;j++){
+            std::array<int,2> index = {i,j};
             if(i == j)                   test_sparse.global_insert_value(index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
             if(i == j +1 || i == j -1)   test_sparse.global_insert_value(index, invh2*4.0/3.0);
             //if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
@@ -159,8 +159,8 @@ int main(int argc, char* argv[]){
     free(guess);
     guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
     // guess : unit vector
-    for(size_t i=0;i<num_eig;i++){
-        std::array<size_t, 2> tmp_index = {i,i};
+    for(int i=0;i<num_eig;i++){
+        std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
 
