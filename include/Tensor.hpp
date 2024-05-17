@@ -11,14 +11,14 @@
 namespace SE{
 
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE DEVICETYPE, STORETYPE STORETYPE> 
 class Tensor{
 using array_d = std::array<int, dimension>;
-using INTERNALTYPE = typename std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
+using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
-    //const STORETYPE store = store;
-    const Comm<device> comm;
+    //const STORETYPE STORETYPE = STORETYPE;
+    const Comm<DEVICETYPE> comm;
     const MAPTYPE map;
     INTERNALTYPE data; 
 
@@ -27,15 +27,15 @@ public:
         filled=false;
     }
 
-    Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
+    Tensor(const Comm<DEVICETYPE>& comm, const MAPTYPE& map):comm(comm),map(map){
         filled=false;
     }
-    //Tensor(const Comm<device>& comm, const MAPTYPE& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
-    Tensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE& data): comm(comm), map(map), data(data){
+    //Tensor(const Comm<DEVICETYPE>& comm, const MAPTYPE& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
+    Tensor(const Comm<DEVICETYPE>& comm, const MAPTYPE& map, INTERNALTYPE& data): comm(comm), map(map), data(data){
         filled=false;
     } 
 
-    Tensor(const Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor): comm(tensor.comm), map(tensor.map){ 
+    Tensor(const Tensor<dimension,DATATYPE,MAPTYPE,DEVICETYPE,STORETYPE>& tensor): comm(tensor.comm), map(tensor.map){ 
         data = tensor.copy_data();
         filled=false;
     }
@@ -43,19 +43,19 @@ public:
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup
-        if constexpr (store == STORETYPE::DENSE) {
-            // If the data is stored as a pointer, delete it
+        if constexpr (STORETYPE == STORETYPE::DENSE) {
+            // If the data is STORETYPEd as a pointer, delete it
             if (data != nullptr) {
                 delete[] data;
                 data = nullptr;
             }
         } else {
-            // If the data is stored as a vector, no cleanup needed
+            // If the data is STORETYPEd as a vector, no cleanup needed
         }
     }
 
     // copy functions
-    Comm<device>* copy_comm() const {
+    Comm<DEVICETYPE>* copy_comm() const {
         return comm.clone();
     }
 
@@ -66,7 +66,7 @@ public:
     virtual INTERNALTYPE copy_data() const=0;
 
     // clone function 
-    virtual Tensor<dimension,DATATYPE,MAPTYPE,device,store>* clone(bool call_complete=false) const=0;
+    virtual Tensor<dimension,DATATYPE,MAPTYPE,DEVICETYPE,STORETYPE>* clone(bool call_complete=false) const=0;
 
     // insert function (add value ) 
     virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;
@@ -105,7 +105,7 @@ public:
 //    };
 
 //    DATATYPE operator() (const array_d idx);
-    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor){
+    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,MAPTYPE,DEVICETYPE,STORETYPE>& tensor){
     //void print_tensor_info() const{
         if(tensor.comm.get_rank() == 0){
             stream << "========= Tensor Info =========" <<std::endl;
@@ -117,8 +117,8 @@ public:
             }
             stream << ")\n"
                    << "MAPTYPE: "   << typeid(MAPTYPE).name() << "\n" 
-                   << "Device: "    << (int) device <<"\n"
-                   << "store: "     << (int) store <<  std::endl;   
+                   << "DEVICETYPE: "<< int(DEVICETYPE)<<"\n"
+                   << "STORETYPE: " << int(STORETYPE) <<  std::endl;   
         }
         return stream;
     };

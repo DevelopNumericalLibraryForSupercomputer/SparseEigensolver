@@ -13,7 +13,30 @@ nprow: number of processor for each row
 block_size: size of block 
 world_size == nprow[0] * nprow[1] .... 
 
+array rank index is col-wise; which means "0->(0,0)" & "1->(1,0)" & "2->(0,1)" & "3->(1,1)"
+
 block index: 
+
+        0     1     0     1    0             (0,0)              (0,1)
+      __________________________         ______________      ___________
+     |1  1 |2  2 |3  3 |4  4 |5 |       |1  1 |3  3 |5 |    |2  2 |4  4 |
+ 0   |1  1 |2  2 |3  3 |4  4 |5 |       |1  1 |3  3 |5 |    |2  2 |4  4 |
+     |_____|_____|_____|_____|__|       |_____|_____|__|    |_____|_____|
+     |6  6 |7  7 |8  8 |9  9 |10|       |11 11|13 13|15|    |12 12|14 14|
+ 1   |6  6 |7  7 |8  8 |9  9 |10|       |11 11|13 13|15|    |12 12|14 14|
+     |_____|_____|_____|_____|__|       |_____|_____|__|    |_____|_____|
+     |11 11|12 12|13 13|14 14|15| --->  |21 21|23 23|25|    |22 22|24 24|
+ 0   |11 11|12 12|13 13|14 14|15|       |_____|_____|__|    |_____|_____|
+     |_____|_____|_____|_____|__|
+     |16 16|17 17|18 18|19 19|20|        
+ 1   |16 16|17 17|18 18|19 19|20|            (1,0)              (1,1)
+     |_____|_____|_____|_____|__|        ______________      ___________
+ 0   |21 21|22 22|23 23|24 24|25|       |6  6 |8  8 |10|    |7  7 |9  9 |
+     |_____|_____|_____|_____|__|       |6  6 |8  8 |10|    |7  7 |9  9 |
+                                        |_____|_____|__|    |_____|_____|
+                                        |16 16|18 18|20|    |17 17|19 19|
+                                        |16 16|18 18|20|    |17 17|19 19|
+                                        |_____|_____|__|    |_____|_____|
 
 */
 class BlockCyclingMap: public Map<dimension,MTYPE::BlockCycling> {
@@ -46,10 +69,11 @@ public:
     int find_rank_from_global_array_index(array_d global_array_index) const override;
 
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
-    int get_split_dim() const {return split_dim;};
+    array_d get_my_array_rank() const {return my_array_rank;};
 private:
-    array_d nprow;
-	array_d block_size;
+    array_d nprow;      // number of processor for each dimension
+    array_d my_array_rank; // processor_id for each dimension
+	array_d block_size; // block size for each dimension
 };
 
 template <int dimension>
@@ -57,9 +81,23 @@ BlockCyclingMap<dimension>::BlockCyclingMap( const array_d global_shape, const i
 											 const array_d nprow)
 :Map<dimension, MTYPE::BlockCycling>(global_shape, my_rank, world_size){
     assert( world_size == std::accumulate(nprow.begin(), nprow.end(), 1, std::multiplies<int>()) );
-
+	int idx = my_rank;
+	for (int dim=0; dim<dimension; dim++){
+		this->my_array_rank[dim] = idx % nprow[dim];
+		idx  /= nprow[dim];
+	}
 	this->block_size=block_size;
 	this->nprow = nprow;
+
+
+	for (int dim = 0; dim<dimension; dim++){
+		this->local_shape[dim]=0;
+		for (int i = this->my_array_rank[dim]; i<std::ceil((double)this->global_shape[dim] / (double)block_size[dim]); i+=nprow[dim] ){
+			int start_idx = i*block_size[dim];
+			int end_idx = std::min((i+1)*block_size[dim], this->global_shape[dim] );
+			this->local_shape[dim]+= end_idx-start_idx;
+		}
+	}		
 	
 }
 template <int dimension>
@@ -68,13 +106,7 @@ int BlockCyclingMap<dimension>::get_num_local_elements() const
 
 	int num_elements =1;
 	for (int dim = 0; dim<dimension; dim++){
-		int num_elements_per_dim = 0;
-		for (int i = this->my_rank; i<std::ceil((double)this->global_shape[dim] / (double)block_size[dim]); i+=nprow[dim] ){
-			int start_idx = i*block_size[dim];
-			int end_idx = std::min((i+1)*block_size[dim], this->global_shape[dim] );
-			num_elements_per_dim += end_idx-start_idx;
-		}
-		num_elements *=num_elements_per_dim;
+		num_elements*=this->local_shape[dim];
 	}
 	return num_elements;	
 }
@@ -91,11 +123,6 @@ template <int dimension>
 int BlockCyclingMap<dimension>::global_to_local(const int global_index) const
 {
     std::array<int, dimension> global_array_index = pack_global_index(global_index); 
-//	printf("%d", global_index );
-//	for (int i =0; i<dimension; i++){
-//		printf("  %d", global_array_index[i]);	
-//	}
-//	printf("\n");
     std::array<int, dimension> local_array_index = global_to_local(global_array_index);
     return unpack_local_array_index(local_array_index);
 }
@@ -108,7 +135,7 @@ std::array<int, dimension> BlockCyclingMap<dimension>::local_to_global(const std
     // Calculate global block index for each dimension and calculate global index
     for (int dim = 0; dim < local_array_index.size(); ++dim) {
 		//local_index[dim] / this->block_size[dim] is local block index
-		int global_block_index = this->nprow[dim] * (local_array_index[dim] / this->block_size[dim])+this->my_rank;
+		int global_block_index = this->nprow[dim] * (local_array_index[dim] / this->block_size[dim])+this->my_array_rank[dim];
         global_array_index[dim] = global_block_index * this->block_size[dim] + local_array_index[dim] % this->block_size[dim];
     }
 
@@ -121,11 +148,11 @@ std::array<int, dimension> BlockCyclingMap<dimension>::global_to_local(const std
     std::array<int, dimension> local_array_index;
     std::array<int, dimension> global_block_index;
 	bool tag = true;
-    for (int dim = 0; dim < local_array_index.size(); ++dim) {
-		global_block_index[dim] = global_array_index[dim] / this->block_size[dim];
-		local_array_index[dim] = (global_block_index[dim]/this->nprow[dim])*this->block_size[dim] + global_array_index[dim]%this->block_size[dim];
+    for (int dim = 0; dim < dimension; ++dim) {
+		global_block_index[dim] =  global_array_index[dim] / this->block_size[dim];
+		local_array_index[dim]  = (global_block_index[dim] / this->nprow[dim])*this->block_size[dim] + global_array_index[dim]%this->block_size[dim];
 
-		if(this->my_rank!=(global_block_index[dim]%this->nprow[dim]) ){
+		if(this->my_array_rank[dim]!=(global_block_index[dim]%this->nprow[dim]) ){
 			tag = false;
 			break;
 		}
@@ -135,7 +162,6 @@ std::array<int, dimension> BlockCyclingMap<dimension>::global_to_local(const std
 			local_array_index[dim] = -1;
 		}
 	}
-
 	return 	local_array_index;
 }
 
