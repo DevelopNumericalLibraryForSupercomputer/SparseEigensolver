@@ -5,6 +5,7 @@
 #include "DenseTensor.hpp"
 #include <cassert>
 #include <math.h>
+#include "device/mpi/TensorOp.hpp"
 
 /* Definition of MIN and MAX functions */
 #define MAX(a,b)((a)<(b)?(b):(a))
@@ -21,7 +22,7 @@ int main(int argc, char* argv[]){
 
 	// problem define 
 	const int n =51;
-	const int nb = 4;
+	const int nb = 3;
 	int p=2; int q=2;
 
 	std::array<int, 2> global_shape = {n,n};
@@ -105,18 +106,25 @@ int main(int argc, char* argv[]){
 	anorm = pdlange( "F", &n, &n, A.data, &i_one, &i_one, descA, work );
     bnorm = pdlange( "F", &n, &n, B.data, &i_one, &i_one, descB, work );
 
+	auto result1 = SE::TensorOp::matmul(A, B, SE::TRANSTYPE::N, SE::TRANSTYPE::N);
+	auto result2 = SE::TensorOp::matmul(A, result1, SE::TRANSTYPE::T, SE::TRANSTYPE::N);
+	auto result3 = SE::TensorOp::add( B, result2, -1.0);
+
 	// C=A@B	
     pdgemm( "N", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, B.data, &i_one, &i_one, descB,
              &zero, C.data, &i_one, &i_one, descC );
+	// B=inv_A@C
     pdgemm( "T", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, C.data, &i_one, &i_one, descC,
              &negone, B.data, &i_one, &i_one, descB );
-	double diffnorm = pdlange( "I", &n, &n, B.data, &i_one, &i_one, descB, work );
+
+	double diffnorm1 = pdlange( "I", &n, &n, B.data, &i_one, &i_one, descB, work );
+	double diffnorm2 = pdlange( "I", &n, &n, result3.data, &i_one, &i_one, descB, work );
 	if( iam == 2 ){ 
 		//printf("%03.11f\n", sqrt(normA) );
 		printf( ".. Norms of A and B are computed ( p?lange ) ..\n" ); 
         printf( "||A|| = %03.11f\n", anorm );
         printf( "||B|| = %03.11f\n", bnorm );
-		printf("%f\n\n", diffnorm);
+		printf(" %03.11f %03.11f\n\n", diffnorm1, diffnorm2);
 	}
 
 //	std::cout <<A <<std::endl;

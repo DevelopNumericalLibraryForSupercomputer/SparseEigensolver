@@ -3,6 +3,11 @@
 #include <cassert>
 #include "../../Comm.hpp"
 #include "Utility.hpp"
+
+#include "mkl_blacs.h"
+#include "mkl_pblas.h"
+#include "mkl_scalapack.h"
+
 namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_NULL; // MPI_COMM_WORLD;
@@ -14,6 +19,12 @@ std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
     int rank ,world_size;
     MPI_Comm_rank(mpi_comm, &rank);
     MPI_Comm_size(mpi_comm, &world_size);
+	    
+//    int rank,world_size, ictxt;
+//	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
+//	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+//    blacs_pinfo( &rank, &world_size );
+
     std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
     assert(world_size>0);
     assert(rank>=0);

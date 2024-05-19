@@ -70,6 +70,8 @@ public:
 
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
     array_d get_my_array_rank() const {return my_array_rank;};
+	array_d get_nprow() const {return nprow;};
+	array_d get_block_size() const {return block_size;};
 private:
     array_d nprow;      // number of processor for each dimension
     array_d my_array_rank; // processor_id for each dimension
