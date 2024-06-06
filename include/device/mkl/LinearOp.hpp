@@ -18,10 +18,10 @@ void free<double, DEVICETYPE::MKL>(double* ptr) {
 */
 
 //ignore COPYTYPE: always NONE
-template<>
-void memcpy<int, DEVICETYPE::MKL>(int* dest, const int* source, int size, COPYTYPE copy_type){
-    std::memcpy(dest, source, size * sizeof(int));
-}
+//template<>
+//void memcpy<int, DEVICETYPE::MKL>(int* dest, const int* source, int size, COPYTYPE copy_type){
+//    std::memcpy(dest, source, size * sizeof(int));
+//}
 
 template<>
 void memcpy<int, DEVICETYPE::MKL>(int* dest, const int* source, int size, COPYTYPE copy_type){

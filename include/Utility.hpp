@@ -11,7 +11,8 @@
 
 namespace SE{
 template <int dimension>
-void cumprod(const std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
+void cumprod(std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
+//void cumprod(const std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
     /* Ex1)
      * shape = {2, 3, 4}, indexing="F"
      * shape_mult = {1, 2, 6, 24}

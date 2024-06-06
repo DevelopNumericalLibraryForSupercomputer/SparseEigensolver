@@ -12,7 +12,7 @@
 #define MIN(a,b)((a)>(b)?(b):(a))
 
 int main(int argc, char* argv[]){
-    int iam, nprocs, ictxt;
+    int rank, world_size, ictxt;
 	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
 	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
 	int info;
@@ -29,16 +29,16 @@ int main(int argc, char* argv[]){
 	std::array<int, 2> block_size = {nb,nb};
 	std::array<int, 2> nprow = {p,q};  // only np 4 works 
 
-    blacs_pinfo( &iam, &nprocs );
+    blacs_pinfo( &rank, &world_size );
     blacs_get( &i_negone, &i_zero, &ictxt );
     blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
     //blacs_gridinfo( &ictxt, &nprow[0], &npcol[1], &myrow, &mycol );
 
-//    if ( iam == 0 ) {
-//        printf( " %d %d\n", iam, nprocs );
+//    if ( rank == 0 ) {
+//        printf( " %d %d\n", rank, world_size );
 //	}
 
-    SE::BlockCyclingMap<2> map(  global_shape, iam, nprocs, block_size, nprow);
+    SE::BlockCyclingMap<2> map(  global_shape, rank, world_size, block_size, nprow);
 	for (int i=0; i<global_shape[0]; i++){
 		for (int j=0; j<global_shape[1]; j++){
 //			std::array<int,2> index1 = {i,j};
@@ -46,15 +46,15 @@ int main(int argc, char* argv[]){
 //			auto idx1 = map.unpack_global_array_index( index1);
 //			auto idx2 = map.unpack_local_array_index( index2);
 //
-//			if(iam==3) printf("%d: %d %d %d %d \n",iam, index1[0], index1[1], index2[0], index2[1]);
-//			if(iam==3) printf("%d: %d %d\n",iam,  idx1, idx2);
+//			if(rank==3) printf("%d: %d %d %d %d \n",rank, index1[0], index1[1], index2[0], index2[1]);
+//			if(rank==3) printf("%d: %d %d\n",rank,  idx1, idx2);
 			int idx = i+n*j;
 			auto idx_ = map.pack_global_index(idx);
 			auto local_idx = map.global_to_local(idx);
-			//if(iam==0) printf("%d: %d %d\n", idx, idx_[0], idx_[1] );
+			//if(rank==0) printf("%d: %d %d\n", idx, idx_[0], idx_[1] );
 		}
 	}
-	SE::Comm<SE::DEVICETYPE::MPI> comm(iam, nprocs);
+	SE::Comm<SE::DEVICETYPE::MPI> comm(rank, world_size);
 	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > A(comm, map);
 	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > B(comm, map);
 	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > C(comm, map);
@@ -92,8 +92,8 @@ int main(int argc, char* argv[]){
 
     int lld = MAX( A.map.get_local_shape()[0], 1 );
 
-//	std::cout << iam << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld<<"\t" <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
-//	std::cout << iam << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
+//	std::cout << rank << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld<<"\t" <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
+//	std::cout << rank << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
 /*  Initialize descriptors for distributed arrays */
     descinit( descA, &n, &n, &nb, &nb, &i_zero, &i_zero, &ictxt, &lld, &info );
 	assert (info==0);
@@ -119,7 +119,7 @@ int main(int argc, char* argv[]){
 
 	double diffnorm1 = pdlange( "I", &n, &n, B.data, &i_one, &i_one, descB, work );
 	double diffnorm2 = pdlange( "I", &n, &n, result3.data, &i_one, &i_one, descB, work );
-	if( iam == 2 ){ 
+	if( rank == 2 ){ 
 		//printf("%03.11f\n", sqrt(normA) );
 		printf( ".. Norms of A and B are computed ( p?lange ) ..\n" ); 
         printf( "||A|| = %03.11f\n", anorm );

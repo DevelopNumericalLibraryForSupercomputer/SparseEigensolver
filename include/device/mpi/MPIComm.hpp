@@ -14,9 +14,9 @@ MPI_Comm mpi_comm = MPI_COMM_NULL; // MPI_COMM_WORLD;
 
 template<>
 std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
+    int rank ,world_size;
     MPI_Init(&argc, &argv);
     mpi_comm = MPI_COMM_WORLD;
-    int rank ,world_size;
     MPI_Comm_rank(mpi_comm, &rank);
     MPI_Comm_size(mpi_comm, &world_size);
 	    

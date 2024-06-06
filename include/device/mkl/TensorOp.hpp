@@ -30,7 +30,7 @@ DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> TensorOp::matmul(
     assert ( mat.map.get_global_shape(contract_dim) == vec.map.get_global_shape(0) );
     std::cout << "MKLDENSE, m : " << m << ", k : " << k << std::endl;
     std::array<int, 1> output_shape = {mat.map.get_global_shape(remained_dim)};
-    Contiguous1DMap output_map(output_shape, 0,1);
+    Contiguous1DMap<1> output_map(output_shape, 0,1);
     DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> output ( *vec.copy_comm(), output_map);
     //mby k * kby 1
     //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.map.get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
@@ -62,7 +62,7 @@ DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> TensorOp::matmul(
     
     assert(k == k2);
     std::array<int, 2> output_shape = {m,n};
-    Contiguous1DMap output_map (output_shape, 0,1);
+    Contiguous1DMap<2> output_map (output_shape, 0,1);
     DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> output ( *mat2.copy_comm(), output_map );
     //mby k * kby n
     gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, mat1.map.get_global_shape(1), mat2.data, mat2.map.get_global_shape(1), 0.0, output.data, n);
@@ -104,7 +104,7 @@ DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> SE::TensorOp::matmul
 
     assert (num_col==vec.map.get_global_shape(0));
     std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
-    Contiguous1DMap output_map (output_shape, 0,1);
+    Contiguous1DMap<1> output_map (output_shape, 0,1);
 
     DenseTensor<1, double, Contiguous1DMap<1>, DEVICETYPE::MKL> output(*p_comm, output_map );
 
@@ -172,7 +172,7 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     
     assert (num_col==mat2.map.get_global_shape(0));
     std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.map.get_global_shape(1)};
-    Contiguous1DMap output_map (output_shape, 0,1);
+    Contiguous1DMap<2> output_map (output_shape, 0,1);
 
     DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> output(*p_comm, output_map );
 

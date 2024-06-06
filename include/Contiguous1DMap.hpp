@@ -48,8 +48,8 @@ private:
 template <int dimension>
 Contiguous1DMap<dimension>::Contiguous1DMap( std::array<int, dimension> global_shape, int my_rank, int world_size)
 :Map<dimension, MTYPE::Contiguous1D>(global_shape, my_rank, world_size){
-    cumprod(this->global_shape, this->global_shape_mult);
-
+    cumprod<dimension>(this->global_shape, this->global_shape_mult);
+	
     this->ranks_per_dim.fill(1);
     this->ranks_per_dim[0]=this->world_size;
 
@@ -60,7 +60,7 @@ Contiguous1DMap<dimension>::Contiguous1DMap( std::array<int, dimension> global_s
 template<int dimension>
 Contiguous1DMap<dimension>::Contiguous1DMap( std::array<int, dimension> global_shape, int my_rank, int world_size, std::array<bool, dimension> is_parallel) 
 :Map<dimension, MTYPE::Contiguous1D>(global_shape, my_rank, world_size){
-    cumprod(this->global_shape, this->global_shape_mult);
+    cumprod<dimension>(this->global_shape, this->global_shape_mult);
 
     assert (1==std::count(is_parallel.begin(), is_parallel.end(), true));
     split_dim = std::distance(is_parallel.begin(), std::find(is_parallel.begin(), is_parallel.end(), true));
@@ -93,7 +93,7 @@ void Contiguous1DMap<dimension>::initialize(){
         all_local_shape.push_back(tmp_local_shape);
     }
     this->local_shape = all_local_shape[this->my_rank];
-    cumprod(this->local_shape, this->local_shape_mult);
+    cumprod<dimension>(this->local_shape, this->local_shape_mult);
     /*
     std::cout << "Rank " << this->my_rank << " : ";
     for(int i=0;i<this->local_shape.size();i++){
