@@ -353,15 +353,23 @@ void TensorOp::scale_vectors(DenseTensor<2, double, BlockCyclingMap<2>, DEVICETY
 	auto block_size = mat.map.get_block_size();
     const int lld = MAX( mat.map.get_local_shape()[0], 1 );
 
-    descinit( desc, &row, &col, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
-	assert (info==0);
 
-    const int vec_size = mat.map.get_global_shape()[0];
-	const int num_vec  = mat.map.get_global_shape()[1]; 
-    for(int index = 0; index < num_vec; index++){
-        //scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], block_size);
-		pdscal ( &vec_size, &scale_coeff[index] , mat.data, &i_one, &index, desc, &num_vec); 
-    }
+	for (int i=0; i< mat.map.get_local_shape(1); i++ ){
+		std::array<int,2> local_arr_idx = {0, i};
+		auto global_arr_idx = mat.map.local_to_global(local_arr_idx);
+		auto local_idx = mat.map.unpack_local_array_index(local_arr_idx);
+		cblas_dscal(mat.map.get_local_shape(0), scale_coeff[global_arr_idx[1]], &mat.data[local_idx],1);
+
+	}
+//    descinit( desc, &row, &col, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+//	assert (info==0);
+//
+//    const int vec_size = mat.map.get_global_shape()[0];
+//	const int num_vec  = mat.map.get_global_shape()[1]; 
+//    for(int index = 0; index < num_vec; index++){
+//        //scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], block_size);
+//		pdscal ( &vec_size, &scale_coeff[index] , mat.data, &i_one, &index, desc, &num_vec); 
+//    }
 	return;
 }
 
@@ -385,7 +393,7 @@ void TensorOp::get_norm_of_vectors(DenseTensor<2, double, BlockCyclingMap<2>, DE
 	}
 	
 	std::fill_n(norm, norm_size, 0.0); //initialize norm as 0
-
+	// C means column-wise sum which means summation along processors having the same processor col id is perform
 	dgsum2d(&ictxt, "C", "1-tree", &i_one, &num_vec, local_sum, &i_one, &i_negone, &i_negone);
 
 
