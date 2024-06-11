@@ -11,14 +11,14 @@
 namespace SE{
 
 
-template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE DEVICETYPE, STORETYPE STORETYPE> 
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE STORETYPE> 
 class Tensor{
 using array_d = std::array<int, dimension>;
 using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
     //const STORETYPE STORETYPE = STORETYPE;
-    const std::unique_ptr<Comm<DEVICETYPE> > ptr_comm;
+    const std::unique_ptr<Comm<device> > ptr_comm;
     const std::unique_ptr<Map<dimension,mtype>> ptr_map;
     INTERNALTYPE data; 
 
@@ -27,23 +27,23 @@ public:
         filled=false;
     }
 
-    Tensor(const std::unique_ptr<Comm<DEVICETYPE> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map):
-	ptr_comm(std::unique_ptr<Comm<DEVICETYPE> >(ptr_comm->clone())),
+    Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map):
+	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
 	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) )
 	{
         filled=false;
     }
-    //Tensor(const std::unique_ptr<Comm<DEVICETYPE> >& comm, const std::unique_ptr<Map<dimension,mtype>>& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
-    Tensor(const std::unique_ptr<Comm<DEVICETYPE> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
-	ptr_comm(std::unique_ptr<Comm<DEVICETYPE> >(ptr_comm->clone())),
+    //Tensor(const std::unique_ptr<Comm<device> >& comm, const std::unique_ptr<Map<dimension,mtype>>& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
+    Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
+	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
 	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) ),
 	data(data)
 	{
         filled=false;
     } 
 
-    Tensor(const Tensor<dimension,DATATYPE,mtype,DEVICETYPE,STORETYPE>& tensor): 
-	ptr_comm(std::unique_ptr<Comm<DEVICETYPE> >(ptr_comm->clone())),
+    Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor): 
+	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
 	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) )
 	{ 
         data = tensor.copy_data();
@@ -65,8 +65,8 @@ public:
     }
 
     // copy functions
-    std::unique_ptr<Comm<DEVICETYPE> > copy_comm() const {
-        return std::unique_ptr<Comm<DEVICETYPE> > (ptr_comm->clone());
+    std::unique_ptr<Comm<device> > copy_comm() const {
+        return std::unique_ptr<Comm<device> > (ptr_comm->clone());
     }
 
     std::unique_ptr<Map<dimension,mtype>> copy_map() const {
@@ -76,7 +76,7 @@ public:
     virtual INTERNALTYPE copy_data() const=0;
 
     // clone function 
-    virtual std::unique_ptr<Tensor<dimension,DATATYPE,mtype,DEVICETYPE,STORETYPE> > clone(bool call_complete=false) const=0;
+    virtual std::unique_ptr<Tensor<dimension,DATATYPE,mtype,device,STORETYPE> > clone(bool call_complete=false) const=0;
 
     // insert function (add value ) 
     virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;
@@ -115,7 +115,7 @@ public:
 //    };
 
 //    DATATYPE operator() (const array_d idx);
-    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,mtype,DEVICETYPE,STORETYPE>& tensor){
+    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor){
     //void print_tensor_info() const{
         if(tensor.ptr_comm->get_rank() == 0){
             stream << "========= Tensor Info =========" <<std::endl;
@@ -127,7 +127,7 @@ public:
             }
             stream << ")\n"
                    << "Map<dimension,mtype>: "   << typeid(Map<dimension,mtype>).name() << "\n" 
-                   << "DEVICETYPE: "<< int(DEVICETYPE)<<"\n"
+                   << "device: "<< int(device)<<"\n"
                    << "STORETYPE: " << int(STORETYPE) <<  std::endl;   
         }
         return stream;

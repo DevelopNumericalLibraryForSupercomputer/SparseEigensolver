@@ -8,8 +8,8 @@
 namespace SE{
 
 // Dummy 
-template <typename DATATYPE, MTYPE mtype, DEVICETYPE DEVICETYPE >
-std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEVICETYPE>& tensor, DenseTensor<2, DATATYPE, mtype, DEVICETYPE>* eigvec){assert(true);};
+template <typename DATATYPE, MTYPE mtype, DEVICETYPE device >
+std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec){assert(true);};
 
 template <typename DATATYPE, MTYPE mtype>
 std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, mtype, DEVICETYPE::MKL>* eigvec){
