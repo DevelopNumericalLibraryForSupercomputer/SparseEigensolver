@@ -4,6 +4,10 @@
 #include <iomanip>
 #include "Map.hpp"
 namespace SE{
+
+template<int dimension>
+class Contiguous1DMapInp;
+
 template<int dimension> 
 class Contiguous1DMap: public Map<dimension,MTYPE::Contiguous1D> {
     using array_d = std::array<int, dimension>;
@@ -38,11 +42,44 @@ public:
 
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
     int get_split_dim() const {return split_dim;};
+
+	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const{
+		Contiguous1DMapInp<dimension > map_inp(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
+
+		return std::unique_ptr<MapInp<dimension,MTYPE::Contiguous1D> > (&map_inp);
+	};
+private:
+    //array_d ranks_per_dim;      // number of processor for each dimension
 private:
     // all_local_shape store local_shape of all ranks, so all_local_shape.size() == world_size
     std::vector< array_d > all_local_shape;
     int split_dim=0;
     void initialize();
+};
+
+template<int dimension>
+class Contiguous1DMapInp: public MapInp<dimension,MTYPE::Contiguous1D >
+{
+	public:
+		//std::array<int, dimension >	 global_shape;
+		//int my_rank;
+		//int world_size;
+		std::unique_ptr<Map<dimension,MTYPE::Contiguous1D> > create_map() override; 
+		Contiguous1DMapInp( std::array<int, dimension> global_shape, int my_rank=0, int world_size=1,  std::array<int, dimension> ranks_per_dim = std::array<int, dimension>{} ){
+			this->global_shape=global_shape;
+			this->my_rank = my_rank;
+			this->world_size = world_size;
+			this->ranks_per_dim = ranks_per_dim;
+		};
+};
+
+template<int dimension>
+std::unique_ptr< Map<dimension,MTYPE::Contiguous1D> > Contiguous1DMapInp<dimension>::create_map(){
+	if (this->ranks_per_dim[0]==0){
+		// default value(std::array<int, dimension>{}) for ranks_per_dim is set
+		return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size);
+	}
+	return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim); //shchoi add more cases
 };
 
 template <int dimension>

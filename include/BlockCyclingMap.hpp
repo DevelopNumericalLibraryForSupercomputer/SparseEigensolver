@@ -5,8 +5,9 @@
 #include <cmath>
 #include "Map.hpp"
 namespace SE{
-template<int dimension> 
 
+template<int dimension>
+class BlockCyclingMapInp;
 /*
 Map for Block Cyclic Distribution (for all dimension) 
 nprow: number of processor for each row
@@ -39,6 +40,7 @@ block index:
                                         |_____|_____|__|    |_____|_____|
 
 */
+template<int dimension> 
 class BlockCyclingMap: public Map<dimension,MTYPE::BlockCycling> {
     using array_d = std::array<int, dimension>;
 
@@ -68,19 +70,45 @@ public:
     int find_rank_from_global_index(int global_index) const override;
     int find_rank_from_global_array_index(array_d global_array_index) const override;
 
-    std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
-    array_d get_my_array_rank() const {return my_array_rank;};
-	array_d get_nprow() const {return nprow;};
-	array_d get_block_size() const {return block_size;};
+    //std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
+	array_d get_nprow() const override{return this->nprow;};
+    array_d get_my_array_rank() const {return this->my_array_rank;};
+	array_d get_block_size() const override {return this->block_size;};
+	std::unique_ptr<MapInp<dimension, MTYPE::BlockCycling> > generate_map_inp() const override{
+		BlockCyclingMapInp<dimension> map_inp(this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
+		return std::unique_ptr<MapInp<dimension,MTYPE::BlockCycling> > (&map_inp);
+	};
 private:
     array_d nprow;      // number of processor for each dimension
     array_d my_array_rank; // processor_id for each dimension
 	array_d block_size; // block size for each dimension
 };
 
+template<int dimension>
+class BlockCyclingMapInp: public MapInp<dimension, MTYPE::BlockCycling >{
+	public:
+
+		std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > create_map() override;
+
+		BlockCyclingMapInp( std::array<int, dimension> global_shape, int my_rank, int world_size, std::array<int, dimension> block_size, std::array<int, dimension> nprow){
+			this->global_shape=global_shape;
+			this->my_rank = my_rank;
+			this->world_size = world_size;
+			this->block_size = block_size;
+			this->nprow=nprow;
+		};
+
+};
+
+template<int dimension>
+std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > BlockCyclingMapInp<dimension>::create_map(){
+//std::unique_ptr< BlockCyclingMap<dimension> > BlockCyclingMapInp<dimension>::create_map(){
+	return std::make_unique<BlockCyclingMap<dimension> > ( this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
+};
+
 template <int dimension>
-BlockCyclingMap<dimension>::BlockCyclingMap( const array_d global_shape, const int my_rank, const int world_size, const array_d block_size, 
-											 const array_d nprow)
+BlockCyclingMap<dimension>::BlockCyclingMap( const std::array<int,dimension> global_shape, const int my_rank, const int world_size, const std::array<int, dimension> block_size, 
+											 const std::array<int, dimension> nprow)
 :Map<dimension, MTYPE::BlockCycling>(global_shape, my_rank, world_size){
     assert( world_size == std::accumulate(nprow.begin(), nprow.end(), 1, std::multiplies<int>()) );
 	int idx = my_rank;

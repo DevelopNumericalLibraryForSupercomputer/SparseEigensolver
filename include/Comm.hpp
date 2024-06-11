@@ -10,6 +10,9 @@
 namespace SE{
 
 template<DEVICETYPE device>
+class CommInp;
+
+template<DEVICETYPE device>
 class Comm{
 public:
     Comm(int rank, int world_size): rank(rank), world_size(world_size) {};
@@ -42,6 +45,8 @@ public:
     int rank = 0;           // Process rank
     //int local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     int world_size = 1;     // Total number of processes in the job
+
+	std::unique_ptr<CommInp<device> > generate_comm_inp() const;
 protected:
     inline static int count =0;
 };
@@ -52,8 +57,14 @@ std::ostream &operator<<(std::ostream &os, Comm<device> const &comm) {
     return os << "Comm<" << typeid(device).name() << ">"<<std::endl ;
 }
 
+
 template<DEVICETYPE device>
-std::unique_ptr<Comm<device> > create_comm(int argc, char *argv[]);
+class CommInp
+{
+	public:
+		virtual std::unique_ptr<Comm<device> > create_comm()=0;
+}; 
+
 //{
 //    std::cout << "empty comm" << std::endl;
 //    return std::make_unique< Comm<device> >();

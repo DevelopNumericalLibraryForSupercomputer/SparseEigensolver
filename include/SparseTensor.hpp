@@ -8,8 +8,8 @@
 namespace SE{
 
 
-template<int dimension, typename DATATYPE, typename MAPTYPE=Contiguous1DMap<dimension>, DEVICETYPE device=DEVICETYPE::BASE> 
-class SparseTensor: public Tensor<dimension, DATATYPE, MAPTYPE, device, STORETYPE::COO > {
+template<int dimension, typename DATATYPE, MTYPE mtype=MTYPE::Contiguous1D, DEVICETYPE device=DEVICETYPE::BASE> 
+class SparseTensor: public Tensor<dimension, DATATYPE, mtype, device, STORETYPE::COO > {
 
 
 using array_d = std::array<int, dimension>;
@@ -18,9 +18,9 @@ using INTERNALTYPE =  std::vector<std::pair<array_d, DATATYPE> >;
 
 public:
     SparseTensor();
-    SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map);
-    SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, int reserve_size);
-    SparseTensor(const Comm<device>& _comm, const MAPTYPE& _map, INTERNALTYPE data);
+    SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map);
+    SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, int reserve_size);
+    SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
 
     ~SparseTensor() {
         if (complete_index != nullptr) {
@@ -36,7 +36,7 @@ public:
     INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone
-    SparseTensor<dimension, DATATYPE, MAPTYPE, device>* clone(bool call_complete) const override;
+    std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::COO> > clone(bool call_complete) const override;
     // insert function
     void global_insert_value(const array_d global_array_index, const DATATYPE value) override;
     void local_insert_value (const array_d local_array_index, const DATATYPE value) override;
@@ -48,8 +48,8 @@ public:
     void global_set_value(const int global_index,        const DATATYPE value) override;
     void local_set_value (const int local_index,         const DATATYPE value) override;
     // string stream
-    friend std::ostream& operator<< (std::ostream& stream, const SparseTensor<dimension,DATATYPE,MAPTYPE,device>& tensor){
-        stream << static_cast<const Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::COO>&> (tensor);
+    friend std::ostream& operator<< (std::ostream& stream, const SparseTensor<dimension,DATATYPE,mtype,device>& tensor){
+        stream << static_cast<const Tensor<dimension,DATATYPE,mtype,device,STORETYPE::COO>&> (tensor);
 
         stream << "========= Tensor Content =========" <<std::endl;
         auto const num = tensor.get_num_nonzero();
@@ -84,28 +84,28 @@ public:
 private:
     int nnz=0;
 };
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-SparseTensor<dimension,DATATYPE,MAPTYPE,device>::SparseTensor(const Comm<device>& comm, const MAPTYPE& map)
-:Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::COO>(comm,map){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+SparseTensor<dimension,DATATYPE,mtype,device>::SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map)
+:Tensor<dimension,DATATYPE,mtype,device,STORETYPE::COO>(ptr_comm,ptr_map){
     this->filled=false;
 };
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-SparseTensor<dimension,DATATYPE,MAPTYPE,device>::SparseTensor(const Comm<device>& comm, const MAPTYPE& map, int reserve_size)
-:Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::COO>(comm,map){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+SparseTensor<dimension,DATATYPE,mtype,device>::SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, int reserve_size)
+:Tensor<dimension,DATATYPE,mtype,device,STORETYPE::COO>(ptr_comm,ptr_map){
     this->data.reserve(reserve_size);
     this->filled=false;
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-SparseTensor<dimension,DATATYPE,MAPTYPE,device>::SparseTensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE data)
-:Tensor<dimension,DATATYPE,MAPTYPE,device,STORETYPE::COO>(comm,map, data){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+SparseTensor<dimension,DATATYPE,mtype,device>::SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data)
+:Tensor<dimension,DATATYPE,mtype,device,STORETYPE::COO>(ptr_comm,ptr_map, data){
     this->filled=false;
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device>
-SparseTensor<dimension, DATATYPE, MAPTYPE, device>* SparseTensor<dimension,DATATYPE,MAPTYPE,device>::clone(bool call_complete) const{
-    auto return_val = new SparseTensor<dimension,DATATYPE,MAPTYPE,device> (*this->copy_comm(), *this->copy_map() );
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device,STORETYPE::COO > > SparseTensor<dimension,DATATYPE,mtype,device>::clone(bool call_complete) const{
+    auto return_val = std::make_unique< SparseTensor<dimension,DATATYPE,mtype,device> > (this->copy_comm(), this->copy_map() ); // I am not sure if pointer of inherit class work well shchoi
     if(this->filled && call_complete){
         auto nnz = get_num_nonzero();
         return_val->complete_index = malloc<int,device>(nnz*dimension );
@@ -127,50 +127,50 @@ SparseTensor<dimension, DATATYPE, MAPTYPE, device>* SparseTensor<dimension,DATAT
 }
 
 // insert function
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(const std::array<int, dimension> global_array_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::global_insert_value(const std::array<int, dimension> global_array_index, const DATATYPE value){
     assert (this->filled==false);
-    auto local_array_index = this->map.global_to_local(global_array_index);
+    auto local_array_index = this->ptr_map->global_to_local(global_array_index);
     local_insert_value(local_array_index, value);
     return;
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(const std::array<int, dimension> local_array_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::local_insert_value(const std::array<int, dimension> local_array_index, const DATATYPE value){
     assert (this->filled==false);
     for(int i=0;i<dimension;i++){
-        assert (local_array_index[i] >=0 && local_array_index[i]<this->map.get_local_shape(i));
+        assert (local_array_index[i] >=0 && local_array_index[i]<this->ptr_map->get_local_shape(i));
     }
     auto item = std::make_pair(local_array_index, value);
     this->data.push_back(item);
     return;
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::global_insert_value(const int global_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::global_insert_value(const int global_index, const DATATYPE value){
     static_assert(true, "SparseTensor::global_insert_value(const int global_index, const DATATYPE value) is not implemented");
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::local_insert_value(int local_index, DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::local_insert_value(int local_index, DATATYPE value){
     assert (this->filled==false);
     this->data[local_index].second+=value;
 }
 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::global_set_value(const std::array<int, dimension> global_array_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::global_set_value(const std::array<int, dimension> global_array_index, const DATATYPE value){
     static_assert(true, "SparseTensor::global_set_value(const std::array<int, dimension> global_index, const DATATYPE value) is not implemented");
 }
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value (const std::array<int, dimension> local_array_index,  const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::local_set_value (const std::array<int, dimension> local_array_index,  const DATATYPE value){
     static_assert(true, "SparseTensor::local_set_value(const std::array<int, dimension> global_index, const DATATYPE value) is not implemented");
 }
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::global_set_value(const int global_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::global_set_value(const int global_index, const DATATYPE value){
     static_assert(true, "SparseTensor::global_set_value(const int global_index, const DATATYPE value) is not implemented");
 }
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value (const int local_index, const DATATYPE value){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::local_set_value (const int local_index, const DATATYPE value){
     assert (this->filled==false);
     this->data[local_index].second=value;
 }
@@ -178,8 +178,8 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::local_set_value (const int
 
 
 // Sparse Tensor Only 
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
     if(!this->filled && this->data.size() !=0){
 
         std::sort(this->data.begin(), this->data.end());
@@ -225,8 +225,8 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
 };
 
 //// print functions
-//template<typename DATATYPE, int dimension, DEVICETYPE device, typename MAPTYPE>
-//void Tensor<STORETYPE::COO, DATATYPE, dimension, device, MAPTYPE>::print() const{
+//template<typename DATATYPE, int dimension, DEVICETYPE device, MTYPE mtype>
+//void Tensor<STORETYPE::COO, DATATYPE, dimension, device, Map<dimension,mtype>>::print() const{
 //
 //    for(auto const &i: this->data){
 //        for(int j=0;j<2;j++) std::cout << i.first[j] << '\t';
@@ -234,18 +234,18 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
 //    }
 //    return;
 //}
-//template<typename DATATYPE, int dimension, DEVICETYPE device, typename MAPTYPE>
-//void Tensor<STORETYPE::COO, DATATYPE, dimension, device, MAPTYPE>::print(const std::string& name) const{
+//template<typename DATATYPE, int dimension, DEVICETYPE device, MTYPE mtype>
+//void Tensor<STORETYPE::COO, DATATYPE, dimension, device, Map<dimension,mtype>>::print(const std::string& name) const{
 //
-//    if(!this->map.is_sliced){
-//        if(this->comm->get_rank() == 0){
+//    if(!this->ptr_map.is_sliced){
+//        if(this->ptr_comm->get_rank() == 0){
 //            std::cout << name << " : " << std::endl;
 //            print();
 //            std::cout << "=======================" << std::endl;
 //        }
 //    }
 //    else{
-//        std::cout << name << " : (rank " << this->comm->get_rank() << ")" << std::endl;
+//        std::cout << name << " : (rank " << this->ptr_comm->get_rank() << ")" << std::endl;
 //        print();
 //    }
 //}
@@ -253,9 +253,9 @@ void SparseTensor<dimension,DATATYPE,MAPTYPE,device>::complete(bool reuse){
 
 
 // get functions
-template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-DATATYPE SparseTensor<dimension,DATATYPE,MAPTYPE,device>::operator() (const int local_index){
-//    auto local_array_index = this->map.pack_local_index(local_index);
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+DATATYPE SparseTensor<dimension,DATATYPE,mtype,device>::operator() (const int local_index){
+//    auto local_array_index = this->ptr_map.pack_local_index(local_index);
 //    auto iter = std::find(this->data.begin(), this->data.end(), [local_array_index](std::pair<std::array<int, dimension>, DATATYPE> element){return element.first==local_array_index;} );
 //    if (iter==this->data.end()) return Zero<DATATYPE>::value;
 //    return iter->second;
@@ -264,8 +264,8 @@ DATATYPE SparseTensor<dimension,DATATYPE,MAPTYPE,device>::operator() (const int 
 };
 
 
-//template<typename DATATYPE, int dimension, DEVICETYPE device, typename MAPTYPE>
-//int Tensor<STORETYPE::COO, DATATYPE, dimension, device, MAPTYPE>::calculate_column( std::array<int, dimension> index, int dim){
+//template<typename DATATYPE, int dimension, DEVICETYPE device, MTYPE mtype>
+//int Tensor<STORETYPE::COO, DATATYPE, dimension, device, Map<dimension,mtype>>::calculate_column( std::array<int, dimension> index, int dim){
 //    int return_val = 0;
 //    int stride = 1;
 //    for (int i = 0; i < dimension; i++){

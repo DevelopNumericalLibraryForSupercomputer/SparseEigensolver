@@ -1,9 +1,12 @@
 //#include "Matrix.hpp"
+//#include "device/mkl/LinearOp.hpp"
+#include "device/mkl/TensorOp.hpp"
+#include "device/mkl/MKLComm.hpp"
+
 #include "Contiguous1DMap.hpp"
 #include "DenseTensor.hpp"
 #include "SparseTensor.hpp"
-//#include "device/mkl/LinearOp.hpp"
-#include "device/mkl/TensorOp.hpp"
+
 #include <vector>
 #include <array>
 #include <iostream>
@@ -25,15 +28,18 @@ std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
 using namespace SE;
 
 int main(int argc, char* argv[]){
-    auto ptr_comm = create_comm<DEVICETYPE::MKL>(argc, argv);
+	MKLCommInp comm_inp;
+    auto ptr_comm = comm_inp.create_comm();
     std::cout << "SERIAL test" << std::endl;
     std::cout << *ptr_comm <<std::endl;    
     
     std::array<int, 2> test_shape = {4,3};
-    Contiguous1DMap map (test_shape,  0,1);
-    std::vector<double> test_data = {1,0,0,1,1,0,1,1,1,0,0,0};
+	Contiguous1DMapInp<2> map_inp( test_shape );
+	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_map = map_inp.create_map();
+	std::cout << *ptr_map <<std::endl;
 
-    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix(*ptr_comm,map);
+    std::vector<double> test_data = {1,0,0,1,1,0,1,1,1,0,0,0};
+    SE::DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix(ptr_comm,ptr_map);
     for(int i=0;i<test_shape[0] * test_shape[1];i++){
         test_matrix.local_insert_value(i,test_data[i]);
     }
@@ -49,8 +55,9 @@ int main(int argc, char* argv[]){
     std::cout << generalortho << std::endl;
 
     std::array<int, 1> vector_shape = {3};
-    Contiguous1DMap map1d (vector_shape,  0,1);
-    SE::DenseTensor<1,double,Contiguous1DMap<1>, DEVICETYPE::MKL> test_vector(*ptr_comm,map1d);
+	Contiguous1DMapInp<1> map1d_inp( vector_shape );
+	std::unique_ptr<Map<1,MTYPE::Contiguous1D> > ptr_map1d = map1d_inp.create_map();
+    SE::DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_vector(ptr_comm,ptr_map1d);
     //std::cout << test_vector << std::endl;
     for(int i=0;i<3;i++){
         test_vector.local_insert_value(i,1.0);
@@ -66,9 +73,12 @@ int main(int argc, char* argv[]){
 
 
     std::array<int, 2> test_shape2 = {N,N};
-    Contiguous1DMap map2 (test_shape2,  0,1);
+	Contiguous1DMapInp<2> map2_inp( test_shape2 );
+	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_map2 = map2_inp.create_map();
+
     std::array<int, 1> test_shape2_vec = {N};
-    Contiguous1DMap map2_vec (test_shape2_vec,  0,1);
+	Contiguous1DMapInp<1> map2_vec_inp( test_shape2_vec );
+	std::unique_ptr<Map<1,MTYPE::Contiguous1D> > ptr_map2_vec = map2_vec_inp.create_map();
     
     // local potnetial v(x) = 2.0*(std::abs(0.5*(double)N-(double)i)) + spacing 1.0, 3th order kinetic energy matrix
     double invh2 = 1.0;
@@ -85,8 +95,8 @@ int main(int argc, char* argv[]){
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
     }
-    DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix2(*ptr_comm, map2, test_data2);
-    SE::DenseTensor<2,double,Contiguous1DMap<2>, DEVICETYPE::MKL> test_matrix3(test_matrix2);
+    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(ptr_comm, ptr_map2, test_data2);
+    SE::DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix3(test_matrix2);
 
     //std::cout << test_matrix2 <<std::endl; 
     
@@ -104,8 +114,10 @@ int main(int argc, char* argv[]){
     
 
     std::array<int, 2> guess_shape = {N,num_eig};
-    auto guess_map = Contiguous1DMap<2>(guess_shape, 0, 1);
-    auto guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
+	Contiguous1DMapInp<2> guess_map_inp( guess_shape );
+	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_guess_map = guess_map_inp.create_map();
+
+    auto guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
@@ -116,19 +128,19 @@ int main(int argc, char* argv[]){
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, guess, "evd");
-    print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.get(), out1.get()->imag_eigvals.get());
+    print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
     free(guess);
-    guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
+    guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
     
-    SE::SparseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> test_sparse( *ptr_comm, map2, N*9);
+    SE::SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_sparse( ptr_comm, ptr_map2, N*9);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             std::array<int,2> index = {i,j};
@@ -152,22 +164,22 @@ int main(int argc, char* argv[]){
 */
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, guess, "davidson");
-    print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.get(), out2.get()->imag_eigvals.get());
+    print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
 
     free(guess);
-    guess = new DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL>(*ptr_comm, guess_map);
+    guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
 
-    TestTensorOperations* test_op = new TestTensorOperations(N);
+    TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL>* test_op = new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
     auto out4 = decompose(test_op, guess, "davidson");
-    print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.get(), out4.get()->imag_eigvals.get());
+    print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end4 - begin4).count())/1000000.0 << "[sec]" << std::endl;
  

@@ -6,10 +6,15 @@
 #include <memory>
 
 namespace SE{
-template <typename DATATYPE, typename MAPTYPE>
-std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, DEVICETYPE::MKL>* eigvec){
-    assert(tensor.map.get_global_shape()[0] == tensor.map.get_global_shape()[1]);
-    const int n = tensor.map.get_global_shape()[1];
+
+// Dummy 
+template <typename DATATYPE, MTYPE mtype, DEVICETYPE DEVICETYPE >
+std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEVICETYPE>& tensor, DenseTensor<2, DATATYPE, mtype, DEVICETYPE>* eigvec){assert(true);};
+
+template <typename DATATYPE, MTYPE mtype>
+std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, mtype, DEVICETYPE::MKL>* eigvec){
+    assert(tensor.ptr_map->get_global_shape()[0] == tensor.ptr_map->get_global_shape()[1]);
+    const int n = tensor.ptr_map->get_global_shape()[1];
 
     std::unique_ptr<DATATYPE[]> real_eigvals_ptr(new DATATYPE[n]);
     std::unique_ptr<DATATYPE[]> imag_eigvals_ptr(new DATATYPE[n]);
@@ -34,7 +39,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,MAPTYPE,D
     std::unique_ptr<DecomposeResult<DATATYPE> > return_val = std::make_unique< DecomposeResult<DATATYPE> >( (int) n, real_eigvals,imag_eigvals);
     
     //eigvec = std::move(eigvec_0);
-    const int num_guess = eigvec->map.get_global_shape()[1];
+    const int num_guess = eigvec->ptr_map->get_global_shape()[1];
     for(int i=0;i<num_guess;i++){
         copy<DATATYPE, DEVICETYPE::MKL>(n,&eigvec_0.get()[i],n,&eigvec->data[i],num_guess);
     }

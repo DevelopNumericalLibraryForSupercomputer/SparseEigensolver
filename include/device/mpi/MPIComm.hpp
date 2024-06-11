@@ -11,44 +11,57 @@
 namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_NULL; // MPI_COMM_WORLD;
+int count_comm = 0;
 
-template<>
-std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(int argc, char *argv[]){
-    int rank ,world_size;
-    MPI_Init(&argc, &argv);
-    mpi_comm = MPI_COMM_WORLD;
-    MPI_Comm_rank(mpi_comm, &rank);
-    MPI_Comm_size(mpi_comm, &world_size);
-	    
-//    int rank,world_size, ictxt;
-//	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
-//	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
-//    blacs_pinfo( &rank, &world_size );
+class MPICommInp: public CommInp<DEVICETYPE::MPI> 
+{
+	public:
+    	std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(){
+        	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+            int rank ,world_size;
+        	int ictxt;
+        
+        	blacs_pinfo( &rank, &world_size );
+            blacs_get( &i_negone, &i_zero, &ictxt );
+            blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
+        
+        	if (mpi_comm==MPI_COMM_NULL){
+        		MPI_Init(NULL, NULL);
+        		mpi_comm = MPI_COMM_WORLD;
+        		//MPI_Comm_rank(mpi_comm, &rank);
+        		//MPI_Comm_size(mpi_comm, &world_size);
+        	}
+        
+            //std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
+            assert(world_size>0);
+            assert(rank>=0);
+        	count_comm+=1;
+            return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size );
+        };
 
-    std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
-    assert(world_size>0);
-    assert(rank>=0);
-    return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size );
-}
+		MPICommInp(std::array<int,2> nprow):nprow(nprow){};
+	//private:
+		std::array<int,2> nprow;
+};
 
 template<>
 Comm<DEVICETYPE::MPI>::~Comm(){
-    /*
-    std::cout << "comm count: " << count << std::endl;
-    //count-=1;
-    
-    if (count==0 && mpi_comm!=MPI_COMM_NULL){
+    //std::cout << "comm count: " << count << std::endl;
+    int ictxt;
+    count_comm-=1;
+    if (count_comm==0 && mpi_comm!=MPI_COMM_NULL){
         int status = MPI_Finalize();
         assert (status == MPI_SUCCESS);
         mpi_comm=MPI_COMM_NULL;
+		blacs_exit(&ictxt);
     }
-    */
+    
 }
 
 template<>
 void Comm<DEVICETYPE::MPI>::finalize(){
-    int status = MPI_Finalize();
-    assert (status == MPI_SUCCESS);
+//    int status = MPI_Finalize();
+//    assert (status == MPI_SUCCESS);
 }
 
 template<>

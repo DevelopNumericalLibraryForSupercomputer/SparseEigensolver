@@ -6,6 +6,8 @@
 #include "Utility.hpp"
 namespace SE{
 
+template<int dimension, MTYPE mtype>
+class MapInp;
 
 template<int dimension, MTYPE mtype>
 class Map{
@@ -49,6 +51,9 @@ public:
     virtual int find_rank_from_global_index(int global_index) const= 0;
     virtual int find_rank_from_global_array_index(array_d global_array_index) const= 0;
 
+	virtual array_d get_nprow() const {array_d return_val; return_val.fill(1); return return_val;};
+	virtual array_d get_block_size() const {array_d return_val; return_val.fill(1); return return_val;};
+
     friend std::ostream& operator<< (std::ostream& stream, const Map<dimension,mtype>& map) {
         std::cout << "========= Map Info =========" <<std::endl;
         std::cout << "type: " << (int) map._mtype << "\n" 
@@ -59,6 +64,8 @@ public:
         std::cout << ")" << std::endl;
         return stream;
     }
+
+	virtual std::unique_ptr<MapInp<dimension, mtype> > generate_map_inp() const=0;
 
 protected:
     array_d global_shape;
@@ -85,6 +92,26 @@ protected:
 
 
 };
+template<int dimension, MTYPE mtype>
+class MapInp
+{
+	public:
+		//common
+		std::array<int, dimension >	 global_shape;
+		int my_rank;
+		int world_size;
+
+		//Contiguous1D
+		std::array<int, dimension> ranks_per_dim;
+
+		//BlockCycling
+		std::array<int, dimension> block_size;
+		std::array<int, dimension> nprow;
+
+		// function
+		virtual std::unique_ptr<Map<dimension,mtype> > create_map()=0; 
+};
+
 /*
 template <int dimension>
 Map<dimension>::Map(array_d total_size, int world_size){

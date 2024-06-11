@@ -1,15 +1,17 @@
 #pragma once
 #include <cassert>
-
+#include <iostream>
 #include "../../Comm.hpp"
 #include "Utility.hpp"
 
 namespace SE{
-template<>
-std::unique_ptr<Comm<DEVICETYPE::MKL> > create_comm(int argc, char *argv[]){
-    std::cout << "MKL Comm" << std::endl;
-    return std::make_unique< Comm<DEVICETYPE::MKL> >( 0, 1 );
-}
+class MKLCommInp: public CommInp<DEVICETYPE::MKL> 
+{
+	public:
+    	std::unique_ptr<Comm<DEVICETYPE::MKL> > create_comm(){
+			return std::make_unique< Comm<DEVICETYPE::MKL> >( 0, 1 );
+        }
+};
 
 template<>
 template<typename DATATYPE>
@@ -52,5 +54,10 @@ void Comm<DEVICETYPE::MKL>::alltoallv(DATATYPE *src, int* sendcounts, DATATYPE *
     assert(sendcounts[0] == recvcounts[0]);
     memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcounts[0]*sizeof(DATATYPE));
 }
+
+std::unique_ptr<CommInp<DEVICETYPE::MKL> > Comm<DEVICETYPE::MKL>::generate_comm_inp() const{
+	return std::make_unique<MKLCommInp >();
+}
+
 
 }

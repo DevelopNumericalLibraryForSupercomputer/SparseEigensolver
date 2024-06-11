@@ -9,7 +9,7 @@ typedef MKL_INT MDESC[ 9 ];
 const MKL_INT i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
 MKL_INT info;
 const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
-/*
+
 //memory managament
 template<>
 double* malloc<double, DEVICETYPE::MPI>(const int size) {
@@ -20,7 +20,7 @@ template<>
 void free<double, DEVICETYPE::MPI>(double* ptr) {
     std::free(ptr);
 }
-*/
+
 
 //ignore COPYTYPE: always NONE
 template<>
