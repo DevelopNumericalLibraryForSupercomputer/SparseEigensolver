@@ -33,7 +33,6 @@ public:
 	{
         filled=false;
     }
-    //Tensor(const std::unique_ptr<Comm<device> >& comm, const std::unique_ptr<Map<dimension,mtype>>& map, int reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
     Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
 	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
 	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) ),
@@ -43,8 +42,8 @@ public:
     } 
 
     Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor): 
-	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
-	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) )
+	ptr_comm(std::unique_ptr<Comm<device> >(tensor.ptr_comm->clone())),
+	ptr_map(std::unique_ptr<Map<dimension,mtype>> (tensor.ptr_map->clone()) )
 	{ 
         data = tensor.copy_data();
         filled=false;

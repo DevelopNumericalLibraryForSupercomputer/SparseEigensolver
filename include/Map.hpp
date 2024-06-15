@@ -28,8 +28,10 @@ public:
 
     // get shape 
     array_d get_global_shape()const{return global_shape;};
+    void set_local_shape(array_d global_shape) const{ this->global_shape=global_shape;};
     array_d get_local_shape() const{return local_shape;};
     int get_global_shape(const int dim)const { return global_shape[dim];};
+    void set_local_shape(const int dim, const int val) const{ this->global_shape[dim]=val;};
     int get_local_shape(const int dim) const { return local_shape[dim];};
 
     // get number of elements

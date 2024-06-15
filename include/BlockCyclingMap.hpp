@@ -75,8 +75,7 @@ public:
     array_d get_my_array_rank() const {return this->my_array_rank;};
 	array_d get_block_size() const override {return this->block_size;};
 	std::unique_ptr<MapInp<dimension, MTYPE::BlockCycling> > generate_map_inp() const override{
-		BlockCyclingMapInp<dimension> map_inp(this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
-		return std::unique_ptr<MapInp<dimension,MTYPE::BlockCycling> > (&map_inp);
+		return  std::make_unique<BlockCyclingMapInp<dimension> > (this->global_shape, this->my_rank, this->world_size,this->block_size, this->nprow);
 	};
 private:
     array_d nprow;      // number of processor for each dimension
@@ -96,12 +95,14 @@ class BlockCyclingMapInp: public MapInp<dimension, MTYPE::BlockCycling >{
 			this->world_size = world_size;
 			this->block_size = block_size;
 			this->nprow=nprow;
+			printf("BlockCyclingMapInp: %d %d \n", this->global_shape[0], this->global_shape[1]);
 		};
 
 };
 
 template<int dimension>
 std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > BlockCyclingMapInp<dimension>::create_map(){
+	printf("BlockCyclingMapInp::create_map start\n");
 //std::unique_ptr< BlockCyclingMap<dimension> > BlockCyclingMapInp<dimension>::create_map(){
 	return std::make_unique<BlockCyclingMap<dimension> > ( this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
 };

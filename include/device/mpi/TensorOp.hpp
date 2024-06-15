@@ -9,6 +9,7 @@
 #include "mkl_pblas.h"
 #include "mkl_scalapack.h"
 
+#include<utility>
 /* Definition of MIN and MAX functions */
 #define MAX(a,b)((a)<(b)?(b):(a))
 #define MIN(a,b)((a)>(b)?(b):(a))
@@ -232,7 +233,7 @@ DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 			vec.data, &i_one, &i_one, desc2,
             &zero, 
 			out.data, &i_one, &i_one, desc3 );
-	return out;
+	return std::move(out);
 }
 
 template <>
@@ -304,7 +305,7 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 			mat2.data, &i_one, &i_one, desc2,
             &zero, 
 			mat3.data, &i_one, &i_one, desc3 );
-	return mat3;
+	return std::move(mat3);
 }
 
 //X + bY
@@ -339,14 +340,14 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::add<doubl
 
     const char trans='N';
 	pdgeadd( &trans, &row1, &col1, &coeff2, mat2.data, &i_one, &i_one, desc2, &one, return_mat.data, &i_one, &i_one, desc1 );
-    return return_mat;
+    return std::move(return_mat);
 }
 
 //Orthonormalization
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, std::string method){
+void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> mat, std::string method){
 
     const double one = 1.0;
     int desc[9];
@@ -440,12 +441,56 @@ void TensorOp::copy_vectors(
 }
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
-template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-DenseTensor<2, DATATYPE, mtype, device> append_vectors(
-        DenseTensor<2, DATATYPE, mtype, device>& mat1,
-        DenseTensor<2, DATATYPE, mtype, device>& mat2){
-	
-	
+template<>
+DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::append_vectors(
+        DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
+        DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2){
+
+	const int row = mat1.ptr_map->get_global_shape(0);
+    const int lld = MAX( row, 1 );
+	assert (row==mat2.ptr_map->get_global_shape(0));
+	int desc1[9]; const int col1=mat1.ptr_map->get_global_shape(1);
+	int desc2[9]; const int col2=mat2.ptr_map->get_global_shape(1);
+	int desc3[9]; const int col3=col1+col2;
+
+	printf("size: %d %d %d %d\n", row, col1, col2, col3);
+	printf("1\n");
+    // new comm (same to the comm of mat1)
+	auto comm_inp = mat1.ptr_comm->generate_comm_inp();
+	auto ptr_new_comm = comm_inp->create_comm();
+	printf("2\n");
+
+    // new map (col3 = col1+col2)
+	auto map_inp = mat1.ptr_map->generate_map_inp();
+	printf("!!!\n");
+	map_inp->global_shape = {row, col3};
+	printf("%d %d\n", map_inp->global_shape[0], map_inp->global_shape[1]);
+	printf("???\n");
+	auto ptr_new_map = map_inp->create_map();
+	printf("@@@\n");
+
+	printf("3\n");
+	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( ptr_new_comm, ptr_new_map);
+
+	printf("4\n");
+	auto block_size1 = mat1.ptr_map->get_block_size();
+	printf("5\n");
+    descinit( desc1, &row, &col1, &block_size1[0], &block_size1[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+	auto block_size2 = mat2.ptr_map->get_block_size();
+    descinit( desc2, &row, &col2, &block_size2[0], &block_size2[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+	printf("6\n");
+	auto block_size3 = mat1.ptr_map->get_block_size();
+    descinit( desc3, &row, &col3, &block_size3[0], &block_size3[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+	assert(info==0);
+	printf("7\n");
+
+	const int col_idx = i_one + col1; //scalapack use 1 base 
+	// mat1->mat3
+	pdgemr2d(&row, &col1, mat1.data, &i_one, &i_one, desc1, mat3.data, &i_one, &i_one, desc3, &ictxt);
+	// mat2->mat3
+	pdgemr2d(&row, &col2, mat2.data, &i_one, &i_one, desc2, mat3.data, &i_one, &col_idx, desc3, &ictxt);
+	printf("8\n");
+	return std::move(mat3);
 }
 
 // // return eigvec

@@ -23,20 +23,25 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
         
         	blacs_pinfo( &rank, &world_size );
             blacs_get( &i_negone, &i_zero, &ictxt );
-            blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
-        
+			if (count_comm==0){
+               blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
+			}
+            /*
         	if (mpi_comm==MPI_COMM_NULL){
+				printf("5\n");
         		MPI_Init(NULL, NULL);
         		mpi_comm = MPI_COMM_WORLD;
         		//MPI_Comm_rank(mpi_comm, &rank);
         		//MPI_Comm_size(mpi_comm, &world_size);
         	}
+			*/
+        	mpi_comm = MPI_COMM_WORLD;
         
             //std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
             assert(world_size>0);
             assert(rank>=0);
         	count_comm+=1;
-            return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size );
+            return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size, this->nprow );
         };
 
 		MPICommInp(std::array<int,2> nprow):nprow(nprow){};
@@ -44,15 +49,16 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
 		std::array<int,2> nprow;
 };
 
+
 template<>
 Comm<DEVICETYPE::MPI>::~Comm(){
     //std::cout << "comm count: " << count << std::endl;
     int ictxt;
     count_comm-=1;
     if (count_comm==0 && mpi_comm!=MPI_COMM_NULL){
-        int status = MPI_Finalize();
-        assert (status == MPI_SUCCESS);
-        mpi_comm=MPI_COMM_NULL;
+        //int status = MPI_Finalize();
+        //assert (status == MPI_SUCCESS);
+        //mpi_comm=MPI_COMM_NULL;
 		blacs_exit(&ictxt);
     }
     
@@ -144,5 +150,8 @@ void Comm<DEVICETYPE::MPI>::scatterv(double *src, int* sendcounts, double *trg, 
     MPI_Scatterv(src, int_sendcounts, displs, MPI_DOUBLE, trg, (int)recvcount, MPI_DOUBLE, root, mpi_comm);
 }
 
+std::unique_ptr<CommInp<DEVICETYPE::MPI> > Comm<DEVICETYPE::MPI>::generate_comm_inp() const{
+	return std::make_unique<MPICommInp>(this->nprow);
+}
 
 }
