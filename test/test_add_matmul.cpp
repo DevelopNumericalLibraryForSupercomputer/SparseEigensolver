@@ -11,6 +11,7 @@
 #define MAX(a,b)((a)<(b)?(b):(a))
 #define MIN(a,b)((a)>(b)?(b):(a))
 
+using namespace SE;
 int main(int argc, char* argv[]){
     int rank, world_size, ictxt;
 	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
@@ -38,26 +39,34 @@ int main(int argc, char* argv[]){
 //        printf( " %d %d\n", rank, world_size );
 //	}
 
-    SE::BlockCyclingMap<2> map(  global_shape, rank, world_size, block_size, nprow);
+	MPICommInp mpi_comm_inp(nprow);
+	auto ptr_mpi_comm = mpi_comm_inp.create_comm();
+
+	BlockCyclingMapInp<2> block_map_inp(global_shape, 
+                                        ptr_mpi_comm->get_rank(), 
+	                                    ptr_mpi_comm->get_world_size(), 
+								        block_size, nprow);
+
+	auto ptr_block_map = block_map_inp.create_map();
+
 	for (int i=0; i<global_shape[0]; i++){
 		for (int j=0; j<global_shape[1]; j++){
 //			std::array<int,2> index1 = {i,j};
-//			auto index2=  map.global_to_local( index1 );
-//			auto idx1 = map.unpack_global_array_index( index1);
-//			auto idx2 = map.unpack_local_array_index( index2);
+//			auto index2=  ptr_block_map->global_to_local( index1 );
+//			auto idx1 = ptr_block_map->unpack_global_array_index( index1);
+//			auto idx2 = ptr_block_map->unpack_local_array_index( index2);
 //
 //			if(rank==3) printf("%d: %d %d %d %d \n",rank, index1[0], index1[1], index2[0], index2[1]);
 //			if(rank==3) printf("%d: %d %d\n",rank,  idx1, idx2);
 			int idx = i+n*j;
-			auto idx_ = map.pack_global_index(idx);
-			auto local_idx = map.global_to_local(idx);
+			auto idx_ = ptr_block_map->pack_global_index(idx);
+			auto local_idx = ptr_block_map->global_to_local(idx);
 			//if(rank==0) printf("%d: %d %d\n", idx, idx_[0], idx_[1] );
 		}
 	}
-	SE::Comm<SE::DEVICETYPE::MPI> comm(rank, world_size);
-	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > A(comm, map);
-	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > B(comm, map);
-	SE::DenseTensor<2, double, SE::BlockCyclingMap<2>, SE::DEVICETYPE::MPI > C(comm, map);
+	DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI > A(ptr_mpi_comm, ptr_block_map);
+	DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI > B(ptr_mpi_comm, ptr_block_map);
+	DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI > C(ptr_mpi_comm, ptr_block_map);
 
 	
     for (int i=0; i<n; i++ ){
@@ -86,14 +95,9 @@ int main(int argc, char* argv[]){
         }
     }
 
-	double* work = new double[A.map.get_num_local_elements()];
-	int myrow = A.map.get_my_array_rank()[0];
-	int mycol = A.map.get_my_array_rank()[1];
+	double* work = new double[A.ptr_map->get_num_local_elements()];
+    int lld = MAX( A.ptr_map->get_local_shape()[0], 1 );
 
-    int lld = MAX( A.map.get_local_shape()[0], 1 );
-
-//	std::cout << rank << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld<<"\t" <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
-//	std::cout << rank << "\t"<<  myrow  <<"\t" <<mycol << "\t" <<lld <<"\t"<<numroc( &n, &nb, &myrow, &i_zero, &nprow[0] ) <<std::endl;
 /*  Initialize descriptors for distributed arrays */
     descinit( descA, &n, &n, &nb, &nb, &i_zero, &i_zero, &ictxt, &lld, &info );
 	assert (info==0);
@@ -106,9 +110,9 @@ int main(int argc, char* argv[]){
 	anorm = pdlange( "F", &n, &n, A.data, &i_one, &i_one, descA, work );
     bnorm = pdlange( "F", &n, &n, B.data, &i_one, &i_one, descB, work );
 
-	auto result1 = SE::TensorOp::matmul(A, B, SE::TRANSTYPE::N, SE::TRANSTYPE::N);
-	auto result2 = SE::TensorOp::matmul(A, result1, SE::TRANSTYPE::T, SE::TRANSTYPE::N);
-	auto result3 = SE::TensorOp::add( B, result2, -1.0);
+	auto result1 = TensorOp::matmul(A, B, TRANSTYPE::N, TRANSTYPE::N);
+	auto result2 = TensorOp::matmul(A, result1, TRANSTYPE::T, TRANSTYPE::N);
+	auto result3 = TensorOp::add( B, result2, -1.0);
 
 	// C=A@B	
     pdgemm( "N", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, B.data, &i_one, &i_one, descB,

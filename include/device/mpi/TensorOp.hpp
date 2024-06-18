@@ -287,9 +287,9 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( ptr_new_comm, ptr_new_map);
 
 
-    int lld1 = MAX( mat1.ptr_map->get_local_shape()[0], 1 );
-    int lld2 = MAX( mat2.ptr_map->get_local_shape()[0], 1 );
-    int lld3 = MAX( mat3.ptr_map->get_local_shape()[0], 1 );
+    const int lld1 = MAX( mat1.ptr_map->get_local_shape()[0], 1 );
+    const int lld2 = MAX( mat2.ptr_map->get_local_shape()[0], 1 );
+    const int lld3 = MAX( mat3.ptr_map->get_local_shape()[0], 1 );
     descinit( desc1, &row1, &col1, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld1, &info );
 	assert (info==0);
     descinit( desc2, &row2, &col2, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld2, &info );

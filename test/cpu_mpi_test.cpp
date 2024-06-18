@@ -39,7 +39,7 @@ int main(int argc, char** argv){
 //    blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
 //	Comm<DEVICETYPE::MPI> comm(rank, nprow[0]*nprow[1]);
 //
-    std::cout << "========================\nDense matrix davidson test" << std::endl;
+    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
     int N = 6000;
     const int num_eig = 3;
 
@@ -80,12 +80,12 @@ int main(int argc, char** argv){
     }
 
 
-    std::cout << "========================\nDense matrix diag start" << std::endl;
+    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, guess, "davidson");
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
+    if(ptr_comm->get_rank()==0) std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
   return 0;
 }

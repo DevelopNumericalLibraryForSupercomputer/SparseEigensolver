@@ -95,15 +95,12 @@ class BlockCyclingMapInp: public MapInp<dimension, MTYPE::BlockCycling >{
 			this->world_size = world_size;
 			this->block_size = block_size;
 			this->nprow=nprow;
-			printf("BlockCyclingMapInp: %d %d \n", this->global_shape[0], this->global_shape[1]);
 		};
 
 };
 
 template<int dimension>
 std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > BlockCyclingMapInp<dimension>::create_map(){
-	printf("BlockCyclingMapInp::create_map start\n");
-//std::unique_ptr< BlockCyclingMap<dimension> > BlockCyclingMapInp<dimension>::create_map(){
 	return std::make_unique<BlockCyclingMap<dimension> > ( this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
 };
 
