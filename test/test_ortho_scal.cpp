@@ -7,10 +7,10 @@
 
 using namespace SE;
 
-template<typename MAPTYPE, DEVICETYPE device>
-void fill_matrix (DenseTensor<2,double,MAPTYPE,device>& matrix){
-	const int n = matrix.map.get_global_shape(0);
-	const int m = matrix.map.get_global_shape(1);
+template<MTYPE mtype, DEVICETYPE device>
+void fill_matrix (DenseTensor<2,double,mtype,device>& matrix){
+	const int n = matrix.ptr_map->get_global_shape(0);
+	const int m = matrix.ptr_map->get_global_shape(1);
 	assert (m == n);
 
 	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
@@ -46,7 +46,7 @@ int main(int argc, char* argv[]){
 //	fill_matrix(A);
 
 	const int nb = 3;
-	int p=2; int q=2;
+	int p=1; int q=1;
 
 	std::array<int, 2> block_size = {nb,nb};
 	std::array<int, 2> nprow = {p,q};  // only np==p*q works 
@@ -56,13 +56,20 @@ int main(int argc, char* argv[]){
 	int descA[9];
 	int descB[9];
 	int descC[9];
-	blacs_pinfo( &rank, &nprocs );
-    blacs_get( &i_negone, &i_zero, &ictxt );
-    blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
-    BlockCyclingMap<2> map(  global_shape, rank, nprocs, block_size, nprow);
-	Comm<DEVICETYPE::MPI> comm(rank, nprow[0]*nprow[1]);
+	//blacs_pinfo( &rank, &nprocs );
+    //blacs_get( &i_negone, &i_zero, &ictxt );
+    //blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
 
-	DenseTensor<2, double, SE::BlockCyclingMap<2>, DEVICETYPE::MPI > A(comm, map);
+	MPICommInp mpi_comm_inp(nprow);
+	auto ptr_mpi_comm = mpi_comm_inp.create_comm();
+	BlockCyclingMapInp<2> block_map_inp(global_shape, 
+                                        ptr_mpi_comm->get_rank(), 
+	                                    ptr_mpi_comm->get_world_size(), 
+								        block_size, nprow);
+	
+	auto ptr_block_map = block_map_inp.create_map();
+
+	DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI > A(ptr_mpi_comm, ptr_block_map);
 	auto scope = 'A';
 	blacs_barrier(&ictxt,&scope);
 	fill_matrix(A);
@@ -79,28 +86,28 @@ int main(int argc, char* argv[]){
 	}
 
 	blacs_barrier(&ictxt,&scope);
-	if(comm.get_rank()==0) printf("=============================================================================\n");
+	if(ptr_mpi_comm->get_rank()==0) printf("=============================================================================\n");
 
-	for (int i=0; i<A.map.get_local_shape(0); i++){
-		for (int j =0; j<A.map.get_local_shape(1); j++){
+	for (int i=0; i<A.ptr_map->get_local_shape(0); i++){
+		for (int j =0; j<A.ptr_map->get_local_shape(1); j++){
 			std::array<int,2> arr_idx = {i,j};
-			auto global_arr_idx = A.map.local_to_global(arr_idx);
-			printf("%d %d %f\n",global_arr_idx[0], global_arr_idx[1],  A.data[A.map.unpack_local_array_index(arr_idx) ]);
+			auto global_arr_idx = A.ptr_map->local_to_global(arr_idx);
+			printf("%d %d %f\n",global_arr_idx[0], global_arr_idx[1],  A.data[A.ptr_map->unpack_local_array_index(arr_idx) ]);
 		}
 	}
 	blacs_barrier(&ictxt,&scope);
-	if(comm.get_rank()==0) printf("=============================================================================\n");
+	if(ptr_mpi_comm->get_rank()==0) printf("=============================================================================\n");
 	blacs_barrier(&ictxt,&scope);
 	//SE::TensorOp::scale_vectors(A, norm);
 	SE::TensorOp::orthonormalize(A, "nothing");
 
-	for (int i=0; i<A.map.get_local_shape(0); i++){
-		for (int j =0; j<A.map.get_local_shape(1); j++){
+	for (int i=0; i<A.ptr_map->get_local_shape(0); i++){
+		for (int j =0; j<A.ptr_map->get_local_shape(1); j++){
 			std::array<int,2> arr_idx = {i,j};
-			auto global_arr_idx = A.map.local_to_global(arr_idx);
-			printf("%d %d %f\n",global_arr_idx[0], global_arr_idx[1],  A.data[A.map.unpack_local_array_index(arr_idx) ]);
+			auto global_arr_idx = A.ptr_map->local_to_global(arr_idx);
+			printf("%d %d %f\n",global_arr_idx[0], global_arr_idx[1],  A.data[A.ptr_map->unpack_local_array_index(arr_idx) ]);
 		}
 	}
-	blacs_exit(&ictxt);
+	//blacs_exit(&ictxt);
 	return 0;
 }

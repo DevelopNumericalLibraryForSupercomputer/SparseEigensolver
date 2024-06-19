@@ -26,8 +26,8 @@ void free(void* ptr){
 
 template<typename DATATYPE, DEVICETYPE devicetype=DEVICETYPE::BASE>
 void memcpy(DATATYPE* dest, const DATATYPE* source, int size, COPYTYPE copy_type=COPYTYPE::NONE){
-    std::cout << typeid(copy_type).name() <<"\t"<< typeid(COPYTYPE::NONE).name() <<std::endl;
-    std::cout << (int) copy_type <<"\t" << (int) COPYTYPE::NONE <<std::endl;
+//    std::cout << typeid(copy_type).name() <<"\t"<< typeid(COPYTYPE::NONE).name() <<std::endl;
+//    std::cout << (int) copy_type <<"\t" << (int) COPYTYPE::NONE <<std::endl;
     assert(COPYTYPE::NONE==(COPYTYPE) copy_type );
     std::memcpy(dest, source, size * sizeof(DATATYPE));
 }

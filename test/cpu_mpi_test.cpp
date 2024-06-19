@@ -25,7 +25,7 @@ int main(int argc, char** argv){
 	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
     int rank=0, nprocs=1, ictxt;
 	const int nb = 3;
-	int p=2; int q=2;
+	int p=1; int q=1;
 
 	MPICommInp comm_inp({p,q});
 	//comm_inp.argc = argc;

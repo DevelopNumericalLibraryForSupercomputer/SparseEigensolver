@@ -11,24 +11,23 @@
 namespace SE{
 
 MPI_Comm mpi_comm = MPI_COMM_NULL; // MPI_COMM_WORLD;
-int count_comm = 0;
+int ictxt ;
 
 class MPICommInp: public CommInp<DEVICETYPE::MPI> 
 {
 	public:
     	std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(){
-        	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+        	const int i_zero = 0, i_one = 1, i_negone = -1;
             int rank ,world_size;
-        	int ictxt;
         
         	blacs_pinfo( &rank, &world_size );
-            blacs_get( &i_negone, &i_zero, &ictxt );
-			if (count_comm==0){
+			if (Comm<DEVICETYPE::MPI>::get_count_comm()==0){
+				blacs_get( &i_negone, &i_zero, &ictxt );
                blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
 			}
+
             /*
         	if (mpi_comm==MPI_COMM_NULL){
-				printf("5\n");
         		MPI_Init(NULL, NULL);
         		mpi_comm = MPI_COMM_WORLD;
         		//MPI_Comm_rank(mpi_comm, &rank);
@@ -40,7 +39,6 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
             //std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
             assert(world_size>0);
             assert(rank>=0);
-        	count_comm+=1;
             return std::make_unique< Comm<DEVICETYPE::MPI> >( (int) rank, (int) world_size, this->nprow );
         };
 
@@ -49,17 +47,23 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
 		std::array<int,2> nprow;
 };
 
+template<>
+Comm<DEVICETYPE::MPI>::Comm(int rank, int world_size, std::array<int,2> nprow): rank(rank), world_size(world_size), nprow(nprow) {
+	count_comm++; 
+	};
 
 template<>
 Comm<DEVICETYPE::MPI>::~Comm(){
     //std::cout << "comm count: " << count << std::endl;
-    int ictxt;
-    count_comm-=1;
-    if (count_comm==0 && mpi_comm!=MPI_COMM_NULL){
+    this->count_comm-=1;
+    if (this->count_comm==0 && mpi_comm!=MPI_COMM_NULL){
         //int status = MPI_Finalize();
         //assert (status == MPI_SUCCESS);
         //mpi_comm=MPI_COMM_NULL;
-		blacs_exit(&ictxt);
+		int i_zero=0;
+		printf("\n!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! blacs gridexit and blacs exit \n\n");
+        blacs_gridexit( &ictxt );
+		blacs_exit(&i_zero);
     }
     
 }

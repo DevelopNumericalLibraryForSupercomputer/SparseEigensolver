@@ -56,7 +56,6 @@ DenseTensor<2, DATATYPE, mtype, device> preconditioner(
     //int new_block_size = block_size + num_eig;
     
     std::array<int, 2> new_guess_shape = {vec_size, num_eig};
-
 	auto p_map_inp = guess.ptr_map->generate_map_inp();
 	p_map_inp->global_shape = {vec_size, num_eig};
 	auto p_new_guess_map = p_map_inp->create_map();

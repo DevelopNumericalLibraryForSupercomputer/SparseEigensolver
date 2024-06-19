@@ -13,10 +13,10 @@
 
 using namespace SE;
 int main(int argc, char* argv[]){
-    int rank, world_size, ictxt;
+    int rank, world_size;
 	const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
 	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
-	int info;
+	int info; 
 	int descA[9];
 	int descB[9];
 	int descC[9];
@@ -30,9 +30,11 @@ int main(int argc, char* argv[]){
 	std::array<int, 2> block_size = {nb,nb};
 	std::array<int, 2> nprow = {p,q};  // only np 4 works 
 
-    blacs_pinfo( &rank, &world_size );
-    blacs_get( &i_negone, &i_zero, &ictxt );
-    blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
+//    blacs_pinfo( &rank, &world_size );
+//    blacs_get( &i_negone, &i_zero, &ictxt );
+//    blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
+//
+
     //blacs_gridinfo( &ictxt, &nprow[0], &npcol[1], &myrow, &mycol );
 
 //    if ( rank == 0 ) {
@@ -105,14 +107,10 @@ int main(int argc, char* argv[]){
 	assert (info==0);
     descinit( descC, &n, &n, &nb, &nb, &i_zero, &i_zero, &ictxt, &lld, &info );
 	assert (info==0);
-    
+
 	double anorm, bnorm;
 	anorm = pdlange( "F", &n, &n, A.data, &i_one, &i_one, descA, work );
     bnorm = pdlange( "F", &n, &n, B.data, &i_one, &i_one, descB, work );
-
-	auto result1 = TensorOp::matmul(A, B, TRANSTYPE::N, TRANSTYPE::N);
-	auto result2 = TensorOp::matmul(A, result1, TRANSTYPE::T, TRANSTYPE::N);
-	auto result3 = TensorOp::add( B, result2, -1.0);
 
 	// C=A@B	
     pdgemm( "N", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, B.data, &i_one, &i_one, descB,
@@ -121,9 +119,13 @@ int main(int argc, char* argv[]){
     pdgemm( "T", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, C.data, &i_one, &i_one, descC,
              &negone, B.data, &i_one, &i_one, descB );
 
+	auto result1 = TensorOp::matmul(A, B, TRANSTYPE::N, TRANSTYPE::N);
+	auto result2 = TensorOp::matmul(A, result1, TRANSTYPE::T, TRANSTYPE::N);
+	auto result3 = TensorOp::add( B, result2, -1.0);
+
 	double diffnorm1 = pdlange( "I", &n, &n, B.data, &i_one, &i_one, descB, work );
 	double diffnorm2 = pdlange( "I", &n, &n, result3.data, &i_one, &i_one, descB, work );
-	if( rank == 2 ){ 
+	if( rank == 0 ){ 
 		//printf("%03.11f\n", sqrt(normA) );
 		printf( ".. Norms of A and B are computed ( p?lange ) ..\n" ); 
         printf( "||A|| = %03.11f\n", anorm );
@@ -155,7 +157,7 @@ int main(int argc, char* argv[]){
 //    printf( "|   : `.    `.      1/q_n-1     1/q_n  | \n" );
 //    printf( "|   :   `.    `.                       | \n" );
 
-    blacs_gridexit( &ictxt );
-    blacs_exit( &i_zero );
+//    blacs_gridexit( &ictxt );
+//    blacs_exit( &i_zero );
 	return 0;
 }

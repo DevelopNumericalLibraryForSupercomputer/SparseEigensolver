@@ -15,9 +15,9 @@ class CommInp;
 template<DEVICETYPE device>
 class Comm{
 public:
-    Comm(int rank, int world_size, std::array<int,2> nprow={}): rank(rank), world_size(world_size), nprow(nprow) {};
-    Comm(){};
-    ~Comm(){};
+    Comm(int rank, int world_size, std::array<int,2> nprow={}): rank(rank), world_size(world_size), nprow(nprow) {count_comm++;};
+    Comm(){count_comm++;};
+    ~Comm(){count_comm--;};
     void finalize(){};
     //const int get_rank(){ return rank; };
     //const int get_world_size(){ return world_size; };
@@ -42,16 +42,19 @@ public:
     int get_rank() const {return rank;};
     int get_world_size() const {return world_size;};
 	std::unique_ptr<CommInp<device> > generate_comm_inp() const;
-    private:
+	static int get_count_comm(){return count_comm;};
+private:
     int rank = 0;           // Process rank
     //int local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     int world_size = 1;     // Total number of processes in the job
 	std::array<int,2> nprow;
-
+	
 protected:
-    inline static int count =0;
+	static int count_comm;
+    //inline static int count_comm =0;
 };
-
+template<DEVICETYPE device>
+int Comm<device>::count_comm=0;
 // helper function 
 template<DEVICETYPE device>
 std::ostream &operator<<(std::ostream &os, Comm<device> const &comm) { 

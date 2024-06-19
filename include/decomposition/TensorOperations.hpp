@@ -36,8 +36,15 @@ public:
         return TensorOp::matmul(this->tensor, vec);
     };
     double get_diag_element(const int index) override{
-        std::array<int, 2> array_index = {index, index};
-        return tensor.operator()(tensor.ptr_map->global_to_local(tensor.ptr_map->unpack_global_array_index(array_index)));
+        std::array<int, 2> global_array_index = {index, index};
+		auto local_index = tensor.ptr_map->global_to_local(tensor.ptr_map->unpack_global_array_index(global_array_index));
+		double src = 0.0; double trg = 0.0;
+
+		if (local_index>=0){
+			src = tensor(local_index);	
+		}
+		tensor.ptr_comm->allreduce(&src, 1, &trg, OPTYPE::SUM);
+        return trg;
     };
 
     std::array<int, 2> get_global_shape() override{
