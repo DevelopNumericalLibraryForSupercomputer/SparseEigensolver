@@ -23,7 +23,7 @@ public:
     //const int get_world_size(){ return world_size; };
 
     void barrier() const{};
-    Comm<device>* clone ()const {return new Comm(rank, world_size, nprow);};
+    std::unique_ptr<Comm<device>> clone ()const {return std::make_unique< Comm<device> > (rank, world_size, nprow);};
     //template <typename DATATYPE> void send(DATATYPE* src, int sendcount, int recv_rank);
     //template <typename DATATYPE> void recv(DATATYPE* src, int sendcount, int recv_rank);
     
@@ -41,13 +41,14 @@ public:
 
     int get_rank() const {return rank;};
     int get_world_size() const {return world_size;};
+	std::array<int,2> get_nprow()const {return nprow;};
 	std::unique_ptr<CommInp<device> > generate_comm_inp() const;
 	static int get_count_comm(){return count_comm;};
 private:
     int rank = 0;           // Process rank
     //int local_rank = 0;     // Local rank within a node (e.g., GPU ID)
     int world_size = 1;     // Total number of processes in the job
-	std::array<int,2> nprow;
+	std::array<int,2> nprow={0,0};
 	
 protected:
 	static int count_comm;

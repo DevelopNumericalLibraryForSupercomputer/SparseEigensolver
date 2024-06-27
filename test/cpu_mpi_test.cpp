@@ -8,6 +8,7 @@
 #include "BlockCyclingMap.hpp"
 //#include "decomposition/IterativeSolver_MPI.hpp"
 #include "decomposition/Decompose.hpp"
+#include "decomposition/DecomposeOption.hpp"
 #include "Utility.hpp"
 #include <chrono>
 
@@ -24,8 +25,8 @@ int main(int argc, char** argv){
 	// predefined value
 	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
     int rank=0, nprocs=1, ictxt;
-	const int nb = 3;
-	int p=1; int q=1;
+	const int nb = 2;
+	int p=3; int q=1;
 
 	MPICommInp comm_inp({p,q});
 	//comm_inp.argc = argc;
@@ -40,16 +41,15 @@ int main(int argc, char** argv){
 //	Comm<DEVICETYPE::MPI> comm(rank, nprow[0]*nprow[1]);
 //
     if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
+    //int N = 6;
     int N = 6000;
     const int num_eig = 3;
 
-
 	BlockCyclingMapInp<2> map_inp({N,N}, ptr_comm->get_rank(), ptr_comm->get_world_size(), {nb, nb}, comm_inp.nprow );
 
-	auto p_map2 = map_inp.create_map();
     //BlockCyclingMap<2> map2(  test_shape2, rank, nprocs, block_size, nprow);
 
-	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> test_matrix2(ptr_comm, p_map2);
+	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> test_matrix2(comm_inp.create_comm(), map_inp.create_map());
 	//DenseTensor<2,double,BlockCyclingMap<2>, DEVICETYPE::MPI> test_matrix2(*ptr_comm.get(), *p_map2.get());
 
     double invh2 = 1.0;
@@ -60,24 +60,26 @@ int main(int argc, char** argv){
             //test_matrix2.global_set_value(global_arr_index, 0.0);
             if(i == j)  test_matrix2.global_insert_value(global_arr_index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
             if(i == j +1 || i == j -1) test_matrix2.global_insert_value(global_arr_index, invh2*4.0/3.0);
-            //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
-            //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
+            if(i == j +2 || i == j -2)  test_matrix2.global_insert_value(global_arr_index, -invh2*1.0/12.0);
+            if(i == j +3 || i == j -3)  test_matrix2.global_insert_value(global_arr_index,   0.3);
+            if(i == j +4 || i == j -4)  test_matrix2.global_insert_value(global_arr_index, -0.1);
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
     }
     
 	map_inp.global_shape = {N,num_eig};
-	auto ptr_guess_map = map_inp.create_map();
-    //std::array<int, 2> guess_shape = {N,num_eig};
-    //BlockCyclingMap<2> guess_map (guess_shape, rank, nprocs, block_size, nprow);
-    auto guess = new DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>(ptr_comm, ptr_guess_map);
+    auto guess = new DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>(comm_inp.create_comm(), map_inp.create_map());
+
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
-        std::array<int, 2> tmp_index = {i,i};
-        guess->global_set_value(tmp_index, 1.0);
+		for (int j=0; j<N; j++){
+	        std::array<int, 2> tmp_index = {j,i};
+			if (i==j)	guess->global_set_value(tmp_index, 1.0);
+			//else	guess->global_set_value(tmp_index, 1e-3);
+		}
     }
+
 
 
     if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix diag start" << std::endl;
@@ -86,7 +88,7 @@ int main(int argc, char** argv){
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
-    
+    delete guess;
   return 0;
 }
 

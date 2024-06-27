@@ -14,7 +14,7 @@ namespace SE{
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE STORETYPE> 
 class Tensor{
 using array_d = std::array<int, dimension>;
-using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
+using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  std::unique_ptr<DATATYPE[]>, std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
     //const STORETYPE STORETYPE = STORETYPE;
@@ -28,22 +28,22 @@ public:
     }
 
     Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map):
-	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
-	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) )
+	ptr_comm(ptr_comm->clone()),
+	ptr_map( ptr_map->clone()) 
 	{
         filled=false;
     }
     Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
-	ptr_comm(std::unique_ptr<Comm<device> >(ptr_comm->clone())),
-	ptr_map(std::unique_ptr<Map<dimension,mtype>> (ptr_map->clone()) ),
-	data(data)
+	ptr_comm(ptr_comm->clone()),
+	ptr_map(ptr_map->clone()) 
 	{
+		this->data = std::move(data);
         filled=false;
     } 
 
     Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor): 
-	ptr_comm(std::unique_ptr<Comm<device> >(tensor.ptr_comm->clone())),
-	ptr_map(std::unique_ptr<Map<dimension,mtype>> (tensor.ptr_map->clone()) )
+	ptr_comm(tensor.ptr_comm->clone()),
+	ptr_map(tensor.ptr_map->clone()) 
 	{ 
         data = tensor.copy_data();
         filled=false;
@@ -52,24 +52,15 @@ public:
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup
-        if constexpr (STORETYPE == STORETYPE::DENSE) {
-            // If the data is STORETYPEd as a pointer, delete it
-            if (data != nullptr) {
-                delete[] data;
-                data = nullptr;
-            }
-        } else {
-            // If the data is STORETYPEd as a vector, no cleanup needed
-        }
     }
 
     // copy functions
     std::unique_ptr<Comm<device> > copy_comm() const {
-        return std::unique_ptr<Comm<device> > (ptr_comm->clone());
+        return ptr_comm->clone();
     }
 
     std::unique_ptr<Map<dimension,mtype>> copy_map() const {
-        return std::unique_ptr<Map<dimension,mtype>>(ptr_map->clone());
+        return ptr_map->clone();
     }
 
     virtual INTERNALTYPE copy_data() const=0;

@@ -24,7 +24,7 @@ public:
     Map(array_d global_shape, int my_rank, int world_size, array_d ranks_per_dim ): global_shape(global_shape), my_rank(my_rank), world_size(world_size), ranks_per_dim(ranks_per_dim){};
 
     //clone
-    virtual Map<dimension, mtype>* clone() const=0;
+    virtual std::unique_ptr<Map<dimension, mtype>> clone() const=0;
 
     // get shape 
     array_d get_global_shape()const{return global_shape;};

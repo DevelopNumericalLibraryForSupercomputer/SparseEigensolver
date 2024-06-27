@@ -49,8 +49,8 @@ public:
     BlockCyclingMap(){};
     BlockCyclingMap( const array_d global_shape, const int my_rank, const int world_size, const array_d block_size, const array_d nprow);
 
-    BlockCyclingMap<dimension>* clone() const override{
-        return new BlockCyclingMap(this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
+    std::unique_ptr<Map<dimension,MTYPE::BlockCycling>> clone() const override{
+        return std::make_unique<BlockCyclingMap<dimension>>(this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
     };
     // get number of elements
     int get_num_local_elements() const override;

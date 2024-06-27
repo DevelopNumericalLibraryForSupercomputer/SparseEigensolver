@@ -17,7 +17,7 @@ public:
 
     virtual DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec)=0;
     virtual DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec)=0;
-    virtual double get_diag_element(const int index)=0;
+    virtual double get_diag_element(const int index)const =0;
     virtual std::array<int, 2> get_global_shape()=0;
 
 };
@@ -35,7 +35,7 @@ public:
     DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec) override{
         return TensorOp::matmul(this->tensor, vec);
     };
-    double get_diag_element(const int index) override{
+    double get_diag_element(const int index) const override{
         std::array<int, 2> global_array_index = {index, index};
 		auto local_index = tensor.ptr_map->global_to_local(tensor.ptr_map->unpack_global_array_index(global_array_index));
 		double src = 0.0; double trg = 0.0;

@@ -54,8 +54,8 @@ DenseTensor<2, DATATYPE, mtype, device> add(
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-void get_norm_of_vectors(DenseTensor<2, DATATYPE, mtype, device>& mat,
-                         DATATYPE* norm, int norm_size);
+void get_norm_of_vectors(const DenseTensor<2, DATATYPE, mtype, device>& mat,
+                         DATATYPE* norm, const int norm_size);
 
 //mat1_i = mat2_i (i=0~new-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
@@ -65,7 +65,7 @@ void copy_vectors(
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-DenseTensor<2, DATATYPE, mtype, device> append_vectors(
+std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > append_vectors(
         DenseTensor<2, DATATYPE, mtype, device>& mat1,
         DenseTensor<2, DATATYPE, mtype, device>& mat2);
 

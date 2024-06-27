@@ -52,8 +52,8 @@ void TensorOp::scale_vectors(DenseTensor<2, DATATYPE, mtype1, device>& mat, DATA
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-void TensorOp::get_norm_of_vectors(DenseTensor<2, DATATYPE, mtype, device>& mat,
-                         DATATYPE* norm, int norm_size);
+void TensorOp::get_norm_of_vectors(const DenseTensor<2, DATATYPE, mtype, device>& mat,
+                         DATATYPE* norm, const int norm_size);
 
 //mat1_i = mat2_i (i=0~new-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
@@ -63,7 +63,7 @@ void TensorOp::copy_vectors(
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-DenseTensor<2, DATATYPE, mtype, device> TensorOp::append_vectors(
+std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > TensorOp::append_vectors(
         DenseTensor<2, DATATYPE, mtype, device>& mat1,
         DenseTensor<2, DATATYPE, mtype, device>& mat2);
 
@@ -210,10 +210,13 @@ DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 
 	std::array<int,1> new_global_shape = { m };
 	
-	auto ptr_new_comm = std::make_unique< Comm<DEVICETYPE::MPI> >(mat.ptr_comm->get_rank(),mat.ptr_comm->get_world_size() );
-	std::unique_ptr<Map<1,MTYPE::BlockCycling> > ptr_new_map = std::make_unique< BlockCyclingMap<1> >(new_global_shape, ptr_new_comm->get_rank(), ptr_new_comm->get_world_size(), vec_block_size, vec.ptr_map->get_nprow() );
+	auto comm_inp = mat.ptr_comm->generate_comm_inp();
 
-	DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> out( ptr_new_comm, ptr_new_map);
+	auto map_inp = vec.ptr_map->generate_map_inp();
+	map_inp->global_shape = new_global_shape;
+
+
+	DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> out( comm_inp->create_comm(), map_inp->create_map());
 
     int lld1 = MAX( mat.ptr_map->get_local_shape()[0], 1 );
     int lld2 = 1;
@@ -231,10 +234,10 @@ DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 	const char trans2 = 'N';
     pdgemm( &trans1, &trans2,
 			&m, &i_one, &n, &one, 
-			mat.data, &i_one, &i_one, desc1, 
-			vec.data, &i_one, &i_one, desc2,
+			mat.data.get(), &i_one, &i_one, desc1, 
+			vec.data.get(), &i_one, &i_one, desc2,
             &zero, 
-			out.data, &i_one, &i_one, desc3 );
+			out.data.get(), &i_one, &i_one, desc3 );
 	return out;
 	//return std::move(out);
 }
@@ -284,10 +287,12 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 	auto col3= n;
 	std::array<int,2> new_global_shape = {row3, col3};
 
-	auto ptr_new_comm = std::make_unique< Comm<DEVICETYPE::MPI> >(mat1.ptr_comm->get_rank(),mat1.ptr_comm->get_world_size() );
-	std::unique_ptr<Map<2,MTYPE::BlockCycling> > ptr_new_map = std::make_unique<BlockCyclingMap<2> >(new_global_shape, ptr_new_comm->get_rank(), ptr_new_comm->get_world_size(), block_size, nprow );
+	auto comm_inp = mat1.ptr_comm->generate_comm_inp();
 
-	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( ptr_new_comm, ptr_new_map);
+	auto map_inp = mat1.ptr_map->generate_map_inp();
+	map_inp->global_shape = new_global_shape;
+
+	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( comm_inp->create_comm(),  map_inp->create_map());
 
 
     const int lld1 = MAX( mat1.ptr_map->get_local_shape()[0], 1 );
@@ -309,10 +314,10 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
     pdgemm( &trans1_, 
 			&trans2_, 
 			&m, &n, &k, &one, 
-			mat1.data, &i_one, &i_one, desc1, 
-			mat2.data, &i_one, &i_one, desc2,
+			mat1.data.get(), &i_one, &i_one, desc1, 
+			mat2.data.get(), &i_one, &i_one, desc2,
             &zero, 
-			mat3.data, &i_one, &i_one, desc3 );
+			mat3.data.get(), &i_one, &i_one, desc3 );
 	return mat3;
 	//return std::move(mat3);
 }
@@ -348,7 +353,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::add<doubl
 	assert (info==0);
 
     const char trans='N';
-	pdgeadd( &trans, &row1, &col1, &coeff2, mat2.data, &i_one, &i_one, desc2, &one, return_mat.data, &i_one, &i_one, desc1 );
+	pdgeadd( &trans, &row1, &col1, &coeff2, mat2.data.get(), &i_one, &i_one, desc2, &one, return_mat.data.get(), &i_one, &i_one, desc1 );
     return return_mat;
     //return std::move(return_mat);
 }
@@ -357,8 +362,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::add<doubl
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> mat, std::string method){
-
+void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, std::string method){
     //const double one = 1.0;
     int desc[9];
     const int row= mat.ptr_map->get_global_shape(0);
@@ -374,24 +378,28 @@ void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 	int lwork = -1;
 	std::vector<double> work(1,0.0);
 
-	double* tau = new double[MIN(m,n)]; //  instead new keyword, malloc<> is required 
+	double* tau =   malloc<double,DEVICETYPE::MPI>( MIN(m,n)); //  instead new keyword, malloc<> is required 
 
 	//std::cout <<"work(1) " << m << "\t" << n << "\t" <<lwork <<std::endl;
-	pdgeqrf(&m, &n, mat.data, &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+	pdgeqrf(&m, &n, mat.data.get(), &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+	assert(info==0);
 	//std::cout <<"work(2) "<< m << "\t" << n << "\t" <<lwork <<std::endl;
     lwork = (int)work[0];
     work.resize(lwork);
-	pdgeqrf(&m, &n, mat.data, &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+	pdgeqrf(&m, &n, mat.data.get(), &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+	assert(info==0);
 
 
 	lwork=-1;
-    pdorgqr(&m, &n, &n, mat.data, &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+    pdorgqr(&m, &n, &n, mat.data.get(), &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+	assert(info==0);
 
 	lwork = (int)work[0];
 	work.resize(lwork);
-    pdorgqr(&m, &n, &n, mat.data, &i_one, &i_one, desc, tau, work.data(), &lwork, &info);
+    pdorgqr(&m, &n, &n, mat.data.get(), &i_one, &i_one, desc, tau, work.data(), &lwork, &info); // potential problem
+	assert(info==0);
 
-	delete[] tau;
+	free<DEVICETYPE::MPI>(tau);
 
     return;
 
@@ -411,8 +419,8 @@ void TensorOp::scale_vectors(DenseTensor<2, double, MTYPE::BlockCycling, DEVICET
 }
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
-void TensorOp::get_norm_of_vectors(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
-                         double* norm, int norm_size){
+void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
+                         double* norm, const int norm_size){
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
 
     const int vec_size = mat.ptr_map->get_local_shape()[0];
@@ -441,37 +449,52 @@ void TensorOp::get_norm_of_vectors(DenseTensor<2, double, MTYPE::BlockCycling, D
 			norm[col_ind] = sqrt(local_sum[i]);	
 		}
 	}
-
+	delete [] local_sum;
 	dgsum2d(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
     return;
 }
 
-//mat1_i = mat2_i (i=0~new-1)
+//mat1_i <- mat2_i (i=0~new-1)
 template <>
 void TensorOp::copy_vectors(
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2, int new_size){
 
     assert(mat1.ptr_map->get_global_shape()[1] >= new_size);
+    assert(mat2.ptr_map->get_global_shape()[1] >= new_size);
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
-    int vec_size = mat1.ptr_map->get_global_shape()[0];
+	const int row = mat1.ptr_map->get_global_shape(0);
+	int desc1[9]; const int col1=mat1.ptr_map->get_global_shape(1);
+	int desc2[9]; const int col2=mat2.ptr_map->get_global_shape(1);
 
-	std::memcpy( mat2.data, mat1.data, sizeof(double)*new_size*vec_size );
+    const int lld1 = MAX( mat1.ptr_map->get_local_shape(0), 1 );
+    const int lld2 = MAX( mat2.ptr_map->get_local_shape(0), 1 );
+
+	auto block_size1 = mat1.ptr_map->get_block_size();
+    descinit( desc1, &row, &col1, &block_size1[0], &block_size1[1], &i_zero, &i_zero, &ictxt, &lld1, &info );
+	assert(info==0);
+
+
+	auto block_size2 = mat2.ptr_map->get_block_size();
+    descinit( desc2, &row, &col2, &block_size2[0], &block_size2[1], &i_zero, &i_zero, &ictxt, &lld2, &info );
+	assert(info==0);
+
+	pdgemr2d(&row, &new_size, mat2.data.get(), &i_one, &i_one, desc2, mat1.data.get(), &i_one, &i_one, desc1, &ictxt);
     return;
 	
 }
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template<>
-DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::append_vectors(
+std::unique_ptr< DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> >TensorOp::append_vectors(
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2){
+
 
 	// define row and check the equaility of mat1 and mat2 row sizes 
 	const int row = mat1.ptr_map->get_global_shape(0);
 	assert (row==mat2.ptr_map->get_global_shape(0));
 
-    const int lld = MAX( mat1.ptr_map->get_local_shape(0), 1 );
 
 	// define desc and col
 	int desc1[9]; const int col1=mat1.ptr_map->get_global_shape(1);
@@ -480,33 +503,38 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::append_ve
 
     // new comm (same to the comm of mat1)
 	auto comm_inp = mat1.ptr_comm->generate_comm_inp();
-	auto ptr_new_comm = comm_inp->create_comm();
 
     // new map (col3 = col1+col2)
 	auto map_inp = mat1.ptr_map->generate_map_inp();
 	map_inp->global_shape = {row, col3};
-	auto ptr_new_map = map_inp->create_map();
 
-	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( ptr_new_comm, ptr_new_map);
+	auto ptr_mat3 = std::make_unique< DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> >( comm_inp->create_comm(), map_inp->create_map());
+	double* local_array = malloc<double,DEVICETYPE::MPI>(ptr_mat3->ptr_map->get_num_local_elements());
+    const int lld1 = MAX( mat1.ptr_map->get_local_shape(0), 1 );
+    const int lld2 = MAX( mat2.ptr_map->get_local_shape(0), 1 );
+    const int lld3 = MAX( ptr_mat3->ptr_map->get_local_shape(0), 1 );
 
 	auto block_size1 = mat1.ptr_map->get_block_size();
-    descinit( desc1, &row, &col1, &block_size1[0], &block_size1[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+    descinit( desc1, &row, &col1, &block_size1[0], &block_size1[1], &i_zero, &i_zero, &ictxt, &lld1, &info );
 	assert(info==0);
 
 	auto block_size2 = mat2.ptr_map->get_block_size();
-    descinit( desc2, &row, &col2, &block_size2[0], &block_size2[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+    descinit( desc2, &row, &col2, &block_size2[0], &block_size2[1], &i_zero, &i_zero, &ictxt, &lld2, &info );
 	assert(info==0);
 
 	auto block_size3 = mat1.ptr_map->get_block_size();
-    descinit( desc3, &row, &col3, &block_size3[0], &block_size3[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+    descinit( desc3, &row, &col3, &block_size3[0], &block_size3[1], &i_zero, &i_zero, &ictxt, &lld3, &info );
 	assert(info==0);
 
 	const int col_idx = i_one + col1; //scalapack use 1 base 
 	// mat1->mat3
-	pdgemr2d(&row, &col1, mat1.data, &i_one, &i_one, desc1, mat3.data, &i_one, &i_one, desc3, &ictxt);
+	pdgemr2d(&row, &col1, mat1.data.get(), &i_one, &i_one, desc1, local_array, &i_one, &i_one, desc3, &ictxt);
 	// mat2->mat3
-	pdgemr2d(&row, &col2, mat2.data, &i_one, &i_one, desc2, mat3.data, &i_one, &col_idx, desc3, &ictxt);
-	return mat3;
+	pdgemr2d(&row, &col2, mat2.data.get(), &i_one, &i_one, desc2, local_array, &i_one, &col_idx, desc3, &ictxt);
+
+	memcpy<double,DEVICETYPE::MPI>(ptr_mat3->data.get(), local_array, ptr_mat3->ptr_map->get_num_local_elements());
+	free<DEVICETYPE::MPI>(local_array);
+	return ptr_mat3;
 	//return std::move(mat3);
 }
 
@@ -546,7 +574,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
 	mat.ptr_comm->barrier();
 
 	// Workspace query for pdsyevd
-    pdsyevd("V", "U", &N, mat.data, &i_one, &i_one, desc1, eigval, eigvec.data, &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
+    pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
     lwork = (int)work_query;
     liwork = iwork_query;
     std::vector<double> work(lwork);
@@ -555,7 +583,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
 	mat.ptr_comm->barrier();
 
     // Compute eigenvalues and eigenvectors
-    pdsyevd("V", "U", &N, mat.data, &i_one, &i_one, desc1, eigval, eigvec.data, &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
+    pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
     assert(info == 0);
 	mat.ptr_comm->barrier();
 	mat.ptr_comm->barrier();

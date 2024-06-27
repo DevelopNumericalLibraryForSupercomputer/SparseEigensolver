@@ -26,7 +26,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, m
     else if(method == "davidson"){
         DenseTensorOperations<mtype, device>* basic_op = new DenseTensorOperations<mtype,device>(tensor);
         auto return_val = davidson(basic_op, eigvec);
-        free(basic_op);
+        delete basic_op;
         return return_val;
     }
     else{

@@ -34,7 +34,7 @@ DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul(
     DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( vec.copy_comm(), ptr_output_map);
     //mby k * kby 1
     //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
-    gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
+    gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output.data.get(), 1);
     return output;
 }
 
@@ -66,7 +66,7 @@ DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<doub
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<2>> (output_shape, 0,1);
     DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( mat2.copy_comm(), ptr_output_map );
     //mby k * kby n
-    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data, mat1.ptr_map->get_global_shape(1), mat2.data, mat2.ptr_map->get_global_shape(1), 0.0, output.data, n);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data.get(), mat1.ptr_map->get_global_shape(1), mat2.data.get(), mat2.ptr_map->get_global_shape(1), 0.0, output.data.get(), n);
     return output;
 }
 
@@ -124,10 +124,10 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans == TRANSTYPE::N){
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data, 0.0, output.data);
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data.get(), 0.0, output.data.get());
     }
     else{
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data, 0.0, output.data);
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data.get(), 0.0, output.data.get());
     }
     assert (status == SPARSE_STATUS_SUCCESS);
 
@@ -192,10 +192,10 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans1 == TRANSTYPE::N){
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data, num_col,num_col, 1.0, output.data, num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col,num_col, 1.0, output.data.get(), num_col);
     }
     else{
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data, num_col, num_col, 1.0, output.data, num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col, num_col, 1.0, output.data.get(), num_col);
     }
     assert (status == SPARSE_STATUS_SUCCESS);
 
@@ -214,28 +214,27 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     auto vector_size       = mat.ptr_map->get_global_shape(0);
     
     if(method == "qr"){
-        double* eigvec = mat.copy_data();
+        auto eigvec = mat.copy_data();
         DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( mat.copy_comm(), mat.copy_map() );
         std::unique_ptr<double[]> tau(new double[number_of_vectors]);
-        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, number_of_vectors, tau.get());
+        int info = geqrf<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec.get(), number_of_vectors, tau.get());
         if(info != 0){
             std::cout << "QR decomposition failed!" << std::endl;
             exit(1);
         }
-        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec, number_of_vectors, tau.get());
+        info = orgqr<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, vector_size, number_of_vectors, eigvec.get(), number_of_vectors, tau.get());
         if(info != 0){
             std::cout << "QR decomposition failed!" << std::endl;
             exit(1);
         }
-        memcpy<double, DEVICETYPE::MKL>(mat.data, eigvec, number_of_vectors*vector_size);
-        free<DEVICETYPE::MKL>(eigvec);
+        memcpy<double, DEVICETYPE::MKL>(mat.data.get(), eigvec.get(), number_of_vectors*vector_size);
         
     }
     else{
         std::cout << "default orthonormalization" << std::endl;
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
-        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data, number_of_vectors, submatrix_eigvals.get());
+        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data.get(), number_of_vectors, submatrix_eigvals.get());
 
         auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
@@ -244,7 +243,7 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             assert(norm != 0.0);
             scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);
         }
-        memcpy<double, DEVICETYPE::MKL>(mat.data, output.data, number_of_vectors*vector_size);
+        memcpy<double, DEVICETYPE::MKL>(mat.data.get(), output.data.get(), number_of_vectors*vector_size);
         
     }
 }
@@ -268,12 +267,12 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::add<d
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
     assert(mat1.ptr_map->get_global_shape()[1] == mat2.ptr_map->get_global_shape()[1]);
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> return_mat(mat1);
-    axpy<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0]*mat1.ptr_map->get_global_shape()[1],coeff2,mat2.data,1,return_mat.data,1);
+    axpy<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0]*mat1.ptr_map->get_global_shape()[1],coeff2,mat2.data.get(),1,return_mat.data.get(),1);
     return return_mat;
 }
 
 template <>
-void SE::TensorOp::get_norm_of_vectors(DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* norm, int norm_size){
+void SE::TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* norm, const int norm_size){
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
     for(int i=0;i<norm_size;i++){
         norm[i] = nrm2<double, DEVICETYPE::MKL>(mat.ptr_map->get_global_shape()[0], &mat.data[i], mat.ptr_map->get_global_shape()[1]);
@@ -295,21 +294,21 @@ void SE::TensorOp::copy_vectors(
 }
 
 template <>
-DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::append_vectors(
+std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::append_vectors(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2){
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
 
     std::array<int, 2> new_shape = {mat1.ptr_map->get_global_shape()[0], mat1.ptr_map->get_global_shape()[1] + mat2.ptr_map->get_global_shape()[1]};
     std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_new_map = std::make_unique<Contiguous1DMap<2> >(new_shape, mat1.ptr_comm->get_rank(), mat1.ptr_comm->get_world_size());
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> return_mat(mat1.copy_comm(), ptr_new_map);
+    auto ptr_mat =std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), ptr_new_map);
     for(int i=0;i<mat1.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &return_mat.data[i], new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &(ptr_mat->data[i]), new_shape[1]);
     }
     for(int i=0;i<mat2.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &return_mat.data[i+mat1.ptr_map->get_global_shape()[1]], new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &(ptr_mat->data[i+mat1.ptr_map->get_global_shape()[1]]), new_shape[1]);
     }
-    return return_mat;
+    return ptr_mat;
 }
 
 
@@ -320,7 +319,7 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::diago
     assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);
     int block_size = mat.ptr_map->get_global_shape()[0];
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> eigvec(mat);
-    int info = syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', block_size, eigvec.data, block_size, eigval);
+    int info = syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', block_size, eigvec.data.get(), block_size, eigval);
     if(info !=0){
         std::cout << "subspace_diagonalization error!" << std::endl;
         exit(-1);

@@ -19,8 +19,8 @@ public:
     Contiguous1DMap( const array_d global_shape, const int my_rank, const int world_size, const std::array<bool, dimension> is_parallel );
     Contiguous1DMap( const array_d global_shape, const int my_rank, const int world_size, const array_d ranks_per_dim );
 
-    Contiguous1DMap<dimension>* clone() const override{
-        return new Contiguous1DMap(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
+    std::unique_ptr<Map<dimension,MTYPE::Contiguous1D>> clone() const override{
+        return std::make_unique<Contiguous1DMap<dimension> >(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
     };
     // get number of elements
     int get_num_local_elements() const override {return this->local_shape_mult[dimension]; };
