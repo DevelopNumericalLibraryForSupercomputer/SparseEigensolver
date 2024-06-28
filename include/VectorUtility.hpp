@@ -1,5 +1,6 @@
 #include "device/LinearOp.hpp"
 
+namespace SE{
 template <typename DATATYPE, DEVICETYPE device>
 void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const size_t number_of_eigvals, const size_t vector_size){
     DATATYPE* new_eigvals = new DATATYPE[number_of_eigvals];
@@ -14,4 +15,6 @@ void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const size_t number_of_
     
     memcpy<DATATYPE, device>(eigvals, new_eigvals, number_of_eigvals, COPYTYPE::DEVICE2DEVICE);
     memcpy<DATATYPE, device>(eigvecs, new_eigvecs, number_of_eigvals*vector_size, COPYTYPE::DEVICE2DEVICE);
+}
+
 }

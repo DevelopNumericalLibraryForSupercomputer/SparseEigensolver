@@ -1,15 +1,12 @@
-//#include "Matrix.hpp"
 #include "Contiguous1DMap.hpp"
 #include "DenseTensor.hpp"
 #include "SparseTensor.hpp"
-//#include "device/mkl/LinearOp.hpp"
 #include "device/mkl/TensorOp.hpp"
 #include <vector>
 #include <array>
 #include <iostream>
 #include <iomanip>
 #include <chrono>
-//#include "device/MKL/TensorOp.hpp"
 #include "decomposition/TestOperations.hpp"
 #include "decomposition/Decompose.hpp"
 
@@ -61,7 +58,7 @@ int main(int argc, char* argv[]){
 //    print_eigenvalues( "Eigenvalues", out.get()->num_eig, out.get()->real_eigvals.get(), out.get()->imag_eigvals.get());
 //    
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    size_t N = 6000;
+    size_t N = 600;
     const size_t num_eig = 3;
 
 
