@@ -294,21 +294,22 @@ void SE::TensorOp::copy_vectors(
 }
 
 template <>
-std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::append_vectors(
+DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::append_vectors(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2){
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
 
     std::array<int, 2> new_shape = {mat1.ptr_map->get_global_shape()[0], mat1.ptr_map->get_global_shape()[1] + mat2.ptr_map->get_global_shape()[1]};
     std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_new_map = std::make_unique<Contiguous1DMap<2> >(new_shape, mat1.ptr_comm->get_rank(), mat1.ptr_comm->get_world_size());
-    auto ptr_mat =std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), ptr_new_map);
+	DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> mat (mat1.copy_comm(), ptr_new_map);
+    //auto ptr_mat =std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), ptr_new_map);
     for(int i=0;i<mat1.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &(ptr_mat->data[i]), new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &(mat.data[i]), new_shape[1]);
     }
     for(int i=0;i<mat2.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &(ptr_mat->data[i+mat1.ptr_map->get_global_shape()[1]]), new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &(mat.data[i+mat1.ptr_map->get_global_shape()[1]]), new_shape[1]);
     }
-    return ptr_mat;
+    return mat;
 }
 
 

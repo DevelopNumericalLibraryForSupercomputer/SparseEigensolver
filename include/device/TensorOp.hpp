@@ -65,7 +65,7 @@ void copy_vectors(
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > append_vectors(
+DenseTensor<2, DATATYPE, mtype, device> append_vectors(
         DenseTensor<2, DATATYPE, mtype, device>& mat1,
         DenseTensor<2, DATATYPE, mtype, device>& mat2);
 

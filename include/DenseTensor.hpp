@@ -2,7 +2,6 @@
 #include "Tensor.hpp"
 #include "Contiguous1DMap.hpp"
 #include "device/LinearOp.hpp"
-
 namespace SE{
 
 //template<int dimension, typename DATATYPE, MTYPE mtype=Contiguous1DMap<dimension>, DEVICETYPE device=DEVICETYPE::BASE> 
@@ -11,13 +10,15 @@ class DenseTensor: public Tensor<dimension, DATATYPE, mtype, device, STORETYPE::
 
 using array_d = std::array<int, dimension>;
 //using INTERNALTYPE = std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >; 
-using INTERNALTYPE = std::unique_ptr<DATATYPE[]>;
+using INTERNALTYPE = std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> >;
 
 public:
     DenseTensor();
     DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map);
     DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,mtype,device>& tensor);
+
+
 
     INTERNALTYPE copy_data() const override;
 
@@ -90,7 +91,7 @@ template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 DenseTensor<dimension,DATATYPE,mtype,device>::DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map)
 :Tensor<dimension,DATATYPE,mtype,device,STORETYPE::DENSE>(ptr_comm,ptr_map){
     auto data_size = this->ptr_map->get_num_local_elements();
-    std::unique_ptr<DATATYPE[]> return_data ( malloc<DATATYPE, device>( data_size ) );
+    std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     this->data = std::move(return_data);
     memset<DATATYPE,device>( this->data.get(), 0, data_size);
     this->filled=false;
@@ -109,12 +110,13 @@ DenseTensor<dimension,DATATYPE,mtype,device>::DenseTensor(const DenseTensor<dime
 
 
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-//std::unique_ptr<DATATYPE[], decltype(free<device>) > DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
-std::unique_ptr<DATATYPE[]> DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
+std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
+//std::unique_ptr<DATATYPE[]> DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
 	//auto deleter = [&](DATATYPE* ptr){ free<device>(ptr); };
+	
     auto data_size = this->ptr_map->get_num_local_elements();
-    std::unique_ptr<DATATYPE[] > return_data ( malloc<DATATYPE, device>( data_size ) );
-    //std::unique_ptr<DATATYPE[], decltype(free<device>) > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
+    //std::unique_ptr<DATATYPE[], > return_data ( malloc<DATATYPE, device>( data_size ) );
+    std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*) > > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     memcpy<DATATYPE, device>(return_data.get(), this->data.get(), data_size);
     return return_data;
 }

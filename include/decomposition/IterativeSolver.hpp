@@ -42,7 +42,7 @@ bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residual, 
 }
 
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > preconditioner(               
+DenseTensor<2, DATATYPE, mtype, device>  preconditioner(               
 //                    DenseTensor<2, DATATYPE, mtype, device> tensor,   //vec_size * vec_size
                     const TensorOperations<mtype, device>* operations,   //vec_size * vec_size
                     DenseTensor<2, DATATYPE, mtype, device>& residual, //vec_size * block_size
@@ -85,7 +85,7 @@ std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > preconditioner(
         free<device>(scale_factor);
         auto new_guess = TensorOp::append_vectors(guess, additional_guess);
 
-        TensorOp::orthonormalize(*new_guess, "default");
+        TensorOp::orthonormalize(new_guess, "default");
         return new_guess;
     }
     else{
@@ -134,7 +134,8 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations<mtype,devi
     int iter = 0;
     while(iter < option.max_iterations){
 		if(eigvec->ptr_comm->get_rank()==0) std::cout << "iter: " <<iter << std::endl;
-		auto new_guess = std::make_unique<DenseTensor<2, DATATYPE, mtype, device> > ( *eigvec);
+		auto new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
+		//DenseTensor<2, DATATYPE, mtype, device> new_guess ( *eigvec);
 
         //block expansion loop
         int i_block = 0;
@@ -181,7 +182,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations<mtype,devi
             }
             
             //preconditioning
-            new_guess = preconditioner<DATATYPE,mtype,device>(operations, residual, ritz_vec, sub_eigval, option);
+            new_guess = std::make_unique <DenseTensor<2, DATATYPE, mtype, device> > ( preconditioner<DATATYPE,mtype,device>(operations, residual, ritz_vec, sub_eigval, option));
             free<device>(sub_eigval);
             //delete new_guess;
             //new_guess = new DenseTensor<2, DATATYPE, mtype, device>(tmp_guess);

@@ -2,7 +2,7 @@
 #include <array>
 #include <vector>
 #include <memory>
-
+#include <functional>
 #include "Comm.hpp"
 #include "Map.hpp"
 //#include "Contiguous1DMap.hpp"
@@ -14,7 +14,7 @@ namespace SE{
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE STORETYPE> 
 class Tensor{
 using array_d = std::array<int, dimension>;
-using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  std::unique_ptr<DATATYPE[]>, std::vector<std::pair<array_d, DATATYPE> > >::type; 
+using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  std::unique_ptr<DATATYPE[],std::function<void(DATATYPE*)> >, std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
     //const STORETYPE STORETYPE = STORETYPE;
@@ -49,6 +49,7 @@ public:
         filled=false;
     }
 
+	//virtual  Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other) = 0;
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup
