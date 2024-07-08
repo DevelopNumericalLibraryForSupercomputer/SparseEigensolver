@@ -2,6 +2,8 @@
 #include <array>
 #include <iostream>
 #include <iomanip>
+#include <omp.h>
+#include <string>
 
 #include "device/mpi/TensorOp.hpp"
 #include "device/mpi/MPIComm.hpp"
@@ -12,6 +14,12 @@
 #include "Utility.hpp"
 #include <chrono>
 
+using namespace SE;
+
+// predefined const variables 
+const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+
+// print funciton 
 std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
     os << "(";
     for(int i = 0; i<3; i++){
@@ -20,40 +28,50 @@ std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
     os << ")";
     return os;
 }
-using namespace SE;
+
+
 int main(int argc, char** argv){
 	// predefined value
-	const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
     int rank=0, nprocs=1, ictxt;
-	const int nb = 2;
-	int p=3; int q=1;
+	
+	// input 
+	int p=1;
+	if (argc>=2 ) p = std::stoi( argv[1] ); 
+	
+	int q=1;
+	if (argc>=3 ) q = std::stoi( argv[2] );
+    
+	int N = 6000;
+	if (argc>=4 ) N=std::stoi(argv[3]);
 
-	MPICommInp comm_inp({p,q});
-	//comm_inp.argc = argc;
-	//comm_inp.argv = argv;
-	//comm_inp.nprow = {p,q};
+	int nb = 2;
+	if (argc>=5 ) N=std::stoi(argv[4]);
+	//int p=1; int q=1;
 
-    auto ptr_comm = comm_inp.create_comm();
-
-//	blacs_pinfo( &rank, &nprocs );
-//    blacs_get( &i_negone, &i_zero, &ictxt );
-//    blacs_gridinit( &ictxt, "C", &nprow[0], &nprow[1] );
-//	Comm<DEVICETYPE::MPI> comm(rank, nprow[0]*nprow[1]);
-//
-    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
-    //int N = 6;
-    int N = 6000;
+	// num_eig variable is not used 
     const int num_eig = 3;
 
+	MPICommInp comm_inp({p,q});
+    auto ptr_comm = comm_inp.create_comm();
+
+//	std::cout << "nprow and npcol: " << p <<" " << q <<std::endl;
+//	#pragma omp parallel
+//	{
+//		
+//		#pragma omp single nowait
+//		{
+//		std::cout <<"omp_get_num_threads:"<< omp_get_num_threads() <<std::endl;	
+//		}
+//	}
+
+    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
+
+
+
 	BlockCyclingMapInp<2> map_inp({N,N}, ptr_comm->get_rank(), ptr_comm->get_world_size(), {nb, nb}, comm_inp.nprow );
-
-    //BlockCyclingMap<2> map2(  test_shape2, rank, nprocs, block_size, nprow);
-
 	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> test_matrix2(comm_inp.create_comm(), map_inp.create_map());
-	//DenseTensor<2,double,BlockCyclingMap<2>, DEVICETYPE::MPI> test_matrix2(*ptr_comm.get(), *p_map2.get());
 
     double invh2 = 1.0;
-    //double* test_data2 = malloc<double, DEVICETYPE::MKL>(N*N);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
 			std::array<int,2> global_arr_index={i,j};
@@ -87,7 +105,7 @@ int main(int argc, char** argv){
     auto out1 = decompose(test_matrix2, guess, "davidson");
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    if(ptr_comm->get_rank()==0) std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
+    if(ptr_comm->get_rank()==0) std::cout << "block davidson calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     delete guess;
   return 0;
 }
