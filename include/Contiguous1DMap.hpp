@@ -46,6 +46,9 @@ private:
 };
 
 template <size_t dimension>
+Contiguous1DMap<dimension>::Contiguous1DMap():Map<dimension, MTYPE::Contiguous1D>(){};
+
+template <size_t dimension>
 Contiguous1DMap<dimension>::Contiguous1DMap( std::array<size_t, dimension> global_shape, size_t my_rank, size_t world_size)
 :Map<dimension, MTYPE::Contiguous1D>(global_shape, my_rank, world_size){
     cumprod(this->global_shape, this->global_shape_mult);

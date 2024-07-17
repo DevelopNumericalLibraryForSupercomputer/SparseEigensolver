@@ -12,7 +12,7 @@ os.environ["CXX"] = "/opt/intel/oneapi/mpi/2021.11/bin/mpiicpx"
 extensions = [
     Extension(
         "PySparseTensor",  # Module name
-        sources=["pycomm.pyx"],
+        sources=["pydensetensor.pyx"],
         libraries=['mkl_rt', 'm'],
         include_dirs=[
             np.get_include(),  # numpy header file path
