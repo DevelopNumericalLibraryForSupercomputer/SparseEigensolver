@@ -23,6 +23,8 @@ public:
     INTERNALTYPE data; 
 
     // constructor
+    Tensor(){}
+
     Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
         filled=false;
     }
@@ -35,7 +37,18 @@ public:
         data = tensor.copy_data();
         filled=false;
     }
-
+    /*
+    // copy assignment constructor
+    Tensor& operator=(const Tensor& other) {
+        if (this != &other) {
+            comm = other.comm;
+            map = other.map;
+            data = other.copy_data();
+            filled = false;
+        }
+        return *this;
+    }
+    */
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup

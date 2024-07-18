@@ -15,6 +15,20 @@ public:
     Comm(size_t rank, size_t world_size): rank(rank), world_size(world_size) {};
     Comm(){};
     ~Comm(){};
+
+    
+    //copy constructor
+    Comm(const Comm<device>& comm):rank(comm.rank), world_size(comm.world_size){};
+
+    //copy assignment constructor
+    Comm<device>& operator=(const Comm<device>& comm) {
+        if(this != &comm){
+            rank = comm.rank;
+            world_size = comm.world_size;
+        }
+        return *this;
+    }
+    
     void finalize(){};
     //const size_t get_rank(){ return rank; };
     //const size_t get_world_size(){ return world_size; };

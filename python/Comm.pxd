@@ -9,10 +9,16 @@ cdef extern from "Comm.hpp" namespace "SE":
         #Comm[DEVICETYPE]* clone()
 
 cdef extern from "device/mkl/MKLComm.hpp" namespace "SE":
+    unique_ptr[MKLComm] create_comm(int argc, char *argv[])
     cdef cppclass MKLComm "SE::Comm<SE::DEVICETYPE::MKL>":
         MKLComm() except+
-        MKLComm(size_t rank, size_t world_size) except+
-        MKLComm* clone()
+        #MKLComm* clone()
+        MKLComm(const MKLComm& other) except+
+        #copy assign operator
+        MKLComm& operator=(const MKLComm& other) except+
+
+        size_t get_rank()
+        size_t get_world_size()
     
 
     
