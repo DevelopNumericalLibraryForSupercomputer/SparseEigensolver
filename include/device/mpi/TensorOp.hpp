@@ -257,6 +257,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::add<doubl
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+template<>
 void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, std::string method){
     //const double one = 1.0;
     int desc[9];
@@ -301,6 +302,7 @@ void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 }
 
 //y_i = scale_coeff_i * x_i
+template<>
 void TensorOp::scale_vectors(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, double* scale_coeff){
 
 	for (int i=0; i< mat.ptr_map->get_local_shape(1); i++ ){
@@ -314,6 +316,7 @@ void TensorOp::scale_vectors(DenseTensor<2, double, MTYPE::BlockCycling, DEVICET
 }
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
+template<>
 void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
                          double* norm, const int norm_size){
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
@@ -436,6 +439,7 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::append_ve
 }
 
 // // return eigvec
+template<>
 DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, double* eigval){
 	
     assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);

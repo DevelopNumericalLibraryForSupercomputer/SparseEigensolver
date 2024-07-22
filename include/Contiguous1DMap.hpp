@@ -43,7 +43,7 @@ public:
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
     int get_split_dim() const {return split_dim;};
 
-	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const{
+	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const override{
 		Contiguous1DMapInp<dimension > map_inp(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
 
 		return std::unique_ptr<MapInp<dimension,MTYPE::Contiguous1D> > (&map_inp);

@@ -40,7 +40,7 @@ template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, std::string method)
 {
     if(method == "davidson"){
-        SparseTensorOperations* basic_op = new SparseTensorOperations(tensor);
+        SparseTensorOperations<mtype, device>* basic_op = new SparseTensorOperations(tensor);
         auto return_val = davidson(basic_op, eigvec);
         free(basic_op);
         return return_val;

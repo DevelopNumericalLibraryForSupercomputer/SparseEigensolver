@@ -55,6 +55,7 @@ void Comm<DEVICETYPE::MKL>::alltoallv(DATATYPE *src, int* sendcounts, DATATYPE *
     memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcounts[0]*sizeof(DATATYPE));
 }
 
+template<>
 std::unique_ptr<CommInp<DEVICETYPE::MKL> > Comm<DEVICETYPE::MKL>::generate_comm_inp() const{
 	return std::make_unique<MKLCommInp >();
 }
