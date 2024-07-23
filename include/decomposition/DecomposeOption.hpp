@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 //#include <yaml-cpp/yaml.h>
-#include "Utility.hpp"
+#include "../Utility.hpp"
 namespace SE{
 
 enum class MAT_TYPE{
@@ -28,24 +28,24 @@ public:
     void set_option(std::string filename);
     void print();
 //    DecomposeMethod algorithm_type; //= DecomposeMethod::Davidson;
-//    size_t max_iterations;          // = 100;
+//    int max_iterations;          // = 100;
 //    double tolerance;               //
-//    size_t max_block;               //= 1E-10;
+//    int max_block;               //= 1E-10;
 //    MAT_TYPE matrix_type;           //= MAT_TYPE::RealSym;
-//    size_t num_eigenvalues;         //= 3;
-//    size_t eigenvalue_guesses;      //= 0;
+//    int num_eigenvalues;         //= 3;
+//    int eigenvalue_guesses;      //= 0;
 //    bool use_preconditioner;        //= false;
 //    PRECOND_TYPE preconditioner;    //= PRECOND_TYPE::Diagonal;
 //    double preconditioner_tolerance;      //= 1E-10;
 //    double preconditioner_max_iterations; //= 30;
 //    bool use_locking;            //= false;
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
-    size_t max_iterations          = 100;
+    int max_iterations          = 100;
     double tolerance               = 1e-4;
-    size_t max_block               = 2;
+    int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
-    size_t num_eigenvalues         = 3;
-    size_t eigenvalue_guesses      = 3;
+    int num_eigenvalues         = 3;
+    int eigenvalue_guesses      = 3;
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;

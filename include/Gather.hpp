@@ -28,10 +28,10 @@ static void gather_from_all(DATATYPE* src, DenseTensor<1,DATATYPE,MAPTYPE,device
 template<>
 template<typename DATATYPE, DEVICETYPE device>
 void Gather<Contiguous1DMap<1>>::gather_from_all(DATATYPE* src, const Contiguous1DMap<1>& map, const Comm<device>& comm, DATATYPE* trg){
-    size_t start_idx=0;
+    int start_idx=0;
     auto all_local_shape = map.get_all_local_shape();
     std::for_each( all_local_shape.begin(), all_local_shape.begin()+comm.get_rank(),
-                               [&start_idx](const std::array<size_t,1>& array) {start_idx+=array[0];} );
+                               [&start_idx](const std::array<int,1>& array) {start_idx+=array[0];} );
     memcpy<DATATYPE,device>(trg, src+start_idx, all_local_shape[comm.get_rank()][0]  );
 
     return;

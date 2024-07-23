@@ -14,19 +14,19 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 */
 //std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(DenseTensor<DATATYPE,2,comm,map>& tensor, std::string method)
 
-//template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
-//std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor, std::string method);
+//template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE store> 
+//std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,mtype,device,store>& tensor, std::string method);
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, std::string method)
 {
     if(method == "evd"){
         return evd(tensor, eigvec);
     }
     else if(method == "davidson"){
-        DenseTensorOperations* basic_op = new DenseTensorOperations(tensor);
+        DenseTensorOperations<mtype, device>* basic_op = new DenseTensorOperations<mtype,device>(tensor);
         auto return_val = davidson(basic_op, eigvec);
-        free(basic_op);
+        delete basic_op;
         return return_val;
     }
     else{
@@ -36,11 +36,11 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, M
 };
 
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, std::string method)
 {
     if(method == "davidson"){
-        SparseTensorOperations* basic_op = new SparseTensorOperations(tensor);
+        SparseTensorOperations<mtype, device>* basic_op = new SparseTensorOperations(tensor);
         auto return_val = davidson(basic_op, eigvec);
         free(basic_op);
         return return_val;
@@ -52,8 +52,8 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, 
 };
 
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations* operations, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, std::string method)
 {
     if(method == "davidson"){
         return davidson(operations, eigvec);

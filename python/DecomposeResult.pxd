@@ -1,9 +1,18 @@
-#distutils: language = c++
-from libcpp.memory cimport unique_ptr
+from libcpp.vector cimport vector
 
-cdef extern from "decomposition/DecomposeResult.hpp" namespace "SE":
-    cdef cppclass DecomposeResult[DATATYPE]:
+cdef extern from "../include/decomposition/DecomposeResult.hpp" namespace "SE":
+    cdef cppclass DecomposeResult[datatype]:
+        #DecomposeResult() except+
+        #DecomposeResult(const int num_eig, vector[datatype] real_eigvals, vector[datatype] real_eigvals) except+
+        
+        #const int num_eig
+        #vector[datatype] real_eigvals
+        #vector[datatype] imag_eigvals
         pass
 
     cdef cppclass DecomposeResult_double "SE::DecomposeResult<double>":
-        DecomposeResult_double(size_t num_eig, unique_ptr[double[]] real_eigvals, unique_ptr[double[]] imag_eigvals) except+
+        DecomposeResult_double(const int num_eig, vector[double] real_eigvals, vector[double] real_eigvals) except+
+        
+        const int num_eig
+        vector[double] real_eigvals
+        vector[double] imag_eigvals

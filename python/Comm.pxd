@@ -19,6 +19,3 @@ cdef extern from "device/mkl/MKLComm.hpp" namespace "SE":
 
         size_t get_rank()
         size_t get_world_size()
-    
-
-    

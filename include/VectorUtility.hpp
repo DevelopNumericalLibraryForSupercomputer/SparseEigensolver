@@ -1,11 +1,13 @@
+#include "Type.hpp"
 #include "device/LinearOp.hpp"
 
 namespace SE{
+namespace SE{
 template <typename DATATYPE, DEVICETYPE device>
-void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const size_t number_of_eigvals, const size_t vector_size){
+void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const int number_of_eigvals, const int vector_size){
     DATATYPE* new_eigvals = new DATATYPE[number_of_eigvals];
     DATATYPE* new_eigvecs = new DATATYPE[number_of_eigvals*vector_size];
-    std::vector<size_t> sorted_indicies = sort_indicies<DATATYPE>(eigvals, number_of_eigvals);
+    std::vector<int> sorted_indicies = sort_indicies<DATATYPE>(eigvals, number_of_eigvals);
     for(int i=0;i<number_of_eigvals;i++){
         new_eigvals[i] = eigvals[sorted_indicies[i]];
         for(int j=0;j<vector_size;j++){
