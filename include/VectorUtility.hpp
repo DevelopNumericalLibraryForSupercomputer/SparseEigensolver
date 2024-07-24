@@ -2,7 +2,6 @@
 #include "device/LinearOp.hpp"
 
 namespace SE{
-namespace SE{
 template <typename DATATYPE, DEVICETYPE device>
 void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const int number_of_eigvals, const int vector_size){
     DATATYPE* new_eigvals = new DATATYPE[number_of_eigvals];

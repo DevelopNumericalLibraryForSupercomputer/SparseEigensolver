@@ -68,6 +68,7 @@ class CommInp
 {
 	public:
 		virtual std::unique_ptr<Comm<device> > create_comm()=0;
+        virtual ~CommInp(){};
 }; 
 
 //{

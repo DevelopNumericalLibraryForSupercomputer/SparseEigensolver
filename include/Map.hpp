@@ -23,6 +23,9 @@ public:
     //Map(array_d global_shape, int my_rank, int world_size, std::array<bool, dimension> is_parallel );
     Map(array_d global_shape, int my_rank, int world_size, array_d ranks_per_dim ): global_shape(global_shape), my_rank(my_rank), world_size(world_size), ranks_per_dim(ranks_per_dim){};
 
+    //destructor
+    virtual ~Map(){};
+
     //clone
     virtual std::unique_ptr<Map<dimension, mtype>> clone() const=0;
 
@@ -112,6 +115,7 @@ class MapInp
 
 		// function
 		virtual std::unique_ptr<Map<dimension,mtype> > create_map()=0; 
+        virtual ~MapInp(){};
 };
 
 /*
