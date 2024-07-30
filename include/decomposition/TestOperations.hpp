@@ -38,9 +38,9 @@ public:
         //std::array<DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>, num_vec> vec_array;
         for(int i=0;i<num_vec;i++){
             auto tmp_vec = DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(vec.copy_comm(),ptr_vec_map);
-            copy<double, DEVICETYPE::MKL>(n,&vec.data[i],num_vec,tmp_vec.data,1);
+            copy<double, DEVICETYPE::MKL>(n,&vec.data[i],num_vec,tmp_vec.data.get(),1);
             auto tmp_result = matvec(tmp_vec);
-            copy<double, DEVICETYPE::MKL>(n,tmp_result.data,1,&return_vec.data[i],num_vec);
+            copy<double, DEVICETYPE::MKL>(n,tmp_result.data.get(),1,&return_vec.data.get()[i],num_vec);
         }
         return return_vec;
     };

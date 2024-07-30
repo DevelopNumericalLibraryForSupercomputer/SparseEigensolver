@@ -1,5 +1,5 @@
 #pragma once
-#include "LinearOp.hpp"
+#include "device/mkl/LinearOp.hpp"
 #include "../TensorOp.hpp"
 #include "MKLComm.hpp"
 
@@ -104,7 +104,8 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     auto ptr_comm=vec.copy_comm();
 
     assert (num_col==vec.ptr_map->get_global_shape(0));
-    std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
+    //std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
+    std::array<int, 1> output_shape = {num_row};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
 
     DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
@@ -172,7 +173,8 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     auto ptr_comm=mat2.copy_comm();
     
     assert (num_col==mat2.ptr_map->get_global_shape(0));
-    std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.ptr_map->get_global_shape(1)};
+    //std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.ptr_map->get_global_shape(1)};
+    std::array<int, 2> output_shape = {num_row, mat2.ptr_map->get_global_shape(1)};
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<2>> (output_shape, 0,1);
 
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
@@ -239,6 +241,11 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
         auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
         for(int i=0; i<number_of_vectors; i++){
+
+
+//gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
+//gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output.data.get(), 1);
+
             double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output.data[i], number_of_vectors);
             assert(norm != 0.0);
             scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);

@@ -118,7 +118,7 @@ std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > DenseTensor<dimensi
     //std::unique_ptr<DATATYPE[], > return_data ( malloc<DATATYPE, device>( data_size ) );
     std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*) > > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     memcpy<DATATYPE, device>(return_data.get(), this->data.get(), data_size);
-    return return_data;
+    return std::move(return_data);
 }
 
 
