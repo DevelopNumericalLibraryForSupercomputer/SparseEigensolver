@@ -16,6 +16,8 @@ void eigenvec_sort(DATATYPE* eigvals, DATATYPE* eigvecs, const int number_of_eig
     
     memcpy<DATATYPE, device>(eigvals, new_eigvals, number_of_eigvals, COPYTYPE::DEVICE2DEVICE);
     memcpy<DATATYPE, device>(eigvecs, new_eigvecs, number_of_eigvals*vector_size, COPYTYPE::DEVICE2DEVICE);
+    delete[] new_eigvals;
+    delete[] new_eigvecs;
 }
 
 }

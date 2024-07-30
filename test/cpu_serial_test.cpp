@@ -138,13 +138,13 @@ int main(int argc, char* argv[]){
     std::cout << "========================\nDense matrix diag done" << std::endl;
     delete guess;
     
-    /*
+    
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
-    free(guess);
-    */
+    free<DEVICETYPE::MKL>(guess);
+    
     /*
     guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( ptr_comm, ptr_guess_map);
     // guess : unit vector
