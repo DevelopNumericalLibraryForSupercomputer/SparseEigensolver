@@ -18,7 +18,8 @@ public:
     DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,mtype,device>& tensor);
 
-
+    //destructor
+    ~DenseTensor(){};
 
     INTERNALTYPE copy_data() const override;
 

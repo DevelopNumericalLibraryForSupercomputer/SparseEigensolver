@@ -14,20 +14,15 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,dev
 
 template <typename DATATYPE, MTYPE mtype>
 std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEVICETYPE::MKL>& tensor, DenseTensor<2, DATATYPE, mtype, DEVICETYPE::MKL>* eigvec){
-    //auto shape = tensor.ptr_map->get_global_shape();
-    //assert(shape[0] == shape[1]);
     assert(tensor.ptr_map->get_global_shape()[0] == tensor.ptr_map->get_global_shape()[1]);
     const int n = tensor.ptr_map->get_global_shape()[0];
-    //const int n = 5;
-    printf( "direct5.\n" );
-    //int n = 5;
     
-    std::unique_ptr<DATATYPE[]> real_eigvals_ptr(new DATATYPE[n]);
-    std::unique_ptr<DATATYPE[]> imag_eigvals_ptr(new DATATYPE[n]);
+    //std::unique_ptr<DATATYPE[]> real_eigvals_ptr(new DATATYPE[n]);
+    //std::unique_ptr<DATATYPE[]> imag_eigvals_ptr(new DATATYPE[n]);
     
-    std::unique_ptr<DATATYPE[]> eigvec_0(new DATATYPE[n*n]);
-    std::unique_ptr<DATATYPE[]> eigvec_1(new DATATYPE[n*n]);
-    /*
+    //std::unique_ptr<DATATYPE[]> eigvec_0(new DATATYPE[n*n]);
+    //std::unique_ptr<DATATYPE[]> eigvec_1(new DATATYPE[n*n]);
+    
     printf( "direct5.\n" );
     double* mat_new = new double[n*n];
     for(int i=0;i<n;i++){
@@ -38,19 +33,19 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEV
             //}
         }
     }
-    printf( "direct5.\n" );
-    
     double* real_eigvals_ptr = new double[n];
     double* imag_eigvals_ptr = new double[n];
     double* eigvec_0 = new double[n*n];
     double* eigvec_1 = new double[n*n];
-    */
-    auto mat = tensor.copy_data();
+
     printf( "direct5.\n" );
     
-    int info = geev<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'V', n, mat.get(), n, real_eigvals_ptr.get(),imag_eigvals_ptr.get(), eigvec_0.get(), n, eigvec_1.get(), n);
-    //int info = geev<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'V', n, mat_new, n, real_eigvals_ptr, imag_eigvals_ptr, eigvec_0, n, eigvec_1, n);
-    //int info = 1;
+    //auto mat = tensor.copy_data();
+    
+    
+    int info = 0;
+    //info = geev<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'V', n, mat_new, n, real_eigvals_ptr.get(),imag_eigvals_ptr.get(), eigvec_0.get(), n, eigvec_1.get(), n);
+    info = geev<DATATYPE, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'V', n, mat_new, n, real_eigvals_ptr,imag_eigvals_ptr, eigvec_0, n, eigvec_1, n);
     printf( "INFO = %d\n",info);
     //printf( "eigvals = %f%f%f\n",real_eigvals_ptr.get()[0], real_eigvals_ptr.get()[1], real_eigvals_ptr.get()[2]);
     printf( "direct5.\n" );
@@ -58,13 +53,13 @@ std::unique_ptr<DecomposeResult<DATATYPE> > evd(DenseTensor<2,DATATYPE,mtype,DEV
         printf( "The algorithm failed to compute eigenvalues.\n" );
         exit( 1 );
     }
-    /*
+    
+    delete[] mat_new;
     delete[] real_eigvals_ptr;
     delete[] imag_eigvals_ptr;
     delete[] eigvec_0;
     delete[] eigvec_1;
-    delete[] mat_new;
-    */
+    
     //eigenvec_sort<DATATYPE, DEVICETYPE::MKL>(real_eigvals_ptr.get(), eigvec_0.get(), n, n);
     printf( "direct6.\n" );
     //Print eigenvalues

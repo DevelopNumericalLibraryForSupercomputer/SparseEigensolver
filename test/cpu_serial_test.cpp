@@ -77,14 +77,12 @@ int main(int argc, char* argv[]){
 
     std::array<int, 2> test_shape2 = {N,N};
 	Contiguous1DMapInp<2> map2_inp( test_shape2 );
-    /*
+    
     std::array<int, 1> test_shape2_vec = {N};
 	Contiguous1DMapInp<1> map2_vec_inp( test_shape2_vec );
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D> > ptr_map2_vec = map2_vec_inp.create_map();
-    */
+    
     // local potnetial v(x) = 2.0*(std::abs(0.5*(double)N-(double)i)) + spacing 1.0, 3th order kinetic energy matrix
-    /*
-    아래 코드 처럼 생성을 하게 되면 segmentation fault가 나게 됨. 왜???
     double invh2 = 1.0;
     std::unique_ptr<double[], std::function<void(double*)> > test_data2 ( malloc<double, DEVICETYPE::MKL>(N*N), free<DEVICETYPE::MKL> );
     for(int i=0;i<N;i++){
@@ -92,39 +90,21 @@ int main(int argc, char* argv[]){
             test_data2.get()[i+j*N] = 0;
             if(i == j)                  test_data2.get()[i+j*N] += 2.0*((double)i-(double)N)   - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
             if(i == j +1 || i == j -1)  test_data2.get()[i+j*N] += invh2*4.0/3.0;
-            //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
     }
-    
-    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(comm_inp.create_comm(), map2_inp.create_map(), std::move(test_data2));
-    */
-    //아래 코드는 정상작동
-    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(comm_inp.create_comm(), map2_inp.create_map());
-    double invh2 = 1.0;
-    for(int i=0;i<N;i++){
-        for(int j=0;j<N;j++){
-			std::array<int,2> global_arr_index={i,j};
-            //test_matrix2.global_set_value(global_arr_index, 0.0);
-            if(i == j)  test_matrix2.global_insert_value(global_arr_index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
-            if(i == j +1 || i == j -1) test_matrix2.global_insert_value(global_arr_index, invh2*4.0/3.0);
-            if(i == j +2 || i == j -2)  test_matrix2.global_insert_value(global_arr_index, -invh2*1.0/12.0);
-            if(i == j +3 || i == j -3)  test_matrix2.global_insert_value(global_arr_index,   0.3);
-            if(i == j +4 || i == j -4)  test_matrix2.global_insert_value(global_arr_index, -0.1);
-            //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
-            //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
-        }
-    }
+    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(ptr_comm, map2_inp.create_map(), std::move(test_data2));
     //DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix3(test_matrix2);
-    test_matrix2.complete();
+    //test_matrix2.complete();
     std::cout << test_matrix2 <<std::endl; 
     //std::cout << test_matrix3 <<std::endl; 
 
-    
     /*
+    
     SE::DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_vec_long(ptr_comm, map2_vec_inp.create_map());
     test_vec_long.global_set_value(0,1.0);
     test_vec_long.global_set_value(3,1.0);
@@ -133,26 +113,30 @@ int main(int argc, char* argv[]){
     std::cout <<  TensorOp::matmul( test_matrix2, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "gemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
-    */
     
-
+    */
+   
     std::array<int, 2> guess_shape = {N,num_eig};
 	Contiguous1DMapInp<2> guess_map_inp( guess_shape );
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_guess_map = guess_map_inp.create_map();
-
-    auto guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(comm_inp.create_comm(), ptr_guess_map);
+    
+    
+    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>* guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(ptr_comm, ptr_guess_map);
+    
+    
+    
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
         guess->global_set_value(tmp_index, 1.0);
     }
 
-
+    
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, guess, "evd");
     std::cout << "========================\nDense matrix diag done" << std::endl;
-    //free(guess);
+    delete guess;
     
     /*
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
