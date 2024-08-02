@@ -44,7 +44,7 @@ public:
         }
         return return_vec;
     };
-    double get_diag_element(const int index) override{
+    double get_diag_element(const int index) const override{
         return 2.0*((double)index-(double)n)   - 5.0/2.0;
     };
 

@@ -24,11 +24,11 @@ public:
 
     ~SparseTensor() {
         if (complete_index != nullptr) {
-            delete[] complete_index;
+            free<device>(complete_index);
             complete_index = nullptr;
         }
         if (complete_value != nullptr) {
-            delete[] complete_value;
+            free<device>(complete_value);
             complete_value = nullptr;
         }
     }

@@ -98,12 +98,12 @@ int main(int argc, char* argv[]){
         }
     }
     DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(ptr_comm, map2_inp.create_map(), std::move(test_data2));
-    //DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix3(test_matrix2);
+    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix3(test_matrix2);
     //test_matrix2.complete();
     std::cout << test_matrix2 <<std::endl; 
     //std::cout << test_matrix3 <<std::endl; 
 
-    /*
+    
     
     SE::DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_vec_long(ptr_comm, map2_vec_inp.create_map());
     test_vec_long.global_set_value(0,1.0);
@@ -114,46 +114,33 @@ int main(int argc, char* argv[]){
     std::cout << "gemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_matrix2, test_matrix2 ) <<std::endl;
     
-    */
+    
    
     std::array<int, 2> guess_shape = {N,num_eig};
 	Contiguous1DMapInp<2> guess_map_inp( guess_shape );
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_guess_map = guess_map_inp.create_map();
-    
-    
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>* guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(ptr_comm, ptr_guess_map);
-    
-    
-    
+
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
-        guess->global_set_value(tmp_index, 1.0);
+        ptr_guess->global_set_value(tmp_index, 1.0);
+        ptr_guess2->global_set_value(tmp_index, 1.0);
+        ptr_guess3->global_set_value(tmp_index, 1.0);
     }
-
     
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    auto out1 = decompose(test_matrix2, guess, "evd");
-    std::cout << "========================\nDense matrix diag done" << std::endl;
-    delete guess;
-    
-    
+    //auto out1 = decompose(test_matrix2, ptr_guess.get(), "evd");
+    std::cout << "========================\nDense matrix diag done" << std::endl;    
+    /*
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
-    
-    free<DEVICETYPE::MKL>(guess);
-    
-    /*
-    guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( ptr_comm, ptr_guess_map);
-    // guess : unit vector
-    for(int i=0;i<num_eig;i++){
-        std::array<int, 2> tmp_index = {i,i};
-        guess->global_set_value(tmp_index, 1.0);
-    }
-    
-    SE::SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_sparse( ptr_comm, ptr_map2, N*9);
+    */ 
+    SE::SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_sparse( ptr_comm, map2_inp.create_map(), N*3);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             std::array<int,2> index = {i,j};
@@ -168,38 +155,28 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    다시짜야함
-    */
-/*
+    
+
     std::cout <<  test_sparse << std::endl;
     std::cout << "SPMV" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
+    //std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "sgemm" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
-*/
-/*다시
+    //std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
+
+
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    auto out2 = decompose(test_matrix3, guess, "davidson");
-    print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
+    //auto out2 = decompose(test_matrix3, ptr_guess2.get(), "davidson");
+    //print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
 
-    free(guess);
-    guess = new DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(ptr_comm, ptr_guess_map);
-    // guess : unit vector
-    for(int i=0;i<num_eig;i++){
-        std::array<int, 2> tmp_index = {i,i};
-        guess->global_set_value(tmp_index, 1.0);
-    }
 
     TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL>* test_op = new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
-    auto out4 = decompose(test_op, guess, "davidson");
+    auto out4 = decompose(test_op, ptr_guess3.get(), "davidson");
     print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end4 - begin4).count())/1000000.0 << "[sec]" << std::endl;
- 다시짜야함
-*/
 
 //
 //    std::cout << "\nSparsematrix Davidson" << std::endl;
