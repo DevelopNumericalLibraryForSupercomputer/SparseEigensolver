@@ -123,31 +123,33 @@ int main(int argc, char* argv[]){
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
         ptr_guess->global_set_value(tmp_index, 1.0);
         ptr_guess2->global_set_value(tmp_index, 1.0);
         ptr_guess3->global_set_value(tmp_index, 1.0);
+        ptr_guess4->global_set_value(tmp_index, 1.0);
     }
     
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    //auto out1 = decompose(test_matrix2, ptr_guess.get(), "evd");
+    auto out1 = decompose(test_matrix2, ptr_guess.get(), "evd");
     std::cout << "========================\nDense matrix diag done" << std::endl;    
-    /*
+
     print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     std::cout << "geev, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
-    */ 
+
     SE::SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> test_sparse( ptr_comm, map2_inp.create_map(), N*3);
     for(int i=0;i<N;i++){
         for(int j=0;j<N;j++){
             std::array<int,2> index = {i,j};
             if(i == j)                   test_sparse.global_insert_value(index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
             if(i == j +1 || i == j -1)   test_sparse.global_insert_value(index, invh2*4.0/3.0);
-            //if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
-            //if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
+            if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
+            if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
             //if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
             //if( i%13 == 0 && j%13 == 0)  test_sparse.global_insert_value(index, 0.01);
             //if( (j*N+i)%53 == 0) test_sparse.global_insert_value(index, 0.01);
@@ -156,35 +158,34 @@ int main(int argc, char* argv[]){
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
     
+/*
 
     std::cout <<  test_sparse << std::endl;
     std::cout << "SPMV" << std::endl;
-    //std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
+    std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
     std::cout << "sgemm" << std::endl;
-    //std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
-
+    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
 
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-    //auto out2 = decompose(test_matrix3, ptr_guess2.get(), "davidson");
-    //print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
+    auto out2 = decompose(test_matrix3, ptr_guess2.get(), "davidson");
+    print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
 
-
-    TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL>* test_op = new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
+    TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
-    auto out4 = decompose(test_op, ptr_guess3.get(), "davidson");
+    auto out4 = decompose(&test_op, ptr_guess3.get(), "davidson");
     print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end4 - begin4).count())/1000000.0 << "[sec]" << std::endl;
 
-//
-//    std::cout << "\nSparsematrix Davidson" << std::endl;
-//    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
-//    auto out3 = decompose(test_sparse, "davidson");
-//    print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
-//    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
-//    std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
+*/
+    std::cout << "\nSparsematrix Davidson" << std::endl;
+    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
+    auto out3 = decompose(test_sparse, ptr_guess4.get(), "davidson");
+    print_eigenvalues( "Eigenvalues", num_eig, out3.get()->real_eigvals.data(), out3.get()->imag_eigvals.data());
+    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+    std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
 //
   return 0;
 }

@@ -68,12 +68,12 @@ DecomposeOption::DecomposeOption(){
     //config = YAML::LoadFile("Default.yaml");
     //set_option_worker();
 }
-/*
 DecomposeOption::DecomposeOption(std::string filename){
-    config = YAML::LoadFile("Default.yaml");
-    set_option(filename);
+    //config = YAML::LoadFile("Default.yaml");
+    //set_option(filename);
 }
 
+/*
 void DecomposeOption::set_option(std::string filename){
     YAML::Node new_config = YAML::LoadFile(filename);
 

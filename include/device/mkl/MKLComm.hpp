@@ -16,28 +16,29 @@ class MKLCommInp: public CommInp<DEVICETYPE::MKL>
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::allreduce(const DATATYPE *src, int count, DATATYPE *trg, OPTYPE op) const{
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, count*sizeof(DATATYPE));
+    std::cout << "MKLComm : DATASIZE : " << sizeof(DATATYPE) << "\t" <<  src <<"\t" <<trg<<std::endl;
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, count);
 }
 
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::alltoall(DATATYPE *src, int sendcount, DATATYPE *trg, int recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount*sizeof(DATATYPE));
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount);
 }
 
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::allgather(DATATYPE *src, int sendcount, DATATYPE *trg, int recvcount) const{
     assert(sendcount == recvcount);
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount*sizeof(DATATYPE) );
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount);
 }
 
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::allgatherv(DATATYPE *src, int sendcount, DATATYPE *trg, int* recvcount) const{
     assert(sendcount == recvcount[0]);
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount*sizeof(DATATYPE));
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, sendcount);
 }
 
 template<>
@@ -45,14 +46,14 @@ template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::scatterv(DATATYPE *src, int* sendcounts, DATATYPE *trg, int recvcount, int root) const{
     assert(sendcounts[0] == recvcount);
     assert(root == 0);
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcount*sizeof(DATATYPE));
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcount);
 }
 
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::alltoallv(DATATYPE *src, int* sendcounts, DATATYPE *trg, int* recvcounts) const{
     assert(sendcounts[0] == recvcounts[0]);
-    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcounts[0]*sizeof(DATATYPE));
+    memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, recvcounts[0]);
 }
 
 template<>

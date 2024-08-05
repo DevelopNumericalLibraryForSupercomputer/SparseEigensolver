@@ -71,7 +71,7 @@ public:
     // Sparse Tensor Only 
     void complete(bool reuse=false);
     
-    DATATYPE operator() (const int local_index);
+    DATATYPE operator() (const int local_index) const { return this->data[local_index]; };
 
     //TUPLEDATA<dimension, DATATYPE*,int*> complete_value; 
     //
@@ -253,15 +253,10 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
 
 
 // get functions
-template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-DATATYPE SparseTensor<dimension,DATATYPE,mtype,device>::operator() (const int local_index){
-//    auto local_array_index = this->ptr_map.pack_local_index(local_index);
-//    auto iter = std::find(this->data.begin(), this->data.end(), [local_array_index](std::pair<std::array<int, dimension>, DATATYPE> element){return element.first==local_array_index;} );
-//    if (iter==this->data.end()) return Zero<DATATYPE>::value;
-//    return iter->second;
-    return this->data[local_index];
-
-};
+//template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+//DATATYPE SparseTensor<dimension,DATATYPE,mtype,device>::operator() const (const int local_index){
+//    return this->data[local_index];
+//};
 
 
 //template<typename DATATYPE, int dimension, DEVICETYPE device, MTYPE mtype>

@@ -44,9 +44,7 @@ public:
     int get_split_dim() const {return split_dim;};
 
 	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const override{
-		Contiguous1DMapInp<dimension > map_inp(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
-
-		return std::unique_ptr<MapInp<dimension,MTYPE::Contiguous1D> > (&map_inp);
+		return std::make_unique< Contiguous1DMapInp<dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim );
 	};
 private:
     //array_d ranks_per_dim;      // number of processor for each dimension
@@ -74,10 +72,13 @@ class Contiguous1DMapInp: public MapInp<dimension,MTYPE::Contiguous1D >
 
 template<int dimension>
 std::unique_ptr< Map<dimension,MTYPE::Contiguous1D> > Contiguous1DMapInp<dimension>::create_map(){
+	std::cout << "!!!!!!!!!!!!!!!!!!" <<std::endl;
 	if (this->ranks_per_dim[0]==0){
+		std::cout << "case 1" <<std::endl;
 		// default value(std::array<int, dimension>{}) for ranks_per_dim is set
 		return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size);
 	}
+	std::cout << "case 2" <<std::endl;
 	return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim); //shchoi add more cases
 };
 
