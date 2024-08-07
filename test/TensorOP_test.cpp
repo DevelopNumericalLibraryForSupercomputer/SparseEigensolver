@@ -7,10 +7,10 @@
 
 using namespace SE;
 
-template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
+template<int dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
 void fill_densetensor(DenseTensor<dimension, DATATYPE, MAPTYPE, device>* mat, const std::vector<DATATYPE> data){
     assert(mat->map.get_num_global_elements() == data.size());
-    for(size_t index = 0; index<data.size() ; ++index){
+    for(int index = 0; index<data.size() ; ++index){
         if(mat->comm.get_rank() == mat->map.find_rank_from_global_index(index)){
             mat->global_insert_value(index,data[index]);
         }
@@ -21,12 +21,12 @@ void fill_densetensor(DenseTensor<dimension, DATATYPE, MAPTYPE, device>* mat, co
 int main(int argc, char* argv[]){
     auto ptr_comm = create_comm<DEVICETYPE::MPI>(argc, argv);
 
-    std::array<size_t, 2> mat1_shape = {7,2};
-    std::array<size_t, 2> mat2_shape = {2,9};
-    std::array<size_t, 2> mat3_shape = {9,9};
-    std::array<size_t, 1> vec1_shape = {2};
-    std::array<size_t, 1> vec2_shape = {9};
-    std::array<size_t, 1> vec3_shape = {7};
+    std::array<int, 2> mat1_shape = {7,2};
+    std::array<int, 2> mat2_shape = {2,9};
+    std::array<int, 2> mat3_shape = {9,9};
+    std::array<int, 1> vec1_shape = {2};
+    std::array<int, 1> vec2_shape = {9};
+    std::array<int, 1> vec3_shape = {7};
     
     auto map_mat1 = Contiguous1DMap(mat1_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());
     auto map_mat2 = Contiguous1DMap(mat2_shape, ptr_comm->get_rank(), ptr_comm->get_world_size());

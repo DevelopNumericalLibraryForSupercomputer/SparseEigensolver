@@ -9,8 +9,9 @@
 #include <vector>
 
 namespace SE{
-template <size_t dimension>
-void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dimension+1>& shape_mult, std::string indexing="F"){
+template <int dimension>
+void cumprod(std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
+//void cumprod(const std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
     /* Ex1)
      * shape = {2, 3, 4}, indexing="F"
      * shape_mult = {1, 2, 6, 24}
@@ -20,30 +21,30 @@ void cumprod(const std::array<size_t, dimension>& shape, std::array<size_t, dime
      */
     shape_mult[0] = 1;
     if (indexing == "F"){
-        for (size_t i = 0; i < dimension; ++i) {
+        for (int i = 0; i < dimension; ++i) {
             shape_mult[i+1] = shape_mult[i] * shape[i];
         }
     }
     else if(indexing == "C"){
-        for (size_t i = 0; i < dimension; ++i) {
+        for (int i = 0; i < dimension; ++i) {
             shape_mult[i+1] = shape_mult[i] * shape[dimension-i-1];
         }
     }
 }
 
 template<typename DATATYPE>
-std::vector<size_t> sort_indicies(const DATATYPE* data_array, const size_t array_size){
-    std::vector<size_t> idx;
+std::vector<int> sort_indicies(const DATATYPE* data_array, const int array_size){
+    std::vector<int> idx;
     idx.resize(array_size);
     std::iota(std::begin(idx), std::end(idx), 0);
-    std::stable_sort(std::begin(idx), std::end(idx), [data_array](size_t i1, size_t i2) {return data_array[i1] < data_array[i2];});
+    std::stable_sort(std::begin(idx), std::end(idx), [data_array](int i1, int i2) {return data_array[i1] < data_array[i2];});
     return idx;
 }
 
 /* Auxiliary routine: printing eigenvalues */
-void print_eigenvalues( const std::string desc, size_t n, double* wr, double* wi ) {
+void print_eigenvalues( const std::string desc, int n, double* wr, double* wi ) {
    std::cout << "\n" << desc << std::endl;
-   for(size_t j = 0; j < n; j++ ) {
+   for(int j = 0; j < n; j++ ) {
       if( wi[j] == (double)0.0 ) {
          printf( " %6.8f", wr[j] );
       } else {
@@ -54,8 +55,8 @@ void print_eigenvalues( const std::string desc, size_t n, double* wr, double* wi
 }
 
 /* Auxiliary routine: printing eigenvectors */
-void print_eigenvectors( const std::string desc, size_t n, double* wi, double* v, size_t ldv ) {
-   size_t i, j;
+void print_eigenvectors( const std::string desc, int n, double* wi, double* v, int ldv ) {
+   int i, j;
    std::cout << "\n" << desc << std::endl;
    for( i = 0; i < n; i++ ) {
       j = 0;

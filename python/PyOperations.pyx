@@ -7,7 +7,7 @@ from cpython cimport PyObject, Py_INCREF, Py_DECREF
 from libcpp.vector cimport vector
 np.import_array()
 
-cdef extern from "PyOperations.hpp":
+cdef extern from "decomposition/PyOperations.hpp":
     ctypedef void   (*MatrixOneVecCallback)(const double* input_vec, double* output_vec, const size_t size, void* user_data)
     ctypedef void   (*MatrixMultVecCallback)(const double* input_vecs, double* output_vec, const size_t num_vec, const size_t size, void* user_data)
     ctypedef double (*GetDiagElementCallback)(size_t index, void* user_data)

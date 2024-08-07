@@ -1,12 +1,10 @@
-
-
-# decompose_result.pyx
-cimport decompose_result
-from libcpp.memory cimport unique_ptr
 import numpy as np
+cimport numpy as np
+from libcpp.memory cimport unique_ptr
+from DecomposeResult cimport DecomposeResult
 
 cdef class PyDecomposeResult:
-    cdef unique_ptr[decompose_result.DecomposeResult[double]] _result
+    cdef DecomposeResult[double] *_result
 
     def __cinit__(self, size_t num_eig, real_eigvals, imag_eigvals):
         cdef unique_ptr[double[]] c_real_eigvals = unique_ptr[double[]](new double[num_eig])
@@ -19,6 +17,10 @@ cdef class PyDecomposeResult:
         self._result = unique_ptr[decompose_result.DecomposeResult[double]](
             new decompose_result.DecomposeResult[double](num_eig, move(c_real_eigvals), move(c_imag_eigvals))
         )
+
+    # copy constructor
+    def __cinit__(self, unique_ptr[decompose_result.DecomposeResult[double]] result):
+        self._result = unique_ptr[decompose_result.DecomposeResult[double]](new decompose_result.DecomposeResult[double](*result))
 
     @property
     def num_eig(self):
