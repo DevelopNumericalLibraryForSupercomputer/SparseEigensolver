@@ -1,7 +1,7 @@
 #pragma once
 #include <mpi.h>
 #include <cassert>
-#include "../../Comm.hpp"
+#include "Comm.hpp"
 #include "Utility.hpp"
 
 #include "mkl_blacs.h"
@@ -163,7 +163,7 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
 		std::array<int,2> nprow;
 };
 
-
+template<>
 std::unique_ptr<CommInp<DEVICETYPE::MPI> > Comm<DEVICETYPE::MPI>::generate_comm_inp() const{
 	return std::make_unique<MPICommInp>(this->nprow);
 }
