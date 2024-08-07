@@ -41,12 +41,12 @@ public:
         filled=false;
     } 
 
-    Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor): 
+    Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor) :
 	ptr_comm(tensor.ptr_comm->clone()),
 	ptr_map(tensor.ptr_map->clone()) 
 	{ 
         data = tensor.copy_data();
-        filled=false;
+        filled=tensor.get_filled();
     }
 
 	//virtual  Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other) = 0;
@@ -67,7 +67,7 @@ public:
     virtual INTERNALTYPE copy_data() const=0;
 
     // clone function 
-    virtual std::unique_ptr<Tensor<dimension,DATATYPE,mtype,device,STORETYPE> > clone(bool call_complete=false) const=0;
+    //virtual std::unique_ptr<Tensor<dimension,DATATYPE,mtype,device,STORETYPE> > clone(bool call_complete=false) const=0;
 
     // insert function (add value ) 
     virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;

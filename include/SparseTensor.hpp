@@ -36,7 +36,7 @@ public:
     INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone
-    std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::COO> > clone(bool call_complete) const override;
+    std::unique_ptr<SparseTensor<dimension, DATATYPE, mtype, device> > clone(bool call_complete) const;
     // insert function
     void global_insert_value(const array_d global_array_index, const DATATYPE value) override;
     void local_insert_value (const array_d local_array_index, const DATATYPE value) override;
@@ -104,7 +104,7 @@ SparseTensor<dimension,DATATYPE,mtype,device>::SparseTensor(const std::unique_pt
 }
 
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device,STORETYPE::COO > > SparseTensor<dimension,DATATYPE,mtype,device>::clone(bool call_complete) const{
+std::unique_ptr<SparseTensor<dimension, DATATYPE, mtype, device> > SparseTensor<dimension,DATATYPE,mtype,device>::clone(bool call_complete) const{
     auto return_val = std::make_unique< SparseTensor<dimension,DATATYPE,mtype,device> > (this->copy_comm(), this->copy_map() ); // I am not sure if pointer of inherit class work well shchoi
     if(this->filled && call_complete){
         auto nnz = get_num_nonzero();

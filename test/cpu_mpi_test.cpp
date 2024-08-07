@@ -4,16 +4,17 @@
 #include <iomanip>
 #include <omp.h>
 #include <string>
+#include <chrono>
+#include <random>
 
 #include "device/mpi/TensorOp.hpp"
+#include "device/mpi/LinearOp.hpp"
 #include "device/mpi/MPIComm.hpp"
 #include "BlockCyclingMap.hpp"
 //#include "decomposition/IterativeSolver_MPI.hpp"
 #include "decomposition/Decompose.hpp"
 #include "decomposition/DecomposeOption.hpp"
 #include "Utility.hpp"
-#include <chrono>
-
 using namespace SE;
 
 // predefined const variables 
@@ -33,6 +34,7 @@ std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
 int main(int argc, char** argv){
 	// predefined value
     int rank=0, nprocs=1, ictxt;
+	DecomposeOption option;
 	
 	// input 
 	int p=1;
@@ -45,14 +47,18 @@ int main(int argc, char** argv){
 	if (argc>=4 ) N=std::stoi(argv[3]);
 
 	int nb = 2;
-	if (argc>=5 ) N=std::stoi(argv[4]);
+	if (argc>=5 ) nb=std::stoi(argv[4]);
 	//int p=1; int q=1;
+	int precond_type = 2;
+	if (argc>=6 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[5]);
 
 	// num_eig variable is not used 
     const int num_eig = 3;
 
 	MPICommInp comm_inp({p,q});
     auto ptr_comm = comm_inp.create_comm();
+	auto ptr_comm2 = ptr_comm->clone();
+	std::cout << "clone!" <<std::endl;
 
 //	std::cout << "nprow and npcol: " << p <<" " << q <<std::endl;
 //	#pragma omp parallel
@@ -63,6 +69,11 @@ int main(int argc, char** argv){
 //		std::cout <<"omp_get_num_threads:"<< omp_get_num_threads() <<std::endl;	
 //		}
 //	}
+
+
+    // Set the seed for random number generation
+    std::mt19937 rng(12345);  // Fixed seed number for reproducibility
+    std::uniform_real_distribution<double> dist(-1, 1);  // Define the range of random values
 
     if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
 
@@ -93,8 +104,9 @@ int main(int argc, char** argv){
     for(int i=0;i<num_eig;i++){
 		for (int j=0; j<N; j++){
 	        std::array<int, 2> tmp_index = {j,i};
-			if (i==j)	guess->global_set_value(tmp_index, 1.0);
+			//if (i==j)	guess->global_set_value(tmp_index, 1.0);
 			//else	guess->global_set_value(tmp_index, 1e-3);
+			guess->global_set_value(tmp_index, dist(rng));
 		}
     }
 
@@ -102,7 +114,7 @@ int main(int argc, char** argv){
 
     if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
-    auto out1 = decompose(test_matrix2, guess, "davidson");
+    auto out1 = decompose(test_matrix2, guess, option);
     if(ptr_comm->get_rank()==0) print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "block davidson calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;

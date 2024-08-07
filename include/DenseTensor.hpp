@@ -22,8 +22,8 @@ public:
 
     INTERNALTYPE copy_data() const override;
 
-    std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::DENSE> > clone(bool call_complete) const override{
-    //std::unique_ptr<DenseTensor<dimension, DATATYPE, Map<dimension,mtype>, device> > clone(bool call_complete) const override{
+    //std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::DENSE> > clone(bool call_complete=true) const override{
+    std::unique_ptr<DenseTensor<dimension, DATATYPE, mtype, device> > clone(bool call_complete=true) const{
         auto return_val = std::make_unique<DenseTensor<dimension,DATATYPE,mtype,device> >(this->copy_comm(), this->copy_map(), this->copy_data() ) ;
         if(call_complete) return_val->complete();
         return return_val;

@@ -13,6 +13,13 @@ CBLAS_LAYOUT map_order_blas_MKL(ORDERTYPE order){
     exit(-1);
 }
 
+CBLAS_UPLO map_uplo_blas_MKL(char uplo){
+    switch (uplo){
+        case 'U': return CblasUpper;
+        case 'L': return CblasLower;
+    }
+    exit(-1);
+}
 int map_order_lapack_MKL(ORDERTYPE order){
     switch (order){
         case ORDERTYPE::ROW: return LAPACK_ROW_MAJOR;
