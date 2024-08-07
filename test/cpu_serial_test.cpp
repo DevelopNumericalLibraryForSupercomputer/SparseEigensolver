@@ -170,13 +170,12 @@ int main(int argc, char* argv[]){
  
 
 
-//
-//    std::cout << "\nSparsematrix Davidson" << std::endl;
-//    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
-//    auto out3 = decompose(test_sparse, "davidson");
-//    print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
-//    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
-//    std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
-//
+
+    std::cout << "\nSparsematrix Davidson" << std::endl;
+    std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
+    auto out3 = decompose(test_sparse, guess, "davidson");
+    print_eigenvalues( "Eigenvalues", 3, out3.get()->real_eigvals.get(), out3.get()->imag_eigvals.get());
+    std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
+    std::cout << "BlockDavidson_sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
   return 0;
 }

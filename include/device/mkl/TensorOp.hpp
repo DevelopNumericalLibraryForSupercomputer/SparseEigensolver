@@ -191,10 +191,30 @@ DenseTensor<2, double, Contiguous1DMap<2>, DEVICETYPE::MKL> SE::TensorOp::matmul
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans1 == TRANSTYPE::N){
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data, num_col,num_col, 1.0, output.data, num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data, 
+								  mat2.map.get_global_shape(1), 
+								  mat2.map.get_global_shape(1), 
+								  0.0, 
+								  output.data, 
+								  output.map.get_global_shape(1));
     }
     else{
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data, num_col, num_col, 1.0, output.data, num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data, 
+								  mat2.map.get_global_shape(1), 
+								  mat2.map.get_global_shape(1), 
+								  0.0, 
+								  output.data, 
+								  output.map.get_global_shape(1));
     }
     assert (status == SPARSE_STATUS_SUCCESS);
 
