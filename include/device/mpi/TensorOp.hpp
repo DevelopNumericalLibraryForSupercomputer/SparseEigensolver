@@ -255,13 +255,8 @@ void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-<<<<<<< HEAD
 template <>
 void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const std::string method){
-=======
-template<>
-void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, std::string method){
->>>>>>> 9c3b9034e7f6b020da68fe82285bc92c05a384a6
     //const double one = 1.0;
     int desc[9];
     const int row= mat.ptr_map->get_global_shape(0);
@@ -319,11 +314,7 @@ void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 }
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
-<<<<<<< HEAD
 template <>
-=======
-template<>
->>>>>>> 9c3b9034e7f6b020da68fe82285bc92c05a384a6
 void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
                          double* norm, const int norm_size, const bool root){
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
@@ -331,13 +322,14 @@ void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycl
     const int vec_size = mat.ptr_map->get_local_shape()[0];
 	const int num_vec  = mat.ptr_map->get_local_shape()[1]; 
 	double* local_sum = malloc<double,DEVICETYPE::MPI>(num_vec);
-
+	std::fill_n(local_sum, num_vec, 0.0);
 
 	for (int i=0; i<num_vec; i++){
 		#pragma omp parallel for reduction(+:local_sum[i]) 
 		for (int j=0; j<vec_size; j++){
 			std::array<int, 2> arr = {j,i};
 			auto index = mat.ptr_map->unpack_local_array_index(arr);
+
 			local_sum[i] += mat.data[index]*mat.data[index];
 		}
 	}
