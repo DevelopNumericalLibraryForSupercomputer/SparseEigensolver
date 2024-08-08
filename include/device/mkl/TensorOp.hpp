@@ -196,7 +196,6 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 //sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const double alpha, const sparse_matrix_t A, const struct matrix_descr descr, const sparse_layout_t layout, const double *B, const MKL_INT columns, const MKL_INT ldb, const double beta, double *C, const MKL_INT ldc);
 
     if(trans1 == TRANSTYPE::N){
-<<<<<<< HEAD
         status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 
 		                          1.0, 
 								  cooA, 
