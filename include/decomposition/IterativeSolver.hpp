@@ -50,13 +50,11 @@ DenseTensor<2, DATATYPE, mtype, device>  preconditioner(
                                                                         //return new guess = vec_size * new_block_size
                     DATATYPE* sub_eigval,                               //block_size
                     const DecomposeOption option){
-    std::cout << "diagonal preconditioner 1" <<std::endl;
     int vec_size = residual.ptr_map->get_global_shape()[0];
     //int block_size = residual.map.get_global_shape()[1];
     int num_eig = option.num_eigenvalues;
     //int new_block_size = block_size + num_eig;
-    std::cout << "diagonal preconditioner 2" <<std::endl;
-    std::cout << *guess.ptr_map <<std::endl;
+
     auto p_map_inp = guess.ptr_map->generate_map_inp();
 
     p_map_inp->global_shape[0] =vec_size;
@@ -70,30 +68,22 @@ DenseTensor<2, DATATYPE, mtype, device>  preconditioner(
         //std::array<int, 2> array_index;
         TensorOp::copy_vectors(additional_guess, residual, num_eig);
         DATATYPE* scale_factor = malloc<DATATYPE, device>(num_eig);
-        std::cout << "diagonal preconditioner 3" <<std::endl;
 
         for(int index=0; index< num_eig; index++){
-            std::cout << "diagonal preconditioner 4-1\t" << index <<std::endl;
 //            array_index = {index, index};
             //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
             DATATYPE coeff_i = sub_eigval[index] - operations->get_diag_element(index);
-            std::cout << "diagonal preconditioner 4-2\t" << index <<std::endl;
             if(abs(coeff_i) > option.preconditioner_tolerance){
                 scale_factor[index] = 1.0/coeff_i;
             }
             else{
                 scale_factor[index] = 0.0;
             }
-            std::cout << "diagonal preconditioner 4-3\t" << index <<std::endl;
         }
-
-        std::cout << "diagonal preconditioner 5" <<std::endl;
 
         TensorOp::scale_vectors(additional_guess, scale_factor);
         free<device>(scale_factor);
-        std::cout << "diagonal preconditioner 6" <<std::endl;
         auto new_guess = TensorOp::append_vectors(guess, additional_guess);
-        std::cout << "diagonal preconditioner 7" <<std::endl;
 
         TensorOp::orthonormalize(new_guess, "default");
         return new_guess;
@@ -109,131 +99,99 @@ template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 std::unique_ptr<DecomposeResult<DATATYPE> > davidson(TensorOperations<mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec){
     DecomposeOption option;
     
-    //std::unique_ptr<DATATYPE[]> real_eigvals(new DATATYPE[option.num_eigenvalues]);
-    //std::unique_ptr<DATATYPE[]> imag_eigvals(new DATATYPE[option.num_eigenvalues]);
     std::vector<DATATYPE> real_eigvals(option.num_eigenvalues);
     std::vector<DATATYPE> imag_eigvals(option.num_eigenvalues);
 
-    //auto shape = tensor.map.get_global_shape();
     auto shape = operations->get_global_shape();
     assert (shape[0] == shape[1]);
-    //const int vec_size = shape[0];
-
-    //auto current_comm = tensor.copy_comm();
-    //auto rank = tensor.comm.get_rank();
-    //auto world_size = tensor.comm.get_world_size();
-    //auto current_comm = eigvec->copy_comm();
-    //auto rank = current_comm->get_rank();
-    //auto world_size = current_comm->get_world_size();
-
-/*
-    // initialization of gusss vector(s), V
-    std::array<int, 2> guess_shape = {vec_size,option.num_eigenvalues};
-    auto guess_map = MAPTYPE(guess_shape, rank, world_size);
-    DenseTensor<2, DATATYPE, mtype, device> guess(*current_comm, guess_map);
-    // guess : unit vector
-    for(int i=0;i<option.num_eigenvalues;i++){
-        std::array<int, 2> tmp_index = {i,i};
-        guess.global_set_value(tmp_index, 1.0);
-    }
-    // univ vector guess : do not need orthonormalize.
-*/
     //eigvec is guess.
 
+    //0th iteration.
+    auto new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
+    auto w_iter = operations->matvec(*new_guess);
+    auto subspace_matrix = TensorOp::matmul(*new_guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
+
+    //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
+    DATATYPE* sub_eigval = malloc<DATATYPE, device>(option.num_eigenvalues);
+    auto sub_eigvec = TensorOp::diagonalize(subspace_matrix, sub_eigval);
+
+    //calculate ritz vector
+    //Ritz vector calculation, x_ki = V_k y_ki
+    auto ritz_vec = TensorOp::matmul(*new_guess, sub_eigvec, TRANSTYPE::N, TRANSTYPE::N);
+    
+    //ritz vectors are new eigenvector candidates
+    //new_guess = std::make_unique <DenseTensor<2, DATATYPE, mtype, device> > ( ritz_vec);
+
     bool return_result = false;
-    int iter = 0;
-    while(iter < option.max_iterations){
-        if(eigvec->ptr_comm->get_rank()==0) std::cout << "iter: " <<iter << std::endl;
-        auto new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
-        //DenseTensor<2, DATATYPE, mtype, device> new_guess ( *eigvec);
+    //outer loop
+    //1 ~ option.max_iterations th iteration
+    for(int i_iter = 1; i_iter < option.max_iterations ; i_iter++){
+        if(eigvec->ptr_comm->get_rank()==0) std::cout << "iter: " << i_iter << std::endl;
 
         //block expansion loop
+        //i_block = number of block expanded
         int i_block = 0;
-        std::cout <<1 <<std::endl;
-        while(true){
-
-            const int block_size = option.num_eigenvalues*(i_block+1);
-            std::cout <<2 <<std::endl;
-            // W_iterk = A V_k
-            //auto w_iter = TensorOp::matmul(tensor, *new_guess, TRANSTYPE::N, TRANSTYPE::N);
-            auto w_iter = operations->matvec(*new_guess);
-
-            std::cout <<3 <<std::endl;
-            //auto subspace_matrix = TensorOp::matmul(*new_guess.get(), w_iter, TRANSTYPE::T, TRANSTYPE::N);
-            auto subspace_matrix = TensorOp::matmul(*new_guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
-
-            std::cout <<4 <<std::endl;
-
-
-            //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
-            DATATYPE* sub_eigval = malloc<DATATYPE, device>(block_size);
-            std::cout <<5 <<std::endl;
-            auto sub_eigvec = TensorOp::diagonalize(subspace_matrix, sub_eigval);
-            std::cout <<6 <<std::endl;
-
-
-            //calculate ritz vector
-            //Ritz vector calculation, x_ki = V_k y_ki
-            auto ritz_vec = TensorOp::matmul(*new_guess, sub_eigvec, TRANSTYPE::N, TRANSTYPE::N);
-            std::cout <<7 <<std::endl;
-            //ritz vectors are new eigenvector candidates
-            
-            //get residual
+        for(int i_block = 0; i_block < option.max_block; i_block++){
+            //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             auto residual = calculate_residual<DATATYPE,mtype, device>(w_iter, sub_eigval, sub_eigvec, ritz_vec);
-            std::cout <<8 <<std::endl;
+            
             //check convergence
             bool is_converged = check_convergence<DATATYPE,mtype,device>(residual, option.num_eigenvalues, option.tolerance);
-            std::cout <<9 <<std::endl;
+            
             if(is_converged){
                 return_result = true;
-                //memset<DATATYPE, device>(imag_eigvals.get(), 0.0, option.num_eigenvalues);
-                //memcpy<DATATYPE, device>(real_eigvals.get(), sub_eigval, option.num_eigenvalues);
-                std::fill(imag_eigvals.begin(), imag_eigvals.end(), 0.0);
                 real_eigvals.assign(sub_eigval, sub_eigval+option.num_eigenvalues);
+                //imag_eigvals should be filled from the diagonalization result.
+                //Up to now, davidson only works for symmetric matrix, so the imaginary part should be zero.
+                std::fill(imag_eigvals.begin(), imag_eigvals.end(), 0.0);
 
                 TensorOp::copy_vectors<DATATYPE, mtype, device>(*eigvec, ritz_vec, option.num_eigenvalues);
-                free<device>(sub_eigval);
+                //only the reidual is defined inside the block expansion loop
+                residual.~DenseTensor();
                 break;
             }
-            if(i_block == option.max_block-1){
+
+            //block expansion starts
+            if(eigvec->ptr_comm->get_rank()==0) std::cout << "block: " << i_block << std::endl;
+            //i_block++;
+            int block_size = option.num_eigenvalues*(i_block+1);
+
+            if(i_block == option.max_block){
+                if(eigvec->ptr_comm->get_rank()==0) std::cout << "max block! : " << i_block << std::endl;
+                block_size = option.num_eigenvalues;
                 TensorOp::copy_vectors<DATATYPE, mtype, device>(*eigvec, ritz_vec, option.num_eigenvalues);
-                free<device>(sub_eigval);
-                break;
+                new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
             }
-            std::cout <<10 <<std::endl;
-            
-            //preconditioning
-            new_guess = std::make_unique <DenseTensor<2, DATATYPE, mtype, device> > ( preconditioner<DATATYPE,mtype,device>(operations, residual, ritz_vec, sub_eigval, option));
-            std::cout <<11 <<std::endl;
+            else{
+                //preconditioning
+                new_guess = std::make_unique <DenseTensor<2, DATATYPE, mtype, device> > ( preconditioner<DATATYPE,mtype,device>(operations, residual, ritz_vec, sub_eigval, option));
+            }
+            // W_iterk = A V_k
+            w_iter = operations->matvec(*new_guess);
+            subspace_matrix = TensorOp::matmul(*new_guess, w_iter, TRANSTYPE::T, TRANSTYPE::N);
+
+            //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
             free<device>(sub_eigval);
-            std::cout <<12 <<std::endl;
-            new_guess.reset();
-            w_iter.~DenseTensor();
-            subspace_matrix.~DenseTensor();
-            sub_eigvec.~DenseTensor();
-            ritz_vec.~DenseTensor();
-            residual.~DenseTensor();
-
-            exit(-1);
-
-            //delete new_guess;
-            //new_guess = new DenseTensor<2, DATATYPE, mtype, device>(tmp_guess);
-            i_block++;
+            sub_eigval = malloc<DATATYPE, device>(block_size);
+            sub_eigvec = TensorOp::diagonalize(subspace_matrix, sub_eigval);
+            
+            //calculate ritz vector
+            //Ritz vector calculation, x_ki = V_k y_ki
+            ritz_vec = TensorOp::matmul(*new_guess, sub_eigvec, TRANSTYPE::N, TRANSTYPE::N);
         }
-        //delete new_guess;
         if(return_result){    
-            if(eigvec->ptr_comm->get_rank()==0)     std::cout << "CONVERGED, iter = " << iter << std::endl;            
+            if(eigvec->ptr_comm->get_rank()==0)     std::cout << "CONVERGED, iter = " << i_iter << std::endl;            
             break;
         }
         else{
-            iter++;
+            //i_iter++;
+            
         }
     }
     if(!return_result){
         std::cout << "NOT CONVERGED!" << std::endl;
         exit(-1);
     }
-    //std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,std::move(real_eigvals),std::move(imag_eigvals)));
     std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,real_eigvals,imag_eigvals));
  
     return std::move(return_val);

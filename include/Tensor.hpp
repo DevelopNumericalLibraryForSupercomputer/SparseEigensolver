@@ -25,21 +25,21 @@ public:
     // constructor
     Tensor(){
         filled=false;
-    }
+    };
 
     Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map):
 	ptr_comm(ptr_comm->clone()),
 	ptr_map( ptr_map->clone()) 
 	{
         filled=false;
-    }
+    };
     Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
 	ptr_comm(ptr_comm->clone()),
 	ptr_map(ptr_map->clone()) 
 	{
 		this->data = std::move(data);
         filled=false;
-    } 
+    };
 
     Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor): 
 	ptr_comm(tensor.ptr_comm->clone()),
@@ -47,22 +47,22 @@ public:
 	{ 
         data = tensor.copy_data();
         filled=false;
-    }
+    };
 
 	//virtual  Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other) = 0;
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup
-    }
+    };
 
     // copy functions
     std::unique_ptr<Comm<device> > copy_comm() const {
         return ptr_comm->clone();
-    }
+    };
 
     std::unique_ptr<Map<dimension,mtype>> copy_map() const {
         return ptr_map->clone();
-    }
+    };
 
     virtual INTERNALTYPE copy_data() const=0;
 
@@ -86,7 +86,7 @@ public:
     DATATYPE operator()(const int local_index) const {
         assert(this->filled==false);
         return this->data[local_index];
-    }
+    };
 
     // Sparse Tensor Only 
     void complete(bool reuse=true){};
@@ -123,8 +123,29 @@ public:
         }
         return stream;
     };
+/*
+    //복사 할당 연산자
+    Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other){
+        if(this != &other){
+            this->ptr_comm = other.ptr_comm->clone();
+            this->ptr_map = other.ptr_map->clone();
+            this->data = other.copy_data();
+            this->filled = other.filled;
+        }
+        return *this;
+    };
 
-
+    //이동 할당 연산자
+    Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(Tensor<dimension,DATATYPE,mtype,device,STORETYPE>&& other) noexcept {
+        if(this != &other){
+            this->ptr_comm = std::move(other.ptr_comm);
+            this->ptr_map = std::move(other.ptr_map);
+            this->data = std::move(other.data);
+            this->filled = other.filled;
+        }
+        return *this;
+    };
+*/
 protected:
     bool filled = false;
     //int calculate_column( array_d index, int dim){return index[dim];};

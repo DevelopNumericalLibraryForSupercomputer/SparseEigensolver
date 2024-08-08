@@ -28,7 +28,6 @@ DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul(
     }
     */
     assert ( mat.ptr_map->get_global_shape(contract_dim) == vec.ptr_map->get_global_shape(0) );
-    std::cout << "MKLDENSE, m : " << m << ", k : " << k << std::endl;
     std::array<int, 1> output_shape = {mat.ptr_map->get_global_shape(remained_dim)};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
     DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( vec.copy_comm(), ptr_output_map);
@@ -194,7 +193,7 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 
     descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
     descrA.diag = SPARSE_DIAG_NON_UNIT;
-sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const double alpha, const sparse_matrix_t A, const struct matrix_descr descr, const sparse_layout_t layout, const double *B, const MKL_INT columns, const MKL_INT ldb, const double beta, double *C, const MKL_INT ldc);
+//sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const double alpha, const sparse_matrix_t A, const struct matrix_descr descr, const sparse_layout_t layout, const double *B, const MKL_INT columns, const MKL_INT ldb, const double beta, double *C, const MKL_INT ldc);
 
     if(trans1 == TRANSTYPE::N){
         status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col,num_col, 0.0, output.data.get(), num_col);
@@ -203,7 +202,7 @@ sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const doubl
         status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col, num_col, 0.0, output.data.get(), num_col);
     }
     assert (status == SPARSE_STATUS_SUCCESS);
-//    status = mkl_sparse_destroy(cooA);
+    status = mkl_sparse_destroy(cooA);
     assert (status == SPARSE_STATUS_SUCCESS);
     return output;
 }
@@ -237,7 +236,6 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
         
     }
     else{
-        std::cout << "default orthonormalization" << std::endl;
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
         syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data.get(), number_of_vectors, submatrix_eigvals.get());
@@ -264,6 +262,11 @@ void SE::TensorOp::scale_vectors<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* scale_coeff){
     int vec_size = mat.ptr_map->get_global_shape()[0];
     int block_size = mat.ptr_map->get_global_shape()[1];
+    std::cout << "tensorOP::scale_vectors, MKL : vec_size = " << vec_size << "  , block_size = " << block_size << std::endl;
+    if(scale_coeff == nullptr){
+        std::cout << "WRONG scale_coeff in TensorOp::scale_vectors!" << std::endl;
+        exit(1);
+    }
     for(int index = 0; index < block_size; index++){
         scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], block_size);
     }

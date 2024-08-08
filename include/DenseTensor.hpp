@@ -20,7 +20,27 @@ public:
 
     //destructor
     ~DenseTensor(){};
+/*
+    //copy assign operator
+    DenseTensor<dimension,DATATYPE,mtype,device>& operator=(const DenseTensor<dimension,DATATYPE,mtype,device>& other){
+        if(this == &other) return *this;
+        this->ptr_comm = other.ptr_comm->clone();
+        this->ptr_map = other.ptr_map->clone();
+        this->data = other.copy_data();
+        this->filled = other.filled;
+        return *this;
+    };
 
+    //move assign operator
+    DenseTensor<dimension,DATATYPE,mtype,device>& operator=(DenseTensor<dimension,DATATYPE,mtype,device>&& other){
+        if(this == &other) return *this;
+        this->ptr_comm = std::move(other.ptr_comm);
+        this->ptr_map = std::move(other.ptr_map);
+        this->data = std::move(other.data);
+        this->filled = other.filled;
+        return *this;
+    };
+*/
     INTERNALTYPE copy_data() const override;
 
     std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::DENSE> > clone(bool call_complete) const override{

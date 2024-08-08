@@ -32,7 +32,50 @@ public:
             complete_value = nullptr;
         }
     }
+/*
+    //copy assign operator
+    SparseTensor<dimension,DATATYPE,mtype,device>& SparseTensor<dimension,DATATYPE,mtype,device>::operator=(const SparseTensor<dimension,DATATYPE,mtype,device>& other){
+        if(this == &other) return *this;
+    
+        this->ptr_comm = other->copy_comm();
+        this->ptr_map = other->copy_map();
+        
+        if(other->filled){
+            auto nnz = other->get_num_nonzero();
+            this->complete_index = malloc<int,device>(nnz*dimension );
+            this->complete_value = malloc<DATATYPE,device>(nnz);
+            // DEVICE2DEVICE will be ignored if deivce is less than 10
+            memcpy(this->complete_index, other->complete_index, nnz,COPYTYPE::DEVICE2DEVICE);
+            memcpy(this->complete_value, other->complete_value, nnz,COPYTYPE::DEVICE2DEVICE);
+        }
+        else if(other->filled && call_complete==false){
+            // if call complete with reuse=false, copy is not available anymore
+            assert( other->data.size() == other->get_num_nonzero());
+            this->data = other->data;
+        }
+        else{
+            this->data = other->data;
+        }
+        this->filled = other->filled;
+    
+        return *this;
+    };
 
+    //move assign operator
+    SparseTensor<dimension,DATATYPE,mtype,device>& SparseTensor<dimension,DATATYPE,mtype,device>::operator=(SparseTensor<dimension,DATATYPE,mtype,device>&& other){
+        if(this == &other) return *this;
+        this->ptr_comm = std::move(other.ptr_comm);
+        this->ptr_map = std::move(other.ptr_map);
+        this->data = std::move(other.data);
+        this->filled = other.filled;
+        if(other->filled){
+            //move pointers
+            this->complete_index = other->complete_index;
+            this->complete_value = other->complete_value;
+        }
+        return *this;
+    };
+*/
     INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone

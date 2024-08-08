@@ -16,7 +16,6 @@ class MKLCommInp: public CommInp<DEVICETYPE::MKL>
 template<>
 template<typename DATATYPE>
 void Comm<DEVICETYPE::MKL>::allreduce(const DATATYPE *src, int count, DATATYPE *trg, OPTYPE op) const{
-    std::cout << "MKLComm : DATASIZE : " << sizeof(DATATYPE) << "\t" <<  src <<"\t" <<trg<<std::endl;
     memcpy<DATATYPE, DEVICETYPE::MKL>(trg, src, count);
 }
 
