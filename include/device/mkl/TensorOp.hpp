@@ -196,10 +196,31 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 //sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const double alpha, const sparse_matrix_t A, const struct matrix_descr descr, const sparse_layout_t layout, const double *B, const MKL_INT columns, const MKL_INT ldb, const double beta, double *C, const MKL_INT ldc);
 
     if(trans1 == TRANSTYPE::N){
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col,num_col, 0.0, output.data.get(), num_col);
+<<<<<<< HEAD
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data, 
+								  mat2.map.get_global_shape(1), 
+								  mat2.map.get_global_shape(1), 
+								  0.0, 
+								  output.data, 
+								  output.map.get_global_shape(1));
     }
     else{
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col, num_col, 0.0, output.data.get(), num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data, 
+								  mat2.map.get_global_shape(1), 
+								  mat2.map.get_global_shape(1), 
+								  0.0, 
+								  output.data, 
+								  output.map.get_global_shape(1));
     }
     assert (status == SPARSE_STATUS_SUCCESS);
     status = mkl_sparse_destroy(cooA);
