@@ -16,10 +16,10 @@ class TensorOperations{
 public:
     TensorOperations(){};
 
-    virtual DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec)=0;
-    virtual DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec)=0;
+    virtual DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec) const=0;
+    virtual DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec) const=0;
     virtual double get_diag_element(const int index)const =0;
-    virtual std::array<int, 2> get_global_shape()=0;
+    virtual std::array<int, 2> get_global_shape() const=0;
 
 };
 
@@ -30,10 +30,10 @@ class DenseTensorOperations: public TensorOperations<mtype,device>{
 public:
     DenseTensorOperations(DenseTensor<2, double, mtype, device>& tensor):tensor(tensor){};
 
-    DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec) override{
+    DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec) const override{
         return TensorOp::matmul(this->tensor, vec);
     };
-    DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec) override{
+    DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec) const override{
         return TensorOp::matmul(this->tensor, vec);
     };
     double get_diag_element(const int index) const override{
@@ -47,7 +47,7 @@ public:
         return buff[1];
     };
 
-    std::array<int, 2> get_global_shape() override{
+    std::array<int, 2> get_global_shape() const override{
         return tensor.ptr_map->get_global_shape();
     };
 

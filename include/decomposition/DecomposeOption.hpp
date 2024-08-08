@@ -13,12 +13,13 @@ enum class MAT_TYPE{
 };
 
 enum class DecomposeMethod{
-    Davidson,
-    Direct
+    Direct  =0,
+    Davidson=1,
 };
 
 enum class PRECOND_TYPE{
-    Diagonal
+    Diagonal=0,
+	ISI2    =1,
 };
 
 class DecomposeOption{
@@ -40,7 +41,7 @@ public:
 //    double preconditioner_max_iterations; //= 30;
 //    bool use_locking;            //= false;
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
-    int max_iterations          = 100;
+    int max_iterations          = 10000;
     double tolerance               = 1e-4;
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
@@ -49,9 +50,8 @@ public:
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
-    double preconditioner_max_iterations = 30;
+    int preconditioner_max_iterations = 30;
     bool use_locking               = false;
-
 
 private:
     //void set_option_worker();

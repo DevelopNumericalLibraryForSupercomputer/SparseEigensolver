@@ -5,10 +5,10 @@
 #include "mkl.h"
 
 namespace SE{
-typedef MKL_INT MDESC[ 9 ];
-const MKL_INT i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
-MKL_INT info;
-const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
+//typedef MKL_INT MDESC[ 9 ];
+//const MKL_INT i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
+//MKL_INT info;
+//const double  zero = 0.0E+0, one = 1.0E+0, two = 2.0E+0, negone = -1.0E+0;
 
 //memory managament
 template<>
@@ -17,7 +17,7 @@ double* malloc<double, DEVICETYPE::MPI>(const int size) {
 }
 
 template<>
-void free<double, DEVICETYPE::MPI>(double* ptr) {
+void free<DEVICETYPE::MPI>(void* ptr) {
     std::free(ptr);
 }
 
@@ -26,16 +26,6 @@ void free<double, DEVICETYPE::MPI>(double* ptr) {
 template<>
 void memcpy<int, DEVICETYPE::MPI>(int* dest, const int* source, int size, COPYTYPE copy_type){
     std::memcpy(dest, source, size * sizeof(int));
-}
-
-template<>
-void memcpy<int, DEVICETYPE::MPI>(int* dest, const int* source, int size, COPYTYPE copy_type){
-    std::memcpy(dest, source, size * sizeof(int));
-}
-
-template<>
-void memcpy<double, DEVICETYPE::MPI>(double* dest, const double* source, int size, COPYTYPE copy_type){
-    std::memcpy(dest, source, size * sizeof(double));
 }
 
 template <>
@@ -47,7 +37,21 @@ template <>
 void axpy<double, DEVICETYPE::MPI>(const int n, const double a, const double *x, const int incx, double *y, const int incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
 }
-
+//y =alpha*Ax +beta*y
+/*
+template <>
+void sbmv<double, DEVICETPYE::MPI>(
+            const char uplo, const int n, const int k,
+            const double alpha,
+            const double *a, const int lda,
+            const double *x, const int incx,
+            const double beta,
+            double *y, const int incy
+	    ){
+	return cblas_dsbmv(uplo, n, k, alpha, a, lda, x, incx, beta, y, incy);
+}
+*/
+/*
 template <>
 double nrm2<double, DEVICETYPE::MKL>(const int n, const double *x, const int incx){
     return pddnrm2(n, x, incx);
@@ -98,6 +102,6 @@ void gemm<double, DEVICETYPE::MPI>(const ORDERTYPE order, const TRANSTYPE transa
 //int syev<double, DEVICETYPE::MPI>(const LAYOUT layout, char jobz, char uplo, const int n, double* a, const int lda, double* w){
 //    return LAPACKE_dsyev(map_layout_lapack_MPI(layout), jobz, uplo, n, a, lda, w);
 //}
-
+*/
 
 }

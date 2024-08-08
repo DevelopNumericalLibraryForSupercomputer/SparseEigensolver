@@ -6,16 +6,14 @@
 
 namespace SE{
 //memory managament
-/*
 template<>
 double* malloc<double, DEVICETYPE::MKL>(const int size) {
     return static_cast<double*>(std::malloc(size * sizeof(double)));
-
+}
 template<>
 void free<double, DEVICETYPE::MKL>(double* ptr) {
     std::free(ptr);
 }
-*/
 
 //ignore COPYTYPE: always NONE
 //template<>
@@ -41,6 +39,18 @@ void scal<double, DEVICETYPE::MKL>(const int n, const double alpha, double *x, c
 template <>
 void axpy<double, DEVICETYPE::MKL>(const int n, const double a, const double *x, const int incx, double *y, const int incy){
     return cblas_daxpy(n, a, x, incx, y, incy);
+}
+//y =alpha*Ax +beta*y
+template <>
+void sbmv<double, DEVICETYPE::MKL>(const ORDERTYPE order,
+		    const char uplo, const int n, const int k,
+            const double alpha,
+            const double *a, const int lda,
+            const double *x, const int incx,
+            const double beta,
+            double *y, const int incy
+	    ){
+	return cblas_dsbmv(map_order_blas_MKL(order), map_uplo_blas_MKL(uplo), n, k, alpha, a, lda, x, incx, beta, y, incy);
 }
 
 template <>

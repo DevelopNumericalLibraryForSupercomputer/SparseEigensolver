@@ -7,8 +7,21 @@
 #include <algorithm>
 #include <array>
 #include <vector>
+#include <complex>
 
 namespace SE{
+
+// Primary template: general case
+template <typename T>
+struct is_complex : std::false_type {};
+
+// Specialization: case where T is std::complex<U>
+template <typename U>
+struct is_complex<std::complex<U>> : std::true_type {};
+
+template <typename T>
+inline constexpr bool is_complex_v = is_complex<T>::value;
+
 template <int dimension>
 void cumprod(std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){
 //void cumprod(const std::array<int, dimension>& shape, std::array<int, dimension+1>& shape_mult, std::string indexing="F"){

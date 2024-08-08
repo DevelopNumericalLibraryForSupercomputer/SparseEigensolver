@@ -226,6 +226,8 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     assert (status == SPARSE_STATUS_SUCCESS);
     return output;
 }
+
+
 //Orthonormalization
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
@@ -233,7 +235,7 @@ template <>
 //DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> 
 void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( 
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat,  
-    std::string method)
+    const std::string method)
 {
     auto number_of_vectors = mat.ptr_map->get_global_shape(1);
     auto vector_size       = mat.ptr_map->get_global_shape(0);
@@ -278,8 +280,8 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
 }
 
 template <>
-void SE::TensorOp::scale_vectors<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
-            DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* scale_coeff){
+void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+            DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double* scale_coeff){
     int vec_size = mat.ptr_map->get_global_shape()[0];
     int block_size = mat.ptr_map->get_global_shape()[1];
     std::cout << "tensorOP::scale_vectors, MKL : vec_size = " << vec_size << "  , block_size = " << block_size << std::endl;
@@ -293,25 +295,51 @@ void SE::TensorOp::scale_vectors<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     return;
 }
 
+
 //X + bY
 template <>
-DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::add<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
-            DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
-            DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, double coeff2){
+void SE::TensorOp::add_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+            const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
+            const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, const double coeff2){
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
     assert(mat1.ptr_map->get_global_shape()[1] == mat2.ptr_map->get_global_shape()[1]);
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> return_mat(mat1);
-    axpy<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0]*mat1.ptr_map->get_global_shape()[1],coeff2,mat2.data.get(),1,return_mat.data.get(),1);
-    return return_mat;
+    axpy<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0]*mat1.ptr_map->get_global_shape()[1],coeff2,mat2.data.get(),1,mat1.data.get(),1);
+    return;
 }
 
 template <>
-void SE::TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* norm, const int norm_size){
+void SE::TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* norm, const int norm_size, const bool root /*=true*/){
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
     for(int i=0;i<norm_size;i++){
         norm[i] = nrm2<double, DEVICETYPE::MKL>(mat.ptr_map->get_global_shape()[0], &mat.data[i], mat.ptr_map->get_global_shape()[1]);
+		if (root==false){
+			norm[i] = norm[i]*norm[i];	
+		}
     }
     return;
+}
+
+//norm_i = ||A*B|| (i=0~norm_size-1)
+template <>
+void SE::TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
+                               double* norm, const int norm_size, const bool root/*=true*/){
+
+	assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
+	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
+    assert (mat1.ptr_map->get_global_shape()[1] >= norm_size);
+
+	const int local_size =mat1.ptr_map->get_num_local_elements();
+	auto buff = malloc<double,DEVICETYPE::MKL>(local_size);
+	vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
+
+    for(int i=0;i<norm_size;i++){
+        norm[i] = nrm2<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0], &buff[i], mat1.ptr_map->get_global_shape()[1]);
+		if (root==false){
+			norm[i] = norm[i]*norm[i];	
+		}
+    }
+	free<DEVICETYPE::MKL>(buff);
+	return;
 }
 
 template <>
@@ -328,20 +356,20 @@ void SE::TensorOp::copy_vectors(
 }
 
 template <>
-DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::append_vectors(
+std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::append_vectors(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2){
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
 
     std::array<int, 2> new_shape = {mat1.ptr_map->get_global_shape()[0], mat1.ptr_map->get_global_shape()[1] + mat2.ptr_map->get_global_shape()[1]};
     std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_new_map = std::make_unique<Contiguous1DMap<2> >(new_shape, mat1.ptr_comm->get_rank(), mat1.ptr_comm->get_world_size());
-	DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> mat (mat1.copy_comm(), ptr_new_map);
+	auto mat = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), ptr_new_map);
     //auto ptr_mat =std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), ptr_new_map);
     for(int i=0;i<mat1.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &(mat.data[i]), new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat1.data[i], mat1.ptr_map->get_global_shape()[1], &(mat->data[i]), new_shape[1]);
     }
     for(int i=0;i<mat2.ptr_map->get_global_shape()[1];i++){
-        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &(mat.data[i+mat1.ptr_map->get_global_shape()[1]]), new_shape[1]);
+        copy<double, DEVICETYPE::MKL>(new_shape[0], &mat2.data[i], mat2.ptr_map->get_global_shape()[1], &(mat->data[i+mat1.ptr_map->get_global_shape()[1]]), new_shape[1]);
     }
     return mat;
 }
