@@ -376,12 +376,13 @@ void TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::Blo
     const int vec_size = mat1.ptr_map->get_local_shape()[0];
 	const int num_vec  = mat1.ptr_map->get_local_shape()[1]; 
 	double* local_sum = malloc<double,DEVICETYPE::MPI>(num_vec);
+	std::fill_n(local_sum, num_vec, 0.0);
 
 	for (int i=0; i<num_vec; i++){
 		#pragma omp parallel for reduction(+:local_sum[i]) 
 		for (int j=0; j<vec_size; j++){
-			std::array<int, 2> arr = {j,i};
-			auto index = mat1.ptr_map->unpack_local_array_index(arr);
+			//std::array<int, 2> arr = {j,i};
+			const auto index = mat1.ptr_map->unpack_local_array_index({j,i});
 			local_sum[i] += buff[index]*buff[index];
 		}
 	}

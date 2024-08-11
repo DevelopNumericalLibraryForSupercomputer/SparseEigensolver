@@ -93,30 +93,44 @@ public:
     	const DATATYPE one  = 1.;
     	const DATATYPE zero = 0.;
     
+
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
+
+		DATATYPE* conv = malloc<DATATYPE,device> ( vec_size );
         DATATYPE* norm2 = malloc<DATATYPE, device>(vec_size);
+		DATATYPE* rzold = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* alpha = malloc<DATATYPE,device> ( vec_size );
+        DATATYPE* shift_values = malloc<DATATYPE, device>(num_vec);
+		DATATYPE* rznew = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* beta = malloc<DATATYPE,device> ( num_vec );
+
+		// caluclate square of residual norm 
     	TensorOp::get_norm_of_vectors(residual, norm2, num_vec, false);
     
-        DATATYPE* shift_values = malloc<DATATYPE, device>(vec_size);
-    	memcpy<DATATYPE, device>(shift_values, sub_eigval, vec_size);
-    	axpy<DATATYPE, device>(vec_size, -0.1, norm2, i_one, shift_values, i_one); 
+    	memcpy<DATATYPE, device>(shift_values, sub_eigval, num_vec);
+    	axpy<DATATYPE, device>(num_vec, -0.1, norm2, i_one, shift_values, i_one); 
     
-		#pragma omp parallel for 
-    	for (int i=0; i<vec_size; i++){
-    		if( shift_values[i] <10){
+		bool check_initial_norm = true;
+		//#pragma omp parallel for 
+    	for (int i=0; i<num_vec; i++){
+    		if( norm2[i] >10){
     			shift_values[i]=0;
+				check_initial_norm =false;	
     		}
     	}
 
-		auto p_i = residual.clone(true);
+		auto p_i = residual.clone();
+		if( check_initial_norm ==false){
+			return this->pcg_precond->call( *p_i, sub_eigval) ;
+		}
 
 		////// line 7 start
-    	auto r = TensorOp::scale_vectors(residual, shift_values);  //\tilde{epsilon} *r 
-    	r = TensorOp::add<DATATYPE,mtype,device>(*r,       this->operations->matvec(residual),  -1.0) ; // \tilde{epsilon} *r -H@r
-    	r = TensorOp::add<DATATYPE,mtype,device>(residual, *r,                           1.0) ; //r + \tilde{epsilon} *r - H@r
+    	auto r = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} *r 
+    	r = TensorOp::add<DATATYPE,mtype,device>(*r,       this->operations->matvec(*p_i),  -1.0) ; // \tilde{epsilon} *p_i -H@p_i
+    	r = TensorOp::add<DATATYPE,mtype,device>(residual, *r,                           1.0) ; //r_i + \tilde{epsilon} *p_i - H@p_i
 		////// line 7 end 
-		//
+		
 		////// line 8 start
 		auto p = this->pcg_precond->call( *r, sub_eigval) ;
 		////// line 8 end
@@ -126,17 +140,13 @@ public:
 		////// line 9 end
 
 		////// line 10 start
-		DATATYPE* rzold = malloc<DATATYPE,device> ( vec_size );
 		TensorOp::element_wise_mul_and_norm( *TensorOp::conjugate(*r), *z, rzold, num_vec );
 		////// line 10 end
 
-		DATATYPE* alpha = malloc<DATATYPE,device> ( vec_size );
-
 		for (int i_iter = 0; i_iter<this->option.preconditioner_max_iterations; i_iter++){
 			///// line 12 start
-			auto hp = p->clone(true);
 	    	auto scaled_p = TensorOp::scale_vectors(*p, shift_values);  //\tilde{epsilon} * p
-	    	hp = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*scaled_p), *hp, -1.0) ; // Hp -\tilde{epsilon} *p
+	    	auto hp = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
 			///// line 12 end
 			
 			///// line 13 start
@@ -154,6 +164,7 @@ public:
 			///// line 15 start
 			auto scaled_hp = TensorOp::scale_vectors(*hp, alpha);
 			r = TensorOp::add(*r, *scaled_hp, -1.0) ;
+			scaled_hp.reset();
 			///// line 15 end
 			
 			///// line 16 end
@@ -162,33 +173,49 @@ public:
 
 			
 			///// line 17 end
-			DATATYPE* rznew = malloc<DATATYPE,device> ( vec_size );
 			TensorOp::element_wise_mul_and_norm( *TensorOp::conjugate(*r), *z, rznew, num_vec );
 			///// line 17 end
 
 
-			DATATYPE* conv = malloc<DATATYPE,device> ( vec_size );
 			TensorOp::get_norm_of_vectors(*r, conv, num_vec );
 			bool check_conv = true;
 			for (int j =0; j<num_vec; j++){
 				check_conv =   ( check_conv &&   (conv[j]<0.25*sqrt(norm2[j])  ) );
-				rzold[j] = rznew[j] / rzold[j];
+				//if(residual.ptr_comm->get_rank()==0) std::cout << std::scientific<< rzold[j] <<" " << rznew[j] << " " <<rznew[j]/rzold[j]<<std::endl;
+				if(residual.ptr_comm->get_rank()==0) std::cout << i_iter << " : ("<<conv[j] << "," <<0.25*sqrt(norm2[j]) << ")\t" ;
+				beta[j] = rznew[j] / rzold[j]; // beta = rznew/rzold; 
 			}
+			if(residual.ptr_comm->get_rank()==0) std::cout << std::endl;
 
 			if (check_conv){
+				auto residual_clone = residual.clone();
+				scaled_p = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} * p
+				auto val = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p_i), *scaled_p, -1.0); 
+				val = TensorOp::add<DATATYPE,mtype,device>( *residual_clone, *val, -1.0 );
+				TensorOp::get_norm_of_vectors(*val, norm2, num_vec);
+				std::cout << "======================================== diff (" <<i_iter<< ")" <<std::endl;
+				for(int i=0; i<num_vec; i++){
+					std::cout << norm2[i] <<std::endl;	
+				}
+				exit(-1);
 				break;	
 			}
-			
-			TensorOp::scale_vectors_(*p, rzold);
-			TensorOp::add_(*p,*z,1.0) ; 
-
+			// line 22 start	
+			TensorOp::scale_vectors_(*p, beta); //only for this line rzold is same as beta
+			//TensorOp::add_(*p,*z,1.0) ; 
+			//TensorOp::add_(*z,*p,1.0) ; 
+			p = TensorOp::add(*p,*z,1.0);
+			// line 22 end 
+			//
 			memcpy<DATATYPE, device> (rzold, rznew, num_vec);
-			free<device>(rznew);
-			free<device>(conv);
 		}
-		free<device>(rzold);
+		free<device>(beta);
+		free<device>(rznew);
+		free<device>(shift_values);
 		free<device>(alpha);
+		free<device>(rzold);
 		free<device>(norm2);
+		free<device>(conv);
 
 		return p_i;
     }

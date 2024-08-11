@@ -50,7 +50,7 @@ public:
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
-    int preconditioner_max_iterations = 30;
+    int preconditioner_max_iterations = 30000;
     bool use_locking               = false;
 
 private:
