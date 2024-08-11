@@ -97,13 +97,13 @@ public:
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
 
-		DATATYPE* conv = malloc<DATATYPE,device> ( vec_size );
-        DATATYPE* norm2 = malloc<DATATYPE, device>(vec_size);
-		DATATYPE* rzold = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* alpha = malloc<DATATYPE,device> ( vec_size );
-        DATATYPE* shift_values = malloc<DATATYPE, device>(num_vec);
-		DATATYPE* rznew = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* beta = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
+        DATATYPE* norm2        = malloc<DATATYPE, device>( num_vec );
+		DATATYPE* rzold        = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* alpha        = malloc<DATATYPE,device> ( num_vec );
+        DATATYPE* shift_values = malloc<DATATYPE, device>( num_vec );
+		DATATYPE* rznew        = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* beta         = malloc<DATATYPE,device> ( num_vec );
 
 		// caluclate square of residual norm 
     	TensorOp::get_norm_of_vectors(residual, norm2, num_vec, false);
