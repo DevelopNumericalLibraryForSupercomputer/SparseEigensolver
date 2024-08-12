@@ -201,12 +201,12 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 								  cooA, 
 								  descrA, 
 								  SPARSE_LAYOUT_ROW_MAJOR, 
-								  mat2.data, 
-								  mat2.map.get_global_shape(1), 
-								  mat2.map.get_global_shape(1), 
+								  mat2.data.get(), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  mat2.ptr_map->get_global_shape(1), 
 								  0.0, 
-								  output.data, 
-								  output.map.get_global_shape(1));
+								  output.data.get(), 
+								  output.ptr_map->get_global_shape(1));
     }
     else{
         status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     
@@ -214,12 +214,12 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 								  cooA, 
 								  descrA, 
 								  SPARSE_LAYOUT_ROW_MAJOR, 
-								  mat2.data, 
-								  mat2.map.get_global_shape(1), 
-								  mat2.map.get_global_shape(1), 
+								  mat2.data.get(), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  mat2.ptr_map->get_global_shape(1), 
 								  0.0, 
-								  output.data, 
-								  output.map.get_global_shape(1));
+								  output.data.get(), 
+								  output.ptr_map->get_global_shape(1));
     }
     assert (status == SPARSE_STATUS_SUCCESS);
     status = mkl_sparse_destroy(cooA);
@@ -284,7 +284,7 @@ void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double* scale_coeff){
     int vec_size = mat.ptr_map->get_global_shape()[0];
     int block_size = mat.ptr_map->get_global_shape()[1];
-    std::cout << "tensorOP::scale_vectors, MKL : vec_size = " << vec_size << "  , block_size = " << block_size << std::endl;
+    //std::cout << "tensorOP::scale_vectors, MKL : vec_size = " << vec_size << "  , block_size = " << block_size << std::endl;
     if(scale_coeff == nullptr){
         std::cout << "WRONG scale_coeff in TensorOp::scale_vectors!" << std::endl;
         exit(1);
@@ -329,7 +329,7 @@ void SE::TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE:
     assert (mat1.ptr_map->get_global_shape()[1] >= norm_size);
 
 	const int local_size =mat1.ptr_map->get_num_local_elements();
-	auto buff = malloc<double,DEVICETYPE::MKL>(local_size);
+	double* buff = malloc<double,DEVICETYPE::MKL>(local_size);
 	vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
 
     for(int i=0;i<norm_size;i++){

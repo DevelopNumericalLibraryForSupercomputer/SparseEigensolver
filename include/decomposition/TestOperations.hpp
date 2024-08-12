@@ -9,7 +9,7 @@ public:
     TestTensorOperations(){};
     TestTensorOperations(int n):n(n){};
 // n by n kinetic energy matrix-like matrix generator
-    DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> matvec(const DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec) override{
+    DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> matvec(const DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec) const override{
         auto return_vec = DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(vec);
         //const int n = vec.map.get_global_shape()[0];
         double invh2 = 1.0;
@@ -25,7 +25,7 @@ public:
         return return_vec;
     };
 
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> matvec(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec) override{
+    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> matvec(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec) const override{
         const int num_vec = vec.ptr_map->get_global_shape()[1];
         //const int n = vec.map.get_global_shape()[0];
 
@@ -48,7 +48,7 @@ public:
         return 2.0*((double)index-(double)n)   - 5.0/2.0;
     };
 
-    std::array<int, 2> get_global_shape() override{
+    std::array<int, 2> get_global_shape() const override{
         std::array<int, 2> return_array = {n,n};
         return return_array;
     };

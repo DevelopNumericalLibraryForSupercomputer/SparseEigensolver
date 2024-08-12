@@ -25,10 +25,8 @@ public:
     ~SparseTensor() {
         if (complete_index != nullptr) {
             free<device>(complete_index);
-            complete_index = nullptr;
-        }
-        if (complete_value != nullptr) {
             free<device>(complete_value);
+            complete_index = nullptr;
             complete_value = nullptr;
         }
     }
