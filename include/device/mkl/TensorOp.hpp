@@ -114,9 +114,9 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
                                       num_row,    // number of rows
                                       num_col,    // number of cols
                                       nnz,  // number of nonzeros
-                                      mat.complete_index,
-                                      mat.complete_index+nnz,
-                                      mat.complete_value );
+                                      mat.complete_index.get(),
+                                      mat.complete_index.get()+nnz,
+                                      mat.complete_value.get() );
 
     assert (status == SPARSE_STATUS_SUCCESS);
 
@@ -185,9 +185,9 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
                                       num_row,    // number of rows
                                       num_col,    // number of cols
                                       nnz, // number of nonzeros
-                                      mat1.complete_index,
-                                      mat1.complete_index+nnz,
-                                      mat1.complete_value );
+                                      mat1.complete_index.get(),
+                                      mat1.complete_index.get()+nnz,
+                                      mat1.complete_value.get() );
 
     assert (status == SPARSE_STATUS_SUCCESS);
 

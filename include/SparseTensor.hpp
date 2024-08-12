@@ -22,14 +22,7 @@ public:
     SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, int reserve_size);
     SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
 
-    ~SparseTensor() {
-        if (complete_index != nullptr) {
-            free<device>(complete_index);
-            free<device>(complete_value);
-            complete_index = nullptr;
-            complete_value = nullptr;
-        }
-    }
+    ~SparseTensor() {}
 /*
     //copy assign operator
     SparseTensor<dimension,DATATYPE,mtype,device>& SparseTensor<dimension,DATATYPE,mtype,device>::operator=(const SparseTensor<dimension,DATATYPE,mtype,device>& other){
@@ -117,8 +110,8 @@ public:
     //TUPLEDATA<dimension, DATATYPE*,int*> complete_value; 
     //
     //std::array<dimension, int*> complete_index;
-    int* complete_index;
-    DATATYPE* complete_value;
+    std::unique_ptr<int[], std::function<void(int*)> > complete_index;
+    std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > complete_value;
 
     int get_num_nonzero() const {return nnz;};
 
@@ -149,11 +142,12 @@ std::unique_ptr<SparseTensor<dimension, DATATYPE, mtype, device> > SparseTensor<
     auto return_val = std::make_unique< SparseTensor<dimension,DATATYPE,mtype,device> > (this->copy_comm(), this->copy_map() ); // I am not sure if pointer of inherit class work well shchoi
     if(this->filled && call_complete){
         auto nnz = get_num_nonzero();
-        return_val->complete_index = malloc<int,device>(nnz*dimension );
-        return_val->complete_value = malloc<DATATYPE,device>(nnz);
+        //return_val->complete_index = std::make_unique<int[], std::function<void(int*)>>( malloc<int,device>(nnz*dimension ), free<device> );
+        //return_val->complete_value = std::make_unique<DATATYPE[], std::function<void(DATATYPE*)>>( malloc<DATATYPE,device>(nnz), free<device> );
+
         // DEVICE2DEVICE will be ignored if deivce is less than 10
-        memcpy(return_val->complete_index, this->complete_index, nnz,COPYTYPE::DEVICE2DEVICE);
-        memcpy(return_val->complete_value, this->complete_value, nnz,COPYTYPE::DEVICE2DEVICE);
+        memcpy(return_val->complete_index.get(), this->complete_index.get(), nnz,COPYTYPE::DEVICE2DEVICE);
+        memcpy(return_val->complete_value.get(), this->complete_value.get(), nnz,COPYTYPE::DEVICE2DEVICE);
     }
     else if(this->filled && call_complete==false){
         // if call complete with reuse=false, copy is not available anymore
@@ -235,7 +229,9 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         auto tmp_index = malloc<int> (this->data.size()*dimension);
         auto tmp_value  = malloc<DATATYPE>(this->data.size());
     
-        auto offset= this->data.size();
+        const auto offset= this->data.size();
+
+		#pragma omp parallel for
         for (int i = 0; i < this->data.size() ; i++){
             tmp_value[i] = this->data[i].second;
             for (int j=0; j<dimension; j++){
@@ -249,16 +245,18 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         }
 
         if ( (int)device <10){
-            complete_index = malloc<int,device> (nnz*dimension);
-            complete_value  = malloc<DATATYPE,device>(nnz);
-            memcpy<int,      device>( complete_index, tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
-            memcpy<DATATYPE, device>( complete_value, tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
-            free<>(tmp_index);
-            free<>(tmp_value);
+			std::unique_ptr<int[], std::function<void(int*)>> complete_index_( malloc<int,device>(nnz*dimension ), free<device> );
+			complete_index = std::move(complete_index_);
+	        std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>> complete_value_( malloc<DATATYPE,device>(nnz), free<device> );
+	        complete_value = std::move(complete_value_);
+            memcpy<int,      device>( complete_index.get(), tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
+            memcpy<DATATYPE, device>( complete_value.get(), tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
+            free<device>(tmp_index);
+            free<device>(tmp_value);
         }
         else{
-            complete_index = tmp_index;
-            complete_value = tmp_value;
+			std::cout << "not yet implemented" <<std::endl;
+			exit(-1);
         }
     }
     this->filled = true;
