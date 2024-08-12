@@ -64,7 +64,6 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
     //0th iteration.
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > w_iter = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (operations->matvec(*new_guess));
-    std::cout << "0 - 0th: " << new_guess.get()->data[0] << "\t" << new_guess.get()->data[1] << "\t" << w_iter.get()->data[0] << "\t" << w_iter.get()->data[1] << std::endl;
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > subspace_matrix = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::matmul(*new_guess, *w_iter, TRANSTYPE::T, TRANSTYPE::N) );
 
     //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
@@ -81,17 +80,12 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
     //outer loop
     //1 ~ option.max_iterations th iteration
     for(int i_iter = 1; i_iter < option.max_iterations ; i_iter++){
-    //for(int i_iter = 1; i_iter < 5 ; i_iter++){
-        //if(eigvec->ptr_comm->get_rank()==0) std::cout << "iter: " << i_iter << std::endl;
-
         //block expansion loop
         //i_block = number of block expanded
         int i_block = 0;
         for(int i_block = 0; i_block <= option.max_block; i_block++){
-            //if(eigvec->ptr_comm->get_rank()==0) std::cout << "====================================================start" <<  std::endl;
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec);
-            
             //check convergence
             bool is_converged = check_convergence<DATATYPE,mtype,device>(*residual, option.num_eigenvalues, option.tolerance);
             if(is_converged){
@@ -102,36 +96,25 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
                 std::fill(imag_eigvals.begin(), imag_eigvals.end(), 0.0);
 
                 TensorOp::copy_vectors<DATATYPE, mtype, device>(*eigvec, *ritz_vec, option.num_eigenvalues);
-                //only the reidual is defined inside the block expansion loop
-                //residual.~DenseTensor();
                 break;
             }
 
             //block expansion starts
-            //if(eigvec->ptr_comm->get_rank()==0) std::cout << "block: " << i_block << std::endl;
-            //i_block++;
             int block_size = option.num_eigenvalues*(i_block+1);
 
             if(i_block == option.max_block){
-                //if(eigvec->ptr_comm->get_rank()==0) std::cout << "max block! : " << i_block << ", block_size = " << block_size <<  std::endl;
                 block_size = option.num_eigenvalues;
                 TensorOp::copy_vectors<DATATYPE, mtype, device>(*eigvec, *ritz_vec, option.num_eigenvalues);
                 new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
             }
             else{
-                //if(eigvec->ptr_comm->get_rank()==0) std::cout << "preconditioning : " << i_block << ", block_size = " << block_size <<  std::endl;
                 //preconditioning
                 new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, sub_eigval) );
-                std::cout << i_iter << " - " << i_block << "th: " << new_guess.get()->data[0] << "\t" << new_guess.get()->data[1] << "\t" << w_iter.get()->data[0] << "\t" << w_iter.get()->data[1] << std::endl;
-                std::cout << *new_guess << std::endl;
                 block_size = option.num_eigenvalues*(i_block+2);
-                //if(eigvec->ptr_comm->get_rank()==0) std::cout << "preconditioning : " << i_block << ", block_size = " << block_size <<  std::endl;
-	            TensorOp::orthonormalize(*new_guess, "default");
+                TensorOp::orthonormalize(*new_guess, "default");
             }
             // W_iterk = A V_k
-            //if(eigvec->ptr_comm->get_rank()==0) std::cout << "after preconditioning : " << i_block << ", block_size = " << block_size <<  std::endl;
             w_iter = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( operations->matvec(*new_guess) );
-            std::cout << i_iter << " - " << i_block << "th: " << new_guess.get()->data[0] << "\t" << new_guess.get()->data[1] << "\t" << w_iter.get()->data[0] << "\t" << w_iter.get()->data[1] << std::endl;
             subspace_matrix = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::matmul(*new_guess, *w_iter, TRANSTYPE::T, TRANSTYPE::N) );
 
             //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
@@ -143,10 +126,10 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
             //calculate ritz vector
             //Ritz vector calculation, x_ki = V_k y_ki
             ritz_vec = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) );
-            //if(eigvec->ptr_comm->get_rank()==0) std::cout << "====================================================end" <<  std::endl;
         }
         if(return_result){    
             if(eigvec->ptr_comm->get_rank()==0)     std::cout << "CONVERGED, iter = " << i_iter << std::endl;            
+            free<device>(sub_eigval);
             break;
         }
         else{
@@ -156,6 +139,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
     }
     if(!return_result){
         std::cout << "NOT CONVERGED!" << std::endl;
+        free<device>(sub_eigval);
         exit(-1);
     }
     std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,real_eigvals,imag_eigvals));

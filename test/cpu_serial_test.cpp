@@ -71,8 +71,8 @@ int main(int argc, char* argv[]){
     
     */
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    int N = 10;
-    const int num_eig = 3;
+    int N = 30;
+    const int num_eig = 2;
 
 
     std::array<int, 2> test_shape2 = {N,N};
@@ -90,7 +90,7 @@ int main(int argc, char* argv[]){
             test_data2.get()[i+j*N] = 0;
             if(i == j)                  test_data2.get()[i+j*N] += 2.0*((double)i-(double)N)   - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
             if(i == j +1 || i == j -1)  test_data2.get()[i+j*N] += invh2*4.0/3.0;
-            //if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
+            if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
             //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
@@ -152,7 +152,7 @@ int main(int argc, char* argv[]){
             std::array<int,2> index = {i,j};
             if(i == j)                   test_sparse.global_insert_value(index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
             if(i == j +1 || i == j -1)   test_sparse.global_insert_value(index, invh2*4.0/3.0);
-            //if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
+            if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
             //if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
             //if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
             //if( i%13 == 0 && j%13 == 0)  test_sparse.global_insert_value(index, 0.01);
@@ -161,7 +161,6 @@ int main(int argc, char* argv[]){
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
-    
 
     /*
     std::cout <<  test_sparse << std::endl;
@@ -170,7 +169,7 @@ int main(int argc, char* argv[]){
     std::cout << "sgemm" << std::endl;
     std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
     */
-   std::cout << "\n========\nDense Tensor Operation,  Davidson" << std::endl;
+    std::cout << "\n========\nDense Tensor Operation,  Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, ptr_guess2.get(), option);
     print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
@@ -185,13 +184,12 @@ int main(int argc, char* argv[]){
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, tensorOP, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end4 - begin4).count())/1000000.0 << "[sec]" << std::endl;
 
-/*
     std::cout << "\n========\nSparsematrix Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin3 = std::chrono::steady_clock::now();  
     auto out3 = decompose(test_sparse, ptr_guess4.get(), option);
     print_eigenvalues( "Eigenvalues", num_eig, out3.get()->real_eigvals.data(), out3.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, Sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
-*/  
+
   return 0;
 }

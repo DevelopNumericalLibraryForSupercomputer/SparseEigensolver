@@ -22,6 +22,13 @@ public:
         for(int i=0;i<n-1;i++){
             return_vec.data[i] += vec.data[i+1]* ( invh2*4.0/3.0);
         }
+        for(int i=2;i<n;i++){
+            return_vec.data[i] += vec.data[i-2]* (invh2*(-1.0)/12.0);
+        }
+        for(int i=0;i<n-2;i++){
+            return_vec.data[i] += vec.data[i+2]* (invh2*(-1.0)/12.0);
+        }
+
         return return_vec;
     };
 
