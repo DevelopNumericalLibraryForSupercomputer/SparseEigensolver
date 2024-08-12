@@ -312,6 +312,12 @@ void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 	}
 	return;
 }
+template <>
+void SE::TensorOp::scale_vectors_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
+            DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const double scale_factor){
+	cblas_dscal(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
+    return;
+}
 
 //norm_i = ||mat_i|| (i=0~norm_size-1)
 template <>
@@ -358,8 +364,8 @@ void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycl
 
 //norm_i = ||A*B|| (i=0~norm_size-1)
 template <>
-void TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2,
-                               double* norm, const int norm_size, const bool root/*=true*/){
+void TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2,
+                               double* norm, const int norm_size){
 
 	assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
 	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
@@ -371,23 +377,28 @@ void TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::Blo
 	// element-wise multiplication
 	vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
 
-
 	// get norm (almost same to the above function)
     const int vec_size = mat1.ptr_map->get_local_shape()[0];
 	const int num_vec  = mat1.ptr_map->get_local_shape()[1]; 
 	double* local_sum = malloc<double,DEVICETYPE::MPI>(num_vec);
 	std::fill_n(local_sum, num_vec, 0.0);
+			// debug
+//			std::memcpy(mat1.data.get(), buff, local_size*sizeof(double));
+//			double* norm_        = malloc<double,DEVICETYPE::MPI> ( num_vec );
+//			TensorOp::get_norm_of_vectors(mat1, norm_, num_vec);
+//			std::cout << std::setprecision(6) << "norm of mul: " << norm_[0] << ", " << norm_[1] << ", " <<norm_[2] <<std::endl;
+//			exit(-1);
+
 
 	for (int i=0; i<num_vec; i++){
 		#pragma omp parallel for reduction(+:local_sum[i]) 
 		for (int j=0; j<vec_size; j++){
 			//std::array<int, 2> arr = {j,i};
 			const auto index = mat1.ptr_map->unpack_local_array_index({j,i});
-			local_sum[i] += buff[index]*buff[index];
+			local_sum[i] += buff[index];
 		}
 	}
 	
-
 	std::fill_n(norm, norm_size, 0.0); //initialize norm as 0
 	// C means column-wise sum which means summation along processors having the same processor col id is perform
 	dgsum2d(&ictxt, "C", "1-tree", &i_one, &num_vec, local_sum, &i_one, &i_negone, &i_negone);
@@ -396,12 +407,7 @@ void TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::Blo
 		std::array<int, 2> arr_idx ={0,i};
 		auto col_ind = mat1.ptr_map->local_to_global(arr_idx)[1];
 		if (col_ind>=0 and col_ind<norm_size){
-			if (root){
-				norm[col_ind] = sqrt(local_sum[i]);	
-			}
-			else{
-				norm[col_ind] = local_sum[i];	
-			}
+			norm[col_ind] = local_sum[i];	
 		}
 	}
 	free<DEVICETYPE::MPI>(local_sum);

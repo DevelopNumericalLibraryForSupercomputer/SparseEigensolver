@@ -254,10 +254,17 @@ template <>
 void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double* scale_coeff){
     int vec_size = mat.ptr_map->get_global_shape()[0];
-    int block_size = mat.ptr_map->get_global_shape()[1];
-    for(int index = 0; index < block_size; index++){
-        scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], block_size);
+    int num_vec = mat.ptr_map->get_global_shape()[1];
+    for(int index = 0; index < num_vec; index++){
+        scal<double, DEVICETYPE::MKL>(vec_size, scale_coeff[index], &mat.data[index], num_vec);
     }
+    return;
+}
+
+template <>
+void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+            DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double scale_factor){
+    scal<double, DEVICETYPE::MKL>(mat.ptr_map->get_num_local_elements(), scale_coeff, &mat.data, 1);
     return;
 }
 
@@ -287,8 +294,8 @@ void SE::TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::Conti
 
 //norm_i = ||A*B|| (i=0~norm_size-1)
 template <>
-void SE::TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
-                               double* norm, const int norm_size, const bool root/*=true*/){
+void SE::TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
+                               double* norm, const int norm_size){
 
 	assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
 	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
@@ -298,11 +305,15 @@ void SE::TensorOp::element_wise_mul_and_norm(const DenseTensor<2, double, MTYPE:
 	auto buff = malloc<double,DEVICETYPE::MKL>(local_size);
 	vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
 
+	std::fill_n(norm, num_vec, 0.0);
     for(int i=0;i<norm_size;i++){
-        norm[i] = nrm2<double, DEVICETYPE::MKL>(mat1.ptr_map->get_global_shape()[0], &buff[i], mat1.ptr_map->get_global_shape()[1]);
-		if (root==false){
-			norm[i] = norm[i]*norm[i];	
+		#pragma omp parallel for reduction(+:norm[i]) 
+		for (int j=0; j<vec_size; j++){
+			//std::array<int, 2> arr = {j,i};
+			const auto index = mat1.ptr_map->unpack_local_array_index({j,i});
+			norm[i] += buff[index];
 		}
+
     }
 	free<DEVICETYPE::MKL>(buff);
 	return;

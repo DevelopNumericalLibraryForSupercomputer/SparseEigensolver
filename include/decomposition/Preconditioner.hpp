@@ -140,9 +140,9 @@ public:
 		////// line 9 end
 
 		////// line 10 start
-		TensorOp::element_wise_mul_and_norm( *TensorOp::conjugate(*r), *z, rzold, num_vec );
+		TensorOp::vectorwise_dot( *TensorOp::conjugate(*r), *z, rzold, num_vec );
 		////// line 10 end
-
+		
 		for (int i_iter = 0; i_iter<this->option.preconditioner_max_iterations; i_iter++){
 			///// line 12 start
 	    	auto scaled_p = TensorOp::scale_vectors(*p, shift_values);  //\tilde{epsilon} * p
@@ -150,7 +150,7 @@ public:
 			///// line 12 end
 			
 			///// line 13 start
-			TensorOp::element_wise_mul_and_norm( *TensorOp::conjugate(*p), *hp, alpha, num_vec ); 
+			TensorOp::vectorwise_dot( *TensorOp::conjugate(*p), *hp, alpha, num_vec ); 
 			for (int i=0; i<num_vec; i++){
 				alpha[i] = rzold[i] /alpha[i];
 			}
@@ -173,7 +173,7 @@ public:
 
 			
 			///// line 17 end
-			TensorOp::element_wise_mul_and_norm( *TensorOp::conjugate(*r), *z, rznew, num_vec );
+			TensorOp::vectorwise_dot( *TensorOp::conjugate(*r), *z, rznew, num_vec );
 			///// line 17 end
 
 
@@ -182,10 +182,8 @@ public:
 			for (int j =0; j<num_vec; j++){
 				check_conv =   ( check_conv &&   (conv[j]<0.25*sqrt(norm2[j])  ) );
 				//if(residual.ptr_comm->get_rank()==0) std::cout << std::scientific<< rzold[j] <<" " << rznew[j] << " " <<rznew[j]/rzold[j]<<std::endl;
-				if(residual.ptr_comm->get_rank()==0) std::cout << i_iter << " : ("<<conv[j] << "," <<0.25*sqrt(norm2[j]) << ")\t" ;
 				beta[j] = rznew[j] / rzold[j]; // beta = rznew/rzold; 
 			}
-			if(residual.ptr_comm->get_rank()==0) std::cout << std::endl;
 
 			if (check_conv){
 				auto residual_clone = residual.clone();
@@ -193,11 +191,6 @@ public:
 				auto val = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p_i), *scaled_p, -1.0); 
 				val = TensorOp::add<DATATYPE,mtype,device>( *residual_clone, *val, -1.0 );
 				TensorOp::get_norm_of_vectors(*val, norm2, num_vec);
-				std::cout << "======================================== diff (" <<i_iter<< ")" <<std::endl;
-				for(int i=0; i<num_vec; i++){
-					std::cout << norm2[i] <<std::endl;	
-				}
-				exit(-1);
 				break;	
 			}
 			// line 22 start	
@@ -217,6 +210,7 @@ public:
 		free<device>(norm2);
 		free<device>(conv);
 
+		TensorOp::scale_vectors_(*p_i,-1.0);
 		return p_i;
     }
 	protected:
