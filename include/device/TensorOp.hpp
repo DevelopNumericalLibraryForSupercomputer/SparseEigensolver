@@ -58,6 +58,11 @@ std::unique_ptr<DenseTensor<2,DATATYPE, mtype, device>> scale_vectors(const Dens
 	return output; 
 };
 
+
+//scale_coeff * x
+template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+void scale_vectors_(DenseTensor<2, DATATYPE, mtype, device>& mat, const DATATYPE scale_factor);
+
 //mat1 + coeff2 * mat2
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 void add_(const DenseTensor<2, DATATYPE, mtype, device>& mat1,
@@ -105,8 +110,8 @@ void get_norm_of_vectors(const DenseTensor<2, DATATYPE, mtype, device>& mat,
 
 //norm_i = ||A*B|| (i=0~norm_size-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-void element_wise_mul_and_norm(const DenseTensor<2, DATATYPE, mtype, device>& mat1,const DenseTensor<2, DATATYPE, mtype, device>& mat2,
-                               DATATYPE* norm, const int norm_size, const bool root=true);
+void vectorwise_dot(const DenseTensor<2, DATATYPE, mtype, device>& mat1,const DenseTensor<2, DATATYPE, mtype, device>& mat2,
+                               DATATYPE* norm, const int norm_size);
 
 //mat1_i = mat2_i (i=0~new-1)
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
