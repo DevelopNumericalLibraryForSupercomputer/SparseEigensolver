@@ -1,5 +1,5 @@
 #pragma once
-//#include "LinearOp.hpp"
+#include "device/mpi/LinearOp.hpp"
 #include "../TensorOp.hpp"
 #include "MPIComm.hpp"
 //#include "../../Gather.hpp"
