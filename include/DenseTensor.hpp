@@ -18,8 +18,29 @@ public:
     DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
     DenseTensor(const DenseTensor<dimension,DATATYPE,mtype,device>& tensor);
 
+    //destructor
+    ~DenseTensor(){};
+/*
+    //copy assign operator
+    DenseTensor<dimension,DATATYPE,mtype,device>& operator=(const DenseTensor<dimension,DATATYPE,mtype,device>& other){
+        if(this == &other) return *this;
+        this->ptr_comm = other.ptr_comm->clone();
+        this->ptr_map = other.ptr_map->clone();
+        this->data = other.copy_data();
+        this->filled = other.filled;
+        return *this;
+    };
 
-
+    //move assign operator
+    DenseTensor<dimension,DATATYPE,mtype,device>& operator=(DenseTensor<dimension,DATATYPE,mtype,device>&& other){
+        if(this == &other) return *this;
+        this->ptr_comm = std::move(other.ptr_comm);
+        this->ptr_map = std::move(other.ptr_map);
+        this->data = std::move(other.data);
+        this->filled = other.filled;
+        return *this;
+    };
+*/
     INTERNALTYPE copy_data() const override;
 
     //std::unique_ptr<Tensor<dimension, DATATYPE, mtype, device, STORETYPE::DENSE> > clone(bool call_complete=true) const override{
@@ -118,7 +139,7 @@ std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > DenseTensor<dimensi
     //std::unique_ptr<DATATYPE[], > return_data ( malloc<DATATYPE, device>( data_size ) );
     std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*) > > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     memcpy<DATATYPE, device>(return_data.get(), this->data.get(), data_size);
-    return return_data;
+    return std::move(return_data);
 }
 
 

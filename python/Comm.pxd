@@ -1,39 +1,21 @@
-# cython: language_level=3
 # distutils: language = c++
 from libcpp.memory cimport unique_ptr
-#from Type cimport DEVICETYPE
 
-cdef extern from "../include/Comm.hpp" namespace "SE":
-    cdef cppclass Comm[device]:
-        Comm() except+
-        Comm(int rank, int world_size) except+
+cdef extern from "Comm.hpp" namespace "SE":
+    cdef cppclass Comm[DEVICETYPE]:
+        pass
+        #Comm() except+
+        #Comm(size_t rank, size_t world_size) except+
+        #Comm[DEVICETYPE]* clone()
 
-        void finalize()
-        void barrier()
-        Comm[device]* clone()
-        void allgatherv[DATATYPE](DATATYPE* src, int sendcount, DATATYPE* trg, int* recvcounts)
-        void scatterv[DATATYPE](DATATYPE* src, int* sendcounts, DATATYPE* trg, int recvcount, int root)
-        void alltoallv[DATATYPE](DATATYPE* src, int* sendcounts, DATATYPE* trg, int* recvcounts)
-        int get_rank()
-        int get_world_size()
-        int rank
-        int world_size
-        int count
-
-
-cdef extern from "../include/device/mkl/MKLComm.hpp" namespace "SE":
+cdef extern from "device/mkl/MKLComm.hpp" namespace "SE":
+    unique_ptr[MKLComm] create_comm(int argc, char *argv[])
     cdef cppclass MKLComm "SE::Comm<SE::DEVICETYPE::MKL>":
         MKLComm() except+
-        MKLComm(int rank, int world_size) except+
+        #MKLComm* clone()
+        MKLComm(const MKLComm& other) except+
+        #copy assign operator
+        MKLComm& operator=(const MKLComm& other) except+
 
-        void finalize()
-        void barrier()
-        MKLComm* clone()
-        void allgatherv[DATATYPE](DATATYPE* src, int sendcount, DATATYPE* trg, int* recvcounts)
-        void scatterv[DATATYPE](DATATYPE* src, int* sendcounts, DATATYPE* trg, int recvcount, int root)
-        void alltoallv[DATATYPE](DATATYPE* src, int* sendcounts, DATATYPE* trg, int* recvcounts)
-        int get_rank()
-        int get_world_size()
-        int rank
-        int world_size
-        int count
+        size_t get_rank()
+        size_t get_world_size()

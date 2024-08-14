@@ -44,13 +44,10 @@ public:
     int get_split_dim() const {return split_dim;};
 
 	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const override{
-		Contiguous1DMapInp<dimension > map_inp(this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim);
-
-		return std::unique_ptr<MapInp<dimension,MTYPE::Contiguous1D> > (&map_inp);
+		return std::make_unique< Contiguous1DMapInp<dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim );
 	};
 private:
     //array_d ranks_per_dim;      // number of processor for each dimension
-private:
     // all_local_shape store local_shape of all ranks, so all_local_shape.size() == world_size
     std::vector< array_d > all_local_shape;
     int split_dim=0;

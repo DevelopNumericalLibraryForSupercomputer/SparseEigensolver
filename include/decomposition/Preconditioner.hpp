@@ -12,16 +12,18 @@ public:
 	Preconditioner<DATATYPE,mtype,device>(const TensorOperations<mtype, device>* operations,const DecomposeOption option, std::string type): option(option), operations(operations), type(type){
 		return;
 	}
+	virtual ~Preconditioner() = default;
 	virtual std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (
                                                                DenseTensor<2, DATATYPE, mtype, device>& residual, //vec_size * block_size
                                                                DATATYPE* sub_eigval) const=0;                           //block_size
 															   
-    friend std::ostream& operator<< (std::ostream& stream, const Preconditioner<DATATYPE, mtype, device> preconditioner){
+    friend std::ostream& operator<< (std::ostream& stream, const Preconditioner<DATATYPE, mtype, device>& preconditioner){
     //void print_tensor_info() const{
-        if(preconditioner.ptr_comm->get_rank() == 0){
+        //if(preconditioner.ptr_comm->get_rank() == 0){
+		//preconditioner does not have ptr_comm
             stream << "========= Preconditioner Info =========" <<std::endl;
             stream << "type: " <<  preconditioner.type << std::endl; 
-		}
+		//}
 		return stream;
 	}
 protected:
@@ -225,6 +227,9 @@ const std::unique_ptr<Preconditioner<DATATYPE,mtype,device> > get_preconditioner
 		return std::make_unique<ISI2Preconditioner<DATATYPE,mtype,device> > (ISI2Preconditioner<DATATYPE,mtype,device>(operations, option) );
 	}
 	assert(true);
+	// Default
+	std::cout << "unknown preconditioner!" << std::endl;
+	exit(-1);
 };					
 
 }

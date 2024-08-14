@@ -307,7 +307,7 @@ void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 		std::array<int,2> local_arr_idx = {0, i};
 		auto global_arr_idx = mat.ptr_map->local_to_global(local_arr_idx);
 		auto local_idx = mat.ptr_map->unpack_local_array_index(local_arr_idx);
-		cblas_dscal(mat.ptr_map->get_local_shape(0), scale_coeff[global_arr_idx[1]], &mat.data[local_idx],1);
+		scal<double, DEVICETYPE::MPI>(mat.ptr_map->get_local_shape(0), scale_coeff[global_arr_idx[1]], &mat.data[local_idx],1);
 
 	}
 	return;
@@ -315,7 +315,7 @@ void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 template <>
 void SE::TensorOp::scale_vectors_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
             DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const double scale_factor){
-	cblas_dscal(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
+	scal<double, DEVICETYPE::MPI>(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
     return;
 }
 

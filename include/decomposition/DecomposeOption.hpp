@@ -45,8 +45,8 @@ public:
     double tolerance               = 1e-4;
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
-    int num_eigenvalues         = 3;
-    int eigenvalue_guesses      = 3;
+    int num_eigenvalues         = 2;
+    int eigenvalue_guesses      = 2;
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
@@ -68,12 +68,12 @@ DecomposeOption::DecomposeOption(){
     //config = YAML::LoadFile("Default.yaml");
     //set_option_worker();
 }
-/*
 DecomposeOption::DecomposeOption(std::string filename){
-    config = YAML::LoadFile("Default.yaml");
-    set_option(filename);
+    //config = YAML::LoadFile("Default.yaml");
+    //set_option(filename);
 }
 
+/*
 void DecomposeOption::set_option(std::string filename){
     YAML::Node new_config = YAML::LoadFile(filename);
 

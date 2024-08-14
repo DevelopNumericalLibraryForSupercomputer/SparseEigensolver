@@ -11,7 +11,7 @@ double* malloc<double, DEVICETYPE::MKL>(const int size) {
     return static_cast<double*>(std::malloc(size * sizeof(double)));
 }
 template<>
-void free<double, DEVICETYPE::MKL>(double* ptr) {
+void free <DEVICETYPE::MKL>(void* ptr){
     std::free(ptr);
 }
 

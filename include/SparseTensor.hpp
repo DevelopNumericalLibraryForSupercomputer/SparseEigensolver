@@ -22,17 +22,51 @@ public:
     SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, int reserve_size);
     SparseTensor(const std::unique_ptr<Comm<device>>& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE data);
 
-    ~SparseTensor() {
-        if (complete_index != nullptr) {
-            delete[] complete_index;
-            complete_index = nullptr;
+    ~SparseTensor() {}
+/*
+    //copy assign operator
+    SparseTensor<dimension,DATATYPE,mtype,device>& SparseTensor<dimension,DATATYPE,mtype,device>::operator=(const SparseTensor<dimension,DATATYPE,mtype,device>& other){
+        if(this == &other) return *this;
+    
+        this->ptr_comm = other->copy_comm();
+        this->ptr_map = other->copy_map();
+        
+        if(other->filled){
+            auto nnz = other->get_num_nonzero();
+            this->complete_index = malloc<int,device>(nnz*dimension );
+            this->complete_value = malloc<DATATYPE,device>(nnz);
+            // DEVICE2DEVICE will be ignored if deivce is less than 10
+            memcpy(this->complete_index, other->complete_index, nnz,COPYTYPE::DEVICE2DEVICE);
+            memcpy(this->complete_value, other->complete_value, nnz,COPYTYPE::DEVICE2DEVICE);
         }
-        if (complete_value != nullptr) {
-            delete[] complete_value;
-            complete_value = nullptr;
+        else if(other->filled && call_complete==false){
+            // if call complete with reuse=false, copy is not available anymore
+            assert( other->data.size() == other->get_num_nonzero());
+            this->data = other->data;
         }
-    }
+        else{
+            this->data = other->data;
+        }
+        this->filled = other->filled;
+    
+        return *this;
+    };
 
+    //move assign operator
+    SparseTensor<dimension,DATATYPE,mtype,device>& SparseTensor<dimension,DATATYPE,mtype,device>::operator=(SparseTensor<dimension,DATATYPE,mtype,device>&& other){
+        if(this == &other) return *this;
+        this->ptr_comm = std::move(other.ptr_comm);
+        this->ptr_map = std::move(other.ptr_map);
+        this->data = std::move(other.data);
+        this->filled = other.filled;
+        if(other->filled){
+            //move pointers
+            this->complete_index = other->complete_index;
+            this->complete_value = other->complete_value;
+        }
+        return *this;
+    };
+*/
     INTERNALTYPE copy_data() const override{return this->data;};
 
     // clone
@@ -71,13 +105,13 @@ public:
     // Sparse Tensor Only 
     void complete(bool reuse=false);
     
-    DATATYPE operator() (const int local_index);
+    DATATYPE operator() (const int local_index) const { return this->data[local_index]; };
 
     //TUPLEDATA<dimension, DATATYPE*,int*> complete_value; 
     //
     //std::array<dimension, int*> complete_index;
-    int* complete_index;
-    DATATYPE* complete_value;
+    std::unique_ptr<int[], std::function<void(int*)> > complete_index;
+    std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > complete_value;
 
     int get_num_nonzero() const {return nnz;};
 
@@ -108,11 +142,12 @@ std::unique_ptr<SparseTensor<dimension, DATATYPE, mtype, device> > SparseTensor<
     auto return_val = std::make_unique< SparseTensor<dimension,DATATYPE,mtype,device> > (this->copy_comm(), this->copy_map() ); // I am not sure if pointer of inherit class work well shchoi
     if(this->filled && call_complete){
         auto nnz = get_num_nonzero();
-        return_val->complete_index = malloc<int,device>(nnz*dimension );
-        return_val->complete_value = malloc<DATATYPE,device>(nnz);
+        //return_val->complete_index = std::make_unique<int[], std::function<void(int*)>>( malloc<int,device>(nnz*dimension ), free<device> );
+        //return_val->complete_value = std::make_unique<DATATYPE[], std::function<void(DATATYPE*)>>( malloc<DATATYPE,device>(nnz), free<device> );
+
         // DEVICE2DEVICE will be ignored if deivce is less than 10
-        memcpy(return_val->complete_index, this->complete_index, nnz,COPYTYPE::DEVICE2DEVICE);
-        memcpy(return_val->complete_value, this->complete_value, nnz,COPYTYPE::DEVICE2DEVICE);
+        memcpy(return_val->complete_index.get(), this->complete_index.get(), nnz,COPYTYPE::DEVICE2DEVICE);
+        memcpy(return_val->complete_value.get(), this->complete_value.get(), nnz,COPYTYPE::DEVICE2DEVICE);
     }
     else if(this->filled && call_complete==false){
         // if call complete with reuse=false, copy is not available anymore
@@ -194,7 +229,9 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         auto tmp_index = malloc<int> (this->data.size()*dimension);
         auto tmp_value  = malloc<DATATYPE>(this->data.size());
     
-        auto offset= this->data.size();
+        const auto offset= this->data.size();
+
+		#pragma omp parallel for
         for (int i = 0; i < this->data.size() ; i++){
             tmp_value[i] = this->data[i].second;
             for (int j=0; j<dimension; j++){
@@ -208,16 +245,18 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         }
 
         if ( (int)device <10){
-            complete_index = malloc<int,device> (nnz*dimension);
-            complete_value  = malloc<DATATYPE,device>(nnz);
-            memcpy<int,      device>( complete_index, tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
-            memcpy<DATATYPE, device>( complete_value, tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
-            free<>(tmp_index);
-            free<>(tmp_value);
+			std::unique_ptr<int[], std::function<void(int*)>> complete_index_( malloc<int,device>(nnz*dimension ), free<device> );
+			complete_index = std::move(complete_index_);
+	        std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>> complete_value_( malloc<DATATYPE,device>(nnz), free<device> );
+	        complete_value = std::move(complete_value_);
+            memcpy<int,      device>( complete_index.get(), tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
+            memcpy<DATATYPE, device>( complete_value.get(), tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
+            free<device>(tmp_index);
+            free<device>(tmp_value);
         }
         else{
-            complete_index = tmp_index;
-            complete_value = tmp_value;
+			std::cout << "not yet implemented" <<std::endl;
+			exit(-1);
         }
     }
     this->filled = true;
@@ -253,15 +292,10 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
 
 
 // get functions
-template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-DATATYPE SparseTensor<dimension,DATATYPE,mtype,device>::operator() (const int local_index){
-//    auto local_array_index = this->ptr_map.pack_local_index(local_index);
-//    auto iter = std::find(this->data.begin(), this->data.end(), [local_array_index](std::pair<std::array<int, dimension>, DATATYPE> element){return element.first==local_array_index;} );
-//    if (iter==this->data.end()) return Zero<DATATYPE>::value;
-//    return iter->second;
-    return this->data[local_index];
-
-};
+//template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+//DATATYPE SparseTensor<dimension,DATATYPE,mtype,device>::operator() const (const int local_index){
+//    return this->data[local_index];
+//};
 
 
 //template<typename DATATYPE, int dimension, DEVICETYPE device, MTYPE mtype>

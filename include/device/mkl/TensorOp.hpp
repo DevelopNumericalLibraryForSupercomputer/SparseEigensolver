@@ -1,5 +1,5 @@
 #pragma once
-#include "LinearOp.hpp"
+#include "device/mkl/LinearOp.hpp"
 #include "../TensorOp.hpp"
 #include "MKLComm.hpp"
 
@@ -28,7 +28,6 @@ DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul(
     }
     */
     assert ( mat.ptr_map->get_global_shape(contract_dim) == vec.ptr_map->get_global_shape(0) );
-    std::cout << "MKLDENSE, m : " << m << ", k : " << k << std::endl;
     std::array<int, 1> output_shape = {mat.ptr_map->get_global_shape(remained_dim)};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
     DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( vec.copy_comm(), ptr_output_map);
@@ -104,7 +103,8 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     auto ptr_comm=vec.copy_comm();
 
     assert (num_col==vec.ptr_map->get_global_shape(0));
-    std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
+    //std::array<int, 1> output_shape = {static_cast<unsigned long>(num_row)};
+    std::array<int, 1> output_shape = {num_row};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
 
     DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
@@ -114,9 +114,9 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
                                       num_row,    // number of rows
                                       num_col,    // number of cols
                                       nnz,  // number of nonzeros
-                                      mat.complete_index,
-                                      mat.complete_index+nnz,
-                                      mat.complete_value );
+                                      mat.complete_index.get(),
+                                      mat.complete_index.get()+nnz,
+                                      mat.complete_value.get() );
 
     assert (status == SPARSE_STATUS_SUCCESS);
 
@@ -129,6 +129,8 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     else{
         status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data.get(), 0.0, output.data.get());
     }
+    assert (status == SPARSE_STATUS_SUCCESS);
+    status = mkl_sparse_destroy(cooA);
     assert (status == SPARSE_STATUS_SUCCESS);
 
     return output;
@@ -172,7 +174,8 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     auto ptr_comm=mat2.copy_comm();
     
     assert (num_col==mat2.ptr_map->get_global_shape(0));
-    std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.ptr_map->get_global_shape(1)};
+    //std::array<int, 2> output_shape = {static_cast<unsigned long>(num_row), mat2.ptr_map->get_global_shape(1)};
+    std::array<int, 2> output_shape = {num_row, mat2.ptr_map->get_global_shape(1)};
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<2>> (output_shape, 0,1);
 
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
@@ -182,23 +185,45 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
                                       num_row,    // number of rows
                                       num_col,    // number of cols
                                       nnz, // number of nonzeros
-                                      mat1.complete_index,
-                                      mat1.complete_index+nnz,
-                                      mat1.complete_value );
+                                      mat1.complete_index.get(),
+                                      mat1.complete_index.get()+nnz,
+                                      mat1.complete_value.get() );
 
     assert (status == SPARSE_STATUS_SUCCESS);
 
     descrA.type = SPARSE_MATRIX_TYPE_GENERAL;
     descrA.diag = SPARSE_DIAG_NON_UNIT;
+//sparse_status_t mkl_sparse_d_mm (const sparse_operation_t operation, const double alpha, const sparse_matrix_t A, const struct matrix_descr descr, const sparse_layout_t layout, const double *B, const MKL_INT columns, const MKL_INT ldb, const double beta, double *C, const MKL_INT ldc);
 
     if(trans1 == TRANSTYPE::N){
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col,num_col, 1.0, output.data.get(), num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_NON_TRANSPOSE, 
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data.get(), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  0.0, 
+								  output.data.get(), 
+								  output.ptr_map->get_global_shape(1));
     }
     else{
-        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, SPARSE_LAYOUT_ROW_MAJOR, mat2.data.get(), num_col, num_col, 1.0, output.data.get(), num_col);
+        status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     
+		                          1.0, 
+								  cooA, 
+								  descrA, 
+								  SPARSE_LAYOUT_ROW_MAJOR, 
+								  mat2.data.get(), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  mat2.ptr_map->get_global_shape(1), 
+								  0.0, 
+								  output.data.get(), 
+								  output.ptr_map->get_global_shape(1));
     }
     assert (status == SPARSE_STATUS_SUCCESS);
-
+    status = mkl_sparse_destroy(cooA);
+    assert (status == SPARSE_STATUS_SUCCESS);
     return output;
 }
 
@@ -233,7 +258,6 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
         
     }
     else{
-        std::cout << "default orthonormalization" << std::endl;
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
         syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data.get(), number_of_vectors, submatrix_eigvals.get());
@@ -241,6 +265,11 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
         auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
         for(int i=0; i<number_of_vectors; i++){
+
+
+//gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
+//gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output.data.get(), 1);
+
             double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output.data[i], number_of_vectors);
             assert(norm != 0.0);
             scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);
@@ -253,6 +282,10 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
 template <>
 void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double* scale_coeff){
+    if(scale_coeff == nullptr){
+        std::cout << "WRONG scale_coeff in TensorOp::scale_vectors!" << std::endl;
+        exit(1);
+    }
     int vec_size = mat.ptr_map->get_global_shape()[0];
     int num_vec = mat.ptr_map->get_global_shape()[1];
     for(int index = 0; index < num_vec; index++){
@@ -264,7 +297,7 @@ void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
 template <>
 void SE::TensorOp::scale_vectors_<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
             DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, const double scale_factor){
-    scal<double, DEVICETYPE::MKL>(mat.ptr_map->get_num_local_elements(), scale_coeff, &mat.data, 1);
+    scal<double, DEVICETYPE::MKL>(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(), 1);
     return;
 }
 
@@ -301,11 +334,16 @@ void SE::TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::Contiguous
 	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
     assert (mat1.ptr_map->get_global_shape()[1] >= norm_size);
 
+
+    const int vec_size = mat1.ptr_map->get_local_shape()[0];
+	const int num_vec  = mat1.ptr_map->get_local_shape()[1]; 
+
 	const int local_size =mat1.ptr_map->get_num_local_elements();
-	auto buff = malloc<double,DEVICETYPE::MKL>(local_size);
+	double* buff = malloc<double,DEVICETYPE::MKL>(local_size);
 	vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
 
 	std::fill_n(norm, num_vec, 0.0);
+    
     for(int i=0;i<norm_size;i++){
 		#pragma omp parallel for reduction(+:norm[i]) 
 		for (int j=0; j<vec_size; j++){
