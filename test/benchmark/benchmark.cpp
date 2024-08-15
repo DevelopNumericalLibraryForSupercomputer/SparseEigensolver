@@ -23,17 +23,27 @@ using namespace SE;
 // predefined const variables 
 const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
 
-// print funciton 
-std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
-    os << "(";
-    for(int i = 0; i<3; i++){
-        os << A[i] << " ";
+//// print funciton 
+//std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
+//    os << "(";
+//    for(int i = 0; i<3; i++){
+//        os << A[i] << " ";
+//    }
+//    os << ")";
+//    return os;
+//}
+
+void printMatrix(const std::vector<double>& matrix, const int rows, const int cols) {
+    for (int i = 0; i < rows; i++) {
+        for (int j = 0; j < cols; j++) {
+            std::cout << matrix[i * cols + j] << "\t";
+        }
+        std::cout << std::endl;
     }
-    os << ")";
-    return os;
 }
 
-std::pair<int, std::vector<double> > read_file(const std::string filename){
+
+std::pair<int, std::vector<double> > readMatrixFromTxtFile(const std::string filename){
     std::ifstream matrix_file(filename);
     //std::vector<std::vector<int>> matrix;
     
@@ -62,6 +72,35 @@ std::pair<int, std::vector<double> > read_file(const std::string filename){
 	return output;
 }
 
+std::pair<int, std::vector<double>> readMatrixFromBinaryFile(const std::string& filename) {
+    std::ifstream inFile(filename, std::ios::binary);
+    if (!inFile) {
+        std::cerr << "Could not open the file " << filename << " for reading." << std::endl;
+        return {0, {}};
+    }
+
+    int rows;
+    int cols;
+    // Read dimensions
+    inFile.read(reinterpret_cast<char*>(&rows), sizeof(rows));
+    inFile.read(reinterpret_cast<char*>(&cols), sizeof(cols));
+
+	assert(rows==cols);
+
+	std::pair<int, std::vector<double> >output;
+	output.first = rows;
+	output.second.resize(rows*cols,0.0);
+
+    //std::vector<double> matrix(rows * rows);
+    // Read matrix data
+    inFile.read(reinterpret_cast<char*>(output.second.data()), output.second.size() * sizeof(double));
+
+    inFile.close();
+
+    return output;
+}
+
+
 int main(int argc, char** argv){
 	// predefined value
     int rank=0, nprocs=1, ictxt;
@@ -76,41 +115,48 @@ int main(int argc, char** argv){
 	if (argc>=3 ) q = std::stoi( argv[2] );
     
 	int nb = 2;
-	if (argc>=4 ) nb=std::stoi(argv[4]);
+	if (argc>=4 ) nb=std::stoi(argv[3]);
 	//int p=1; int q=1;
 	int precond_type = 2;
-	if (argc>=5 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[5]);
+	if (argc>=5 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[4]);
 
 	int file_number= 2;
-	if (argc>=6 ) filename = "Sparse_Hamiltonian_sz_+-"+std::to_string(file_number)+".000000.txt";
+	if (argc>=6 ) filename = "Sparse_Hamiltonian_sz_+-"+std::to_string(std::stoi(argv[5]))+".000000.txt";
 
-
+	std::cout << (int) option.preconditioner <<std::endl;
 	MPICommInp comm_inp({p,q});
     auto ptr_comm = comm_inp.create_comm();
-
-    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 1 read matrix
-    std::chrono::steady_clock::time_point begin1 = std::chrono::steady_clock::now();  
-	auto output = read_file(filename);
-	const int N = output.first;
-	assert ( output.second.size() ==N*N);
-    std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
-    if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end1 - begin1).count())/1000000.0 << "[sec]" << std::endl;
-
-	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
-    std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
-	// num_eig variable is not used 
-    const int num_eig = 3;
 
 	if (argc==1 and ptr_comm->get_rank()==0){
 		std::cout << "p: number of rows in processor grid\n" 
                   << "q: number of columns in processor grid\n" 
                   << "nb: number of block size\n" 
-                  << "precond_type: 1 (diagonal) 2 (ISI2)\n" 
+                  << "precond_type: 0 (diagonal) 1 (ISI2)\n" 
                   << "file_number: 0,1,2 "
                   << std::endl; 
 		return 0;
 	}
+
+    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
+//	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 1 read matrix
+//    std::chrono::steady_clock::time_point begin1 = std::chrono::steady_clock::now();  
+//	auto output = readMatrixFromTxtFile(filename);
+//	const int N = output.first;
+//	assert ( output.second.size() ==N*N);
+//    std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
+//    if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end1 - begin1).count())/1000000.0 << "[sec]" << std::endl;
+//	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+	auto output = readMatrixFromBinaryFile("small.dat");
+	const int N = output.first;
+	assert ( output.second.size() ==N*N);
+	//printMatrix(output.second, N, N);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 << "[sec]" << std::endl;
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
+    std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
+	// num_eig variable is not used 
+    const int num_eig = 3;
 
 	if(ptr_comm->get_rank()==0) std::cout << "Dimension: " <<    N<<std::endl;
 
