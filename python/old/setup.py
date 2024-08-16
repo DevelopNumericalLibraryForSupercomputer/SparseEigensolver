@@ -9,25 +9,10 @@ import os
 os.environ["CC"] = "/opt/intel/oneapi/mpi/2021.11/bin/mpiicpx"
 os.environ["CXX"] = "/opt/intel/oneapi/mpi/2021.11/bin/mpiicpx"
 
-
-#extensions = [
-#    Extension(
-#        "PyEigensolver",  # Module name
-#        sources=["PyDecompose.pyx"],
-#        libraries=['mkl_rt', 'm'],
-#        include_dirs=[
-#            np.get_include(),  # numpy header file path
-#            "../include"  # C++ source file path (parent folder)
-#        ],
-#        language="c++",  
-#        extra_compile_args=["-std=c++17"],  # C++17
-#    )
-#]
-
 extensions = [
     Extension(
         "PyEigensolver",  # Module name
-        sources=["PyOperations.pyx"],
+        sources=["PyDecompose.pyx"],
         libraries=['mkl_rt', 'm'],
         include_dirs=[
             np.get_include(),  # numpy header file path
@@ -37,8 +22,6 @@ extensions = [
         extra_compile_args=["-std=c++17"],  # C++17
     )
 ]
-
-
 
 setup(
     name="PyEigensolver",

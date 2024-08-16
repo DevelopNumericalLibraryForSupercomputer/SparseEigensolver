@@ -34,3 +34,30 @@ a = c_decompose(mat, guess)
 print("after dc")
 print(mat)
 print(a)
+
+
+# example.py
+from py_operations import PyTensorOperationsWrapper
+
+def matrix_one_vec_callback(input_vec, output_vec, size, user_data):
+    for i in range(size):
+        output_vec[i] = input_vec[i] * 2
+
+def matrix_mult_vec_callback(input_vecs, output_vec, num_vec, size, user_data):
+    for i in range(num_vec):
+        for j in range(size):
+            output_vec[i * size + j] = input_vecs[i * size + j] * 3
+
+def get_diag_element_callback(index, user_data):
+    return float(index)
+
+def get_global_shape_callback(shape, user_data):
+    shape[0] = 10
+    shape[1] = 5
+
+# 콜백 함수 포인터를 전달하여 객체 생성
+tensor_ops = PyTensorOperationsWrapper(matrix_one_vec_callback, matrix_mult_vec_callback, get_diag_element_callback, get_global_shape_callback, None)
+
+# 텐서 연산 수행
+result = tensor_ops.matvec(your_tensor)
+print(result)
