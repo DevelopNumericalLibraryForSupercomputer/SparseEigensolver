@@ -15,6 +15,11 @@ public:
         double invh2 = 1.0;
         for(int i=0;i<n;i++){
             return_vec.data[i] = vec.data[i]* ( 2.0*((double)i-(double)n)   - invh2*5.0/2.0 );
+            if(i%100==0){
+                for(int j=0;j<n;j=j+100){
+                    return_vec.data[i] += vec.data[j]*0.01;
+                }
+            }
         }
         for(int i=1;i<n;i++){
             return_vec.data[i] += vec.data[i-1]* ( invh2*4.0/3.0);
@@ -28,7 +33,20 @@ public:
         for(int i=0;i<n-2;i++){
             return_vec.data[i] += vec.data[i+2]* (invh2*(-1.0)/12.0);
         }
+        
+        for(int i=3;i<n;i++){
+            return_vec.data[i] += vec.data[i-3]* 0.3;
+        }
+        for(int i=0;i<n-3;i++){
+            return_vec.data[i] += vec.data[i+3]* 0.3;
+        }
 
+        for(int i=4;i<n;i++){
+            return_vec.data[i] += vec.data[i-4]* (-0.1);
+        }
+        for(int i=0;i<n-4;i++){
+            return_vec.data[i] += vec.data[i+4]* (-0.1);
+        }
         return return_vec;
     };
 

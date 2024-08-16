@@ -71,8 +71,8 @@ int main(int argc, char* argv[]){
     
     */
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    int N = 30;
-    const int num_eig = 2;
+    int N = 2000;
+    const int num_eig = 3;
 
 
     std::array<int, 2> test_shape2 = {N,N};
@@ -91,8 +91,9 @@ int main(int argc, char* argv[]){
             if(i == j)                  test_data2.get()[i+j*N] += 2.0*((double)i-(double)N)   - invh2*5.0/2.0;//2.0*((double)i-(double)N) 
             if(i == j +1 || i == j -1)  test_data2.get()[i+j*N] += invh2*4.0/3.0;
             if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
-            //if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
-            //if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
+            if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
+            if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
+            if( i%100 == 0 && j%100 == 0)  test_data2[i+j*N] += 0.01;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
@@ -136,7 +137,7 @@ int main(int argc, char* argv[]){
 	DecomposeOption option_evd;
     option_evd.algorithm_type = DecomposeMethod::Direct;
     DecomposeOption option;
-    
+   
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, ptr_guess.get(), option_evd);
@@ -153,9 +154,9 @@ int main(int argc, char* argv[]){
             if(i == j)                   test_sparse.global_insert_value(index, 2.0*((double)i-(double)N)   - invh2*5.0/2.0);
             if(i == j +1 || i == j -1)   test_sparse.global_insert_value(index, invh2*4.0/3.0);
             if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
-            //if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
-            //if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
-            //if( i%13 == 0 && j%13 == 0)  test_sparse.global_insert_value(index, 0.01);
+            if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, 0.3);
+            if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
+            if( i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
             //if( (j*N+i)%53 == 0) test_sparse.global_insert_value(index, 0.01);
         }
     }

@@ -43,12 +43,12 @@ public:
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
     int max_iterations          = 10000;
     double tolerance               = 1e-4;
-    int max_block               = 2;
+    int max_block               = 3;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
-    int num_eigenvalues         = 2;
-    int eigenvalue_guesses      = 2;
+    int num_eigenvalues         = 3;
+    int eigenvalue_guesses      = 3;
     bool use_preconditioner        = false;
-    PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
+    PRECOND_TYPE preconditioner    = PRECOND_TYPE::ISI2;
     double preconditioner_tolerance      = 1E-3;
     int preconditioner_max_iterations = 30;
     bool use_locking               = false;
@@ -61,7 +61,7 @@ private:
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
     std::map<std::string, PRECOND_TYPE> const precond_table =
-        { {"Diagonal", PRECOND_TYPE::Diagonal}};
+        { {"Diagonal", PRECOND_TYPE::Diagonal}, {"ISI2", PRECOND_TYPE::ISI2}};
     //YAML::Node config;
 };
 DecomposeOption::DecomposeOption(){
