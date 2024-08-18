@@ -10,5 +10,5 @@ Aims.
 
 Prerequisite:
 - YAML-cpp
-- Math kernel Library (for LAPACKE)
-- C++20 or higher
+- Math kernel Library (cblas, LAPACKE, pblas)
+- C++17 or higher
