@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
             if(i == j +2 || i == j -2)  test_data2[i+j*N] -= invh2*1.0/12.0;
             if(i == j +3 || i == j -3)  test_data2[i+j*N] += 0.3;
             if(i == j +4 || i == j -4)  test_data2[i+j*N] -= 0.1;
-            if( i%100 == 0 && j%100 == 0)  test_data2[i+j*N] += 0.01;
+            if(i !=j && i%100 == 0 && j%100 == 0)  test_data2[i+j*N] += 0.01;
             //if( i%13 == 0 && j%13 == 0) test_data2[i+j*N] += 0.01;
             //if(i>=3 || j>=3) test_data2[i+j*N] = 0.0;
         }
@@ -160,7 +160,7 @@ int main(int argc, char* argv[]){
             if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
             if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, 0.3);
             if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
-            if( i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
+            if(i!=j && i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
             //if( (j*N+i)%53 == 0) test_sparse.global_insert_value(index, 0.01);
         }
     }
@@ -180,7 +180,7 @@ int main(int argc, char* argv[]){
     print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, Dense Matrix, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
-/*
+
     std::cout << "\n========\nTest Tensor Operation,  Davidson" << std::endl;
     TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
@@ -203,6 +203,6 @@ int main(int argc, char* argv[]){
     print_eigenvalues( "Eigenvalues", num_eig, out5.get()->real_eigvals.data(), out5.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end5 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, PytensorOP, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end5 - begin5).count())/1000000.0 << "[sec]" << std::endl;
-*/
+
   return 0;
 }

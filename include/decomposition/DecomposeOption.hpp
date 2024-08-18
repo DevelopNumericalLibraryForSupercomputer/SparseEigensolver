@@ -48,7 +48,7 @@ public:
     int num_eigenvalues         = 3;
     int eigenvalue_guesses      = 3;
     bool use_preconditioner        = false;
-    PRECOND_TYPE preconditioner    = PRECOND_TYPE::ISI2;
+    PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
     int preconditioner_max_iterations = 30;
     bool use_locking               = false;

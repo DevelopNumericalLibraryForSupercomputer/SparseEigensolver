@@ -3,7 +3,7 @@
 import numpy as np
 
 # Example matrix for demonstration
-N = 1000
+N = 2000
 
 def matvec(vec):
     n, m = vec.shape
@@ -18,7 +18,17 @@ def matvec(vec):
         return_ivec[:-1] += ivec[1:] *(invh2 * 4.0 / 3.0)
         return_ivec[2:] += ivec[:-2] *(invh2 * -1.0 / 12.0)
         return_ivec[:-2] += ivec[2:] *(invh2 * -1.0 / 12.0)
-
+        
+        return_ivec[3:] += ivec[:-3] * 0.3
+        return_ivec[:-3] += ivec[3:] * 0.3
+        
+        return_ivec[4:] += ivec[:-4] * (-0.1)
+        return_ivec[:-4] += ivec[4:] * (-0.1)
+        
+        if i % 100 ==0:
+            for j in range(0,n,100):
+                if i!=j:
+                    return_ivec += ivec[j] * 0.01
         return_vec[i] = return_ivec
     return return_vec
 
