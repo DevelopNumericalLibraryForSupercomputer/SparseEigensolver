@@ -19,6 +19,8 @@
 #include "decomposition/TestOperations.hpp"
 #include "decomposition/Decompose.hpp"
 
+#include "decomposition/PyOperations.hpp"
+
 std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
     os << "(";
     for(int i = 0; i<3; i++){
@@ -124,6 +126,7 @@ int main(int argc, char* argv[]){
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess5 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
@@ -131,6 +134,7 @@ int main(int argc, char* argv[]){
         ptr_guess2->global_set_value(tmp_index, 1.0);
         ptr_guess3->global_set_value(tmp_index, 1.0);
         ptr_guess4->global_set_value(tmp_index, 1.0);
+        ptr_guess5->global_set_value(tmp_index, 1.0);
     }
     
 	DecomposeOption option_evd;
@@ -175,7 +179,7 @@ int main(int argc, char* argv[]){
     print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, Dense Matrix, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
-
+/*
     std::cout << "\n========\nTest Tensor Operation,  Davidson" << std::endl;
     TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
@@ -191,5 +195,13 @@ int main(int argc, char* argv[]){
     std::chrono::steady_clock::time_point end3 = std::chrono::steady_clock::now();
     std::cout << "BlockDavidson, Sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
 
+    std::cout << "\n========\n Python Tensor Operation,  Davidson" << std::endl;
+    PyTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("/home/jaewook/projects/SparseEigensolver/include/decomposition/tensor_operations.py");
+    std::chrono::steady_clock::time_point begin5 = std::chrono::steady_clock::now();  
+    auto out5 = decompose(&test_op, ptr_guess5.get(), option);
+    print_eigenvalues( "Eigenvalues", num_eig, out5.get()->real_eigvals.data(), out5.get()->imag_eigvals.data());
+    std::chrono::steady_clock::time_point end5 = std::chrono::steady_clock::now();
+    std::cout << "BlockDavidson, PytensorOP, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end5 - begin5).count())/1000000.0 << "[sec]" << std::endl;
+*/
   return 0;
 }
