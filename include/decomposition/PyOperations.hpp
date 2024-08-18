@@ -17,7 +17,11 @@ namespace SE{
 template<MTYPE mtype, DEVICETYPE device>
 class PyTensorOperations: public TensorOperations<mtype, device>{
 private:
-    void MatrixOneVec_wrapper(double* input_vec, double* return_vec, int size) const;
+    //Todo:
+    // 1) each wrapper function should notify python function about the global_index of input_vecs
+    // 2) return_vec gather return_vec from all processors : allgather(SUM)
+
+    void MatrixOneVec_wrapper(double* input_vec, double* return_vec, int size) const; //just a wrapper of MatrixMultVec_wrapper
     void MatrixMultVec_wrapper(double* input_vec, double* return_vec, int num_vec, int size) const;
     double GetDiagElement_wrapper(int index) const;
     void GetGlobalShape_wrapper(int* shape) const;
