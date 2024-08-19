@@ -42,8 +42,8 @@ public:
 		
 	
         int vec_size = residual.ptr_map->get_global_shape()[0];
-        //int block_size = residual.map.get_global_shape()[1];
-        int num_eig = this->option.num_eigenvalues;
+        int num_eig  = residual.ptr_map->get_global_shape()[1];
+        //int num_eig = this->option.num_eigenvalues;
         //int new_block_size = block_size + num_eig;
         
         std::array<int, 2> new_guess_shape = {vec_size, num_eig};
@@ -150,6 +150,7 @@ public:
 	    	auto scaled_p = TensorOp::scale_vectors(*p, shift_values);  //\tilde{epsilon} * p
 	    	auto hp = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
 			///// line 12 end
+			
 			
 			///// line 13 start
 			TensorOp::vectorwise_dot( *TensorOp::conjugate(*p), *hp, alpha, num_vec ); 

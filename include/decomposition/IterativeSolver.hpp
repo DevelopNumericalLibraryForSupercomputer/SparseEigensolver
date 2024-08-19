@@ -67,7 +67,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > subspace_matrix = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::matmul(*new_guess, *w_iter, TRANSTYPE::T, TRANSTYPE::N) );
 
     //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
-    DATATYPE* sub_eigval = malloc<DATATYPE, device>(option.num_eigenvalues) ;
+    DATATYPE* sub_eigval = malloc<DATATYPE, device>(eigvec->ptr_map->get_global_shape(1) ) ;
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > sub_eigvec = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::diagonalize(*subspace_matrix, sub_eigval) );
 
     //calculate ritz vector
@@ -86,6 +86,8 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
         for(int i_block = 0; i_block <= option.max_block; i_block++){
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec);
+
+            //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             //check convergence
             bool is_converged = check_convergence<DATATYPE,mtype,device>(*residual, option.num_eigenvalues, option.tolerance);
             if(is_converged){
@@ -120,7 +122,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
             //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
             
             free<device>(sub_eigval);
-            sub_eigval =  malloc<DATATYPE, device>(block_size) ;
+            sub_eigval =  malloc<DATATYPE, device>(new_guess->ptr_map->get_global_shape(1) );
             sub_eigvec = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::diagonalize(*subspace_matrix, sub_eigval) );
             
             //calculate ritz vector

@@ -42,7 +42,7 @@ public:
 //    bool use_locking;            //= false;
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
     int max_iterations          = 10000;
-    double tolerance               = 1e-4;
+    double tolerance               = 1e-8;
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
     int num_eigenvalues         = 2;
