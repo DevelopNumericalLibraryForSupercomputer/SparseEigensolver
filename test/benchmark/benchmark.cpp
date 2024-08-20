@@ -91,7 +91,6 @@ std::pair<int, std::vector<double>> readMatrixFromBinaryFile(const std::string& 
 	output.first = rows;
 	output.second.resize(rows*cols,0.0);
 
-    //std::vector<double> matrix(rows * rows);
     // Read matrix data
     inFile.read(reinterpret_cast<char*>(output.second.data()), output.second.size() * sizeof(double));
 
@@ -105,7 +104,7 @@ int main(int argc, char** argv){
 	// predefined value
     int rank=0, nprocs=1, ictxt;
 	DecomposeOption option;
-	std::string  filename="Sparse_Hamiltonian_sz_+-2.000000.txt";
+	std::string  filename;
 
 	// input 
 	int p=1;
@@ -117,13 +116,24 @@ int main(int argc, char** argv){
 	int nb = 2;
 	if (argc>=4 ) nb=std::stoi(argv[3]);
 	//int p=1; int q=1;
-	int precond_type = 2;
+	int precond_type = 0;
 	if (argc>=5 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[4]);
 
-	int file_number= 2;
-	if (argc>=6 ) filename = "Sparse_Hamiltonian_sz_+-"+std::to_string(std::stoi(argv[5]))+".000000.txt";
+	int file_number;
 
-	std::cout << (int) option.preconditioner <<std::endl;
+	if (argc>=6 ) file_number = std::stoi(argv[5]);
+	switch (file_number){
+		case 0:
+			filename = "large.dat";
+			break;
+		case 1:
+			filename = "mid.dat";
+			break;
+		case 2:
+			filename = "small.dat";
+			break;
+		
+	}
 	MPICommInp comm_inp({p,q});
     auto ptr_comm = comm_inp.create_comm();
 
@@ -137,7 +147,12 @@ int main(int argc, char** argv){
 		return 0;
 	}
 
-    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix davidson test" << std::endl;
+    if(ptr_comm->get_rank()==0){
+		std::cout << "=========Dense matrix davidson test(" 
+				  << p <<"," <<q<<"," <<nb<<"," 
+				  << precond_type<<"," << file_number << ")" << std::endl;
+	}
+
 //	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 1 read matrix
 //    std::chrono::steady_clock::time_point begin1 = std::chrono::steady_clock::now();  
 //	auto output = readMatrixFromTxtFile(filename);
@@ -147,7 +162,7 @@ int main(int argc, char** argv){
 //    if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end1 - begin1).count())/1000000.0 << "[sec]" << std::endl;
 //	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
     std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
-	auto output = readMatrixFromBinaryFile("small.dat");
+	auto output = readMatrixFromBinaryFile(filename);
 	const int N = output.first;
 	assert ( output.second.size() ==N*N);
 	//printMatrix(output.second, N, N);
@@ -156,7 +171,8 @@ int main(int argc, char** argv){
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
 	// num_eig variable is not used 
-    const int num_eig = 3;
+    const int num_eig = 10;
+	option.num_eigenvalues = num_eig;
 
 	if(ptr_comm->get_rank()==0) std::cout << "Dimension: " <<    N<<std::endl;
 
@@ -164,27 +180,36 @@ int main(int argc, char** argv){
     std::mt19937 rng(12345);  // Fixed seed number for reproducibility
     std::uniform_real_distribution<double> dist(-1, 1);  // Define the range of random values
 
-
 	BlockCyclingMapInp<2> map_inp({N,N}, ptr_comm->get_rank(), ptr_comm->get_world_size(), {nb, nb}, comm_inp.nprow );
 	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> test_matrix(comm_inp.create_comm(), map_inp.create_map() );
-	memcpy<double, DEVICETYPE::MPI> ( test_matrix.data.get(), output.second.data(), output.second.size() );
+	//memcpy<double, DEVICETYPE::MPI> ( test_matrix.data.get(), output.second.data(), output.second.size() );
 	map_inp.global_shape = {N,num_eig};
     auto guess = new DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>(comm_inp.create_comm(), map_inp.create_map());
 
-    // guess : unit vector
-    for(int i=0;i<num_eig;i++){
-		for (int j=0; j<N; j++){
-	        std::array<int, 2> tmp_index = {j,i};
-			//if (i==j)	guess->global_set_value(tmp_index, 1.0);
-			//else	guess->global_set_value(tmp_index, 1e-3);
-			guess->global_set_value(tmp_index, dist(rng));
-		}
-    }
+	#pragma omp parallel for
+	for (int i =0; i<test_matrix.ptr_map->get_num_local_elements(); i++){
+		auto global_array_index = test_matrix.ptr_map->pack_global_index(test_matrix.ptr_map->local_to_global(i));	
+		test_matrix.global_set_value(global_array_index, output.second[N*global_array_index[1]+global_array_index[0]]);
+	}
+	#pragma omp parallel for
+	for (int i =0; i<guess->ptr_map->get_num_local_elements(); i++){
+		auto global_array_index = guess->ptr_map->pack_global_index(guess->ptr_map->local_to_global(i));	
+		guess->global_set_value(global_array_index, dist(rng));
+	}
+
+//    // guess : unit vector
+//    for(int i=0;i<num_eig;i++){
+//		for (int j=0; j<N; j++){
+//	        std::array<int, 2> tmp_index = {j,i};
+//			//if (i==j)	guess->global_set_value(tmp_index, 1.0);
+//			//else	guess->global_set_value(tmp_index, 1e-3);
+//			guess->global_set_value(tmp_index, dist(rng));
+//		}
+//    }
 
     std::chrono::steady_clock::time_point end2 = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "constructing matrices takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 3 diagonalization
-    if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix, guess, option);
     if(ptr_comm->get_rank()==0) print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());

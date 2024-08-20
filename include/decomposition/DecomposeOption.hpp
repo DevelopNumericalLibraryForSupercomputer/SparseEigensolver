@@ -45,7 +45,7 @@ public:
     double tolerance               = 1e-8;
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
-    int num_eigenvalues         = 2;
+    int num_eigenvalues         = 10;
     int eigenvalue_guesses      = 2;
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;

@@ -84,6 +84,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
         //i_block = number of block expanded
         int i_block = 0;
         for(int i_block = 0; i_block <= option.max_block; i_block++){
+			if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec);
 
