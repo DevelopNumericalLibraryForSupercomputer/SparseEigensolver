@@ -116,7 +116,6 @@ int main(int argc, char** argv){
 	int nb = 2;
 	if (argc>=4 ) nb=std::stoi(argv[3]);
 	//int p=1; int q=1;
-	int precond_type = 0;
 	if (argc>=5 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[4]);
 
 	int file_number;
@@ -150,7 +149,7 @@ int main(int argc, char** argv){
     if(ptr_comm->get_rank()==0){
 		std::cout << "=========Dense matrix davidson test(" 
 				  << p <<"," <<q<<"," <<nb<<"," 
-				  << precond_type<<"," << file_number << ")" << std::endl;
+				  << (int) option.preconditioner <<"," << file_number << ")" << std::endl;
 	}
 
 //	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 1 read matrix

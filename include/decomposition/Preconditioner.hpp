@@ -99,13 +99,8 @@ public:
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
 
-		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
         DATATYPE* norm2        = malloc<DATATYPE, device>( num_vec );
-		DATATYPE* rzold        = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* alpha        = malloc<DATATYPE,device> ( num_vec );
         DATATYPE* shift_values = malloc<DATATYPE, device>( num_vec );
-		DATATYPE* rznew        = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* beta         = malloc<DATATYPE,device> ( num_vec );
 
 		// caluclate square of residual norm 
     	TensorOp::get_norm_of_vectors(residual, norm2, num_vec, false);
@@ -124,8 +119,16 @@ public:
 
 		auto p_i = residual.clone();
 		if( check_initial_norm ==false){
+			free<device>(shift_values);
+			free<device>(norm2);
 			return this->pcg_precond->call( *p_i, sub_eigval) ;
 		}
+
+		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* rzold        = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* alpha        = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* rznew        = malloc<DATATYPE,device> ( num_vec );
+		DATATYPE* beta         = malloc<DATATYPE,device> ( num_vec );
 
 		////// line 7 start
     	auto r = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} *r 
@@ -207,11 +210,11 @@ public:
 		}
 		free<device>(beta);
 		free<device>(rznew);
-		free<device>(shift_values);
 		free<device>(alpha);
 		free<device>(rzold);
-		free<device>(norm2);
 		free<device>(conv);
+		free<device>(shift_values);
+		free<device>(norm2);
 
 		TensorOp::scale_vectors_(*p_i,-1.0);
 		return p_i;
