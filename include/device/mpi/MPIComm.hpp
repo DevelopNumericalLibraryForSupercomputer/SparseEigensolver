@@ -134,11 +134,11 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
         	const int i_zero = 0, i_one = 1, i_negone = -1;
             int rank ,world_size;
         
-        	blacs_pinfo( &rank, &world_size );
 			if (Comm<DEVICETYPE::MPI>::get_count_comm()==0){
 				blacs_get( &i_negone, &i_zero, &ictxt );
-               blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
+                blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
 			}
+			blacs_pinfo( &rank, &world_size );
 
             /*
         	if (mpi_comm==MPI_COMM_NULL){
