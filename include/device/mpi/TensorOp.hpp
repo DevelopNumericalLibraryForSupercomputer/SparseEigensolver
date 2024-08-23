@@ -543,12 +543,12 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
 
         LAPACKE_dsyev(LAPACK_ROW_MAJOR, 
 					  'V', 'U', 
-					  N, trg, N, src);
+					  N, trg, N, eigval);
 
 		#pragma omp parallel for 
 		for (int i =0; i< num_local_elements; i++){
 			const auto global_index = eigvec.ptr_map->local_to_global(i);
-			eigvec.data[i] = src[global_index];
+			eigvec.data[i] = trg[global_index];
 		}
 		free<DEVICETYPE::MPI> ( src );
 		free<DEVICETYPE::MPI> ( trg );

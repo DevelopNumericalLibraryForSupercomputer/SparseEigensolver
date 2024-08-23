@@ -36,6 +36,7 @@ bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residual,
     double* norm = malloc<DATATYPE, device>(num_eigenvalues);
     TensorOp::get_norm_of_vectors(residual, norm, num_eigenvalues);
     for(int i=0;i<num_eigenvalues;i++){
+		if(residual.ptr_comm->get_rank()==0) std::cout << i << " " << norm[i] <<std::endl; 
         if(norm[i] > tolerance){
             free<device>(norm);
             return false;
