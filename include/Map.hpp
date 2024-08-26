@@ -19,9 +19,9 @@ public:
 
     //Constructor 
     Map(){};
-    Map(array_d global_shape, int my_rank, int world_size): global_shape(global_shape), my_rank(my_rank), world_size(world_size){};
+    Map(array_d global_shape, int my_rank, int world_size): global_shape(global_shape), my_rank(my_rank), world_size(world_size){cumprod<dimension>(this->global_shape, this->global_shape_mult); };
     //Map(array_d global_shape, int my_rank, int world_size, std::array<bool, dimension> is_parallel );
-    Map(array_d global_shape, int my_rank, int world_size, array_d ranks_per_dim ): global_shape(global_shape), my_rank(my_rank), world_size(world_size), ranks_per_dim(ranks_per_dim){};
+    Map(array_d global_shape, int my_rank, int world_size, array_d ranks_per_dim ): global_shape(global_shape), my_rank(my_rank), world_size(world_size), ranks_per_dim(ranks_per_dim){cumprod<dimension>(this->global_shape, this->global_shape_mult);};
 
     //destructor
     virtual ~Map(){};

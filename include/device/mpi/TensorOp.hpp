@@ -1,5 +1,5 @@
 #pragma once
-//#include "LinearOp.hpp"
+#include "device/mpi/LinearOp.hpp"
 #include "../TensorOp.hpp"
 #include "MPIComm.hpp"
 //#include "../../Gather.hpp"
@@ -411,6 +411,7 @@ void TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::BlockCycling, 
 		}
 	}
 	free<DEVICETYPE::MPI>(local_sum);
+	free<DEVICETYPE::MPI>(buff);
 	// summing up accross the processors (broadcast because norm array is initialized as 0)
 	dgsum2d(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
     return;
@@ -516,47 +517,66 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
 	auto local_shape  = mat.ptr_map->get_local_shape();
     const int lld = MAX(local_shape[0] , 1 );
     //const int lld = MAX( global_shape[0], 1 );
-	const int N = global_shape[0]; 
-	int desc1[9]; 
-	int desc2[9]; 
-	
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
+	const auto N = global_shape[0]; 
+	const auto nprow = mat.ptr_map->get_nprow();
 
-	// define new matrix for containing eigvec
+    // define new matrix for containing eigvec
     DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> eigvec(mat);
-
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
-	// desc1 for mat desc2 for eigvec	
-    descinit( desc1, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
-    descinit( desc2, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
-
-    int lwork = -1, liwork = -1;
-    double work_query;
-    int iwork_query;
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
-
-	// Workspace query for pdsyevd
-    pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
-    lwork = (int)work_query;
-    liwork = iwork_query;
-    std::vector<double> work(lwork);
-    std::vector<int> iwork(liwork);
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
-
-    // Compute eigenvalues and eigenvectors
-    pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
-    assert(info == 0);
-	mat.ptr_comm->barrier();
-	mat.ptr_comm->barrier();
+	std::cout << mat.ptr_map->get_num_global_elements() <<"(" << global_shape[0] << "," <<global_shape[1] <<")\t" << mat.ptr_map->get_num_local_elements()<<std::endl;
+	if (block_size[0]*nprow[0]>N or block_size[1]*nprow[1]>N){
+		if(mat.ptr_comm->get_rank()==0) std::cout << "serial diagonalization" << std::endl;
 
 
+		const auto num_global_elements = mat.ptr_map->get_num_global_elements();
+		const auto num_local_elements = mat.ptr_map->get_num_local_elements();
+		std::cout << num_global_elements << "\t" <<num_local_elements <<std::endl;
+		auto src =  malloc<double, DEVICETYPE::MPI>(num_global_elements);
+		auto trg =  malloc<double, DEVICETYPE::MPI>(num_global_elements);
+		std::fill_n(src, num_global_elements, 0.0);
+		std::fill_n(trg, num_global_elements, 0.0);
+		#pragma omp parallel for 
+		for (int i =0; i<num_local_elements; i++){
+			const auto global_index = mat.ptr_map->local_to_global(i);
+			src[global_index] = mat.data[i];
+		}
+		mat.ptr_comm->allreduce(src, num_global_elements, trg, OPTYPE::SUM);
 
+        LAPACKE_dsyev(LAPACK_ROW_MAJOR, 
+					  'V', 'U', 
+					  N, trg, N, eigval);
+
+		#pragma omp parallel for 
+		for (int i =0; i< num_local_elements; i++){
+			const auto global_index = eigvec.ptr_map->local_to_global(i);
+			eigvec.data[i] = trg[global_index];
+		}
+		free<DEVICETYPE::MPI> ( src );
+		free<DEVICETYPE::MPI> ( trg );
+
+	}
+	else{
+    	int desc1[9]; 
+    	int desc2[9]; 
+    
+    	// desc1 for mat desc2 for eigvec	
+        descinit( desc1, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+        descinit( desc2, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+    
+        int lwork = -1, liwork = -1;
+        double work_query;
+        int iwork_query;
+    
+    	// Workspace query for pdsyevd
+        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
+        lwork = (int)work_query;
+        liwork = iwork_query;
+        std::vector<double> work(lwork);
+        std::vector<int> iwork(liwork);
+    
+        // Compute eigenvalues and eigenvectors
+        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
+        assert(info == 0);
+	}
     return eigvec ;
 	
 }
