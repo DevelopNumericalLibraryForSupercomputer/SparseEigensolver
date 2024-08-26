@@ -2,7 +2,7 @@
 #include <iostream>
 #include <map>
 //#include <yaml-cpp/yaml.h>
-#include "Utility.hpp"
+#include "../Utility.hpp"
 namespace SE{
 
 enum class MAT_TYPE{
@@ -13,12 +13,13 @@ enum class MAT_TYPE{
 };
 
 enum class DecomposeMethod{
-    Davidson,
-    Direct
+    Direct  =0,
+    Davidson=1,
 };
 
 enum class PRECOND_TYPE{
-    Diagonal
+    Diagonal=0,
+	ISI2    =1,
 };
 
 class DecomposeOption{
@@ -28,30 +29,29 @@ public:
     void set_option(std::string filename);
     void print();
 //    DecomposeMethod algorithm_type; //= DecomposeMethod::Davidson;
-//    size_t max_iterations;          // = 100;
+//    int max_iterations;          // = 100;
 //    double tolerance;               //
-//    size_t max_block;               //= 1E-10;
+//    int max_block;               //= 1E-10;
 //    MAT_TYPE matrix_type;           //= MAT_TYPE::RealSym;
-//    size_t num_eigenvalues;         //= 3;
-//    size_t eigenvalue_guesses;      //= 0;
+//    int num_eigenvalues;         //= 3;
+//    int eigenvalue_guesses;      //= 0;
 //    bool use_preconditioner;        //= false;
 //    PRECOND_TYPE preconditioner;    //= PRECOND_TYPE::Diagonal;
 //    double preconditioner_tolerance;      //= 1E-10;
 //    double preconditioner_max_iterations; //= 30;
 //    bool use_locking;            //= false;
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
-    size_t max_iterations          = 100;
+    int max_iterations          = 10000;
     double tolerance               = 1e-4;
-    size_t max_block               = 2;
+    int max_block               = 3;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
-    size_t num_eigenvalues         = 3;
-    size_t eigenvalue_guesses      = 3;
+    int num_eigenvalues         = 3;
+    int eigenvalue_guesses      = 3;
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
-    double preconditioner_max_iterations = 30;
+    int preconditioner_max_iterations = 30;
     bool use_locking               = false;
-
 
 private:
     //void set_option_worker();
@@ -61,19 +61,19 @@ private:
     std::map<std::string, MAT_TYPE> const mat_table =
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
     std::map<std::string, PRECOND_TYPE> const precond_table =
-        { {"Diagonal", PRECOND_TYPE::Diagonal}};
+        { {"Diagonal", PRECOND_TYPE::Diagonal}, {"ISI2", PRECOND_TYPE::ISI2}};
     //YAML::Node config;
 };
 DecomposeOption::DecomposeOption(){
     //config = YAML::LoadFile("Default.yaml");
     //set_option_worker();
 }
-/*
 DecomposeOption::DecomposeOption(std::string filename){
-    config = YAML::LoadFile("Default.yaml");
-    set_option(filename);
+    //config = YAML::LoadFile("Default.yaml");
+    //set_option(filename);
 }
 
+/*
 void DecomposeOption::set_option(std::string filename){
     YAML::Node new_config = YAML::LoadFile(filename);
 

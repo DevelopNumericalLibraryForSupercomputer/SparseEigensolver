@@ -14,6 +14,7 @@ enum class DEVICETYPE: int{
 
 enum class MTYPE: int{
     Contiguous1D=0,
+	BlockCycling=1,
 };
 
 
@@ -41,7 +42,20 @@ enum class TRANSTYPE{
     T,
     C,
 };
+char transtype_to_char(TRANSTYPE trans){
+	char trans_;
 
+	if(trans==TRANSTYPE::N){
+		trans_='N';
+	}
+	else if (trans==TRANSTYPE::T){
+		trans_='T'	;
+	}
+	else if (trans==TRANSTYPE::C){
+		trans_='C';
+	}
+	return trans_;	
+}
 enum class ORDERTYPE{
     ROW,
     COL

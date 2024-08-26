@@ -2,86 +2,91 @@
 #include <array>
 #include <vector>
 #include <memory>
-
+#include <functional>
 #include "Comm.hpp"
 #include "Map.hpp"
-#include "Contiguous1DMap.hpp"
+//#include "Contiguous1DMap.hpp"
 //#include "decomposition/DecomposeResult.hpp"
 
 namespace SE{
 
 
-template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
+template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE STORETYPE> 
 class Tensor{
-using array_d = std::array<size_t, dimension>;
-using INTERNALTYPE = typename std::conditional< store==STORETYPE::DENSE,  DATATYPE* , std::vector<std::pair<array_d, DATATYPE> > >::type; 
+using array_d = std::array<int, dimension>;
+using INTERNALTYPE = typename std::conditional< STORETYPE==STORETYPE::DENSE,  std::unique_ptr<DATATYPE[],std::function<void(DATATYPE*)> >, std::vector<std::pair<array_d, DATATYPE> > >::type; 
 
 public:
-    //const STORETYPE store = store;
-    const Comm<device> comm;
-    const MAPTYPE map;
+    //const STORETYPE STORETYPE = STORETYPE;
+    const std::unique_ptr<Comm<device> > ptr_comm;
+    const std::unique_ptr<Map<dimension,mtype>> ptr_map;
     INTERNALTYPE data; 
 
     // constructor
-    Tensor(const Comm<device>& comm, const MAPTYPE& map):comm(comm),map(map){
+    Tensor(){
         filled=false;
-    }
-    //Tensor(const Comm<device>& comm, const MAPTYPE& map, size_t reserve_size): comm(comm), map(map) {//_internal_dataype data reserve};
-    Tensor(const Comm<device>& comm, const MAPTYPE& map, INTERNALTYPE& data): comm(comm), map(map), data(data){
-        filled=false;
-    } 
+    };
 
-    Tensor(const Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor): comm(tensor.comm), map(tensor.map){ 
+    Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map):
+	ptr_comm(ptr_comm->clone()),
+	ptr_map( ptr_map->clone()) 
+	{
+        filled=false;
+    };
+    Tensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map, INTERNALTYPE& data): 
+	ptr_comm(ptr_comm->clone()),
+	ptr_map(ptr_map->clone()) 
+	{
+		this->data = std::move(data);
+        filled=false;
+    };
+
+    Tensor(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor) :
+	ptr_comm(tensor.ptr_comm->clone()),
+	ptr_map(tensor.ptr_map->clone()) 
+	{ 
         data = tensor.copy_data();
-        filled=false;
+        filled=tensor.get_filled();
     }
 
+	//virtual  Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other) = 0;
     //destructor
     ~Tensor() {
         // Depending on the storage type, perform cleanup
-        if constexpr (store == STORETYPE::DENSE) {
-            // If the data is stored as a pointer, delete it
-            if (data != nullptr) {
-                delete[] data;
-                data = nullptr;
-            }
-        } else {
-            // If the data is stored as a vector, no cleanup needed
-        }
-    }
+    };
 
     // copy functions
-    Comm<device>* copy_comm() const {
-        return comm.clone();
-    }
+    std::unique_ptr<Comm<device> > copy_comm() const {
+        return ptr_comm->clone();
+    };
 
-    MAPTYPE* copy_map() const {
-        return map.clone();
-    }
+    std::unique_ptr<Map<dimension,mtype>> copy_map() const {
+        return ptr_map->clone();
+    };
 
     virtual INTERNALTYPE copy_data() const=0;
 
     // clone function 
-    virtual Tensor<dimension,DATATYPE,MAPTYPE,device,store>* clone(bool call_complete=false) const=0;
+    //virtual std::unique_ptr<Tensor<dimension,DATATYPE,mtype,device,STORETYPE> > clone(bool call_complete=false) const=0;
 
     // insert function (add value ) 
     virtual void global_insert_value(const array_d global_array_index, const DATATYPE value)=0;
     virtual void local_insert_value (const array_d local_array_index,  const DATATYPE value)=0;
-    virtual void global_insert_value(const size_t global_index,        const DATATYPE value)=0;
-    virtual void local_insert_value (const size_t local_index,         const DATATYPE value)=0;
+    virtual void global_insert_value(const int global_index,        const DATATYPE value)=0;
+    virtual void local_insert_value (const int local_index,         const DATATYPE value)=0;
 
     // set function 
     virtual void global_set_value(const array_d global_array_index, const DATATYPE value)=0;
     virtual void local_set_value (const array_d local_array_index,  const DATATYPE value)=0;
-    virtual void global_set_value(const size_t global_index,        const DATATYPE value)=0;
-    virtual void local_set_value (const size_t local_index,         const DATATYPE value)=0;
+    virtual void global_set_value(const int global_index,        const DATATYPE value)=0;
+    virtual void local_set_value (const int local_index,         const DATATYPE value)=0;
 
 
     // access function, it works only when filled==false
-    DATATYPE operator()(const size_t local_index) const {
+    DATATYPE operator()(const int local_index) const {
         assert(this->filled==false);
         return this->data[local_index];
-    }
+    };
 
     // Sparse Tensor Only 
     void complete(bool reuse=true){};
@@ -101,27 +106,48 @@ public:
 //    };
 
 //    DATATYPE operator() (const array_d idx);
-    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor){
+    friend std::ostream& operator<< (std::ostream& stream, const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& tensor){
     //void print_tensor_info() const{
-        if(tensor.comm.get_rank() == 0){
+        if(tensor.ptr_comm->get_rank() == 0){
             stream << "========= Tensor Info =========" <<std::endl;
             stream << "dimension: " << dimension<< "\n" 
                    << "DATATYPE: "  << typeid(DATATYPE).name()
                    << "   shape: ("  ;
-            for (auto shape_i : tensor.map.get_global_shape()){
+            for (auto shape_i : tensor.ptr_map->get_global_shape()){
                 stream << shape_i << ",";
             }
             stream << ")\n"
-                   << "MAPTYPE: "   << typeid(MAPTYPE).name() << "\n" 
-                   << "Device: "    << (int) device <<"\n"
-                   << "store: "     << (int) store <<  std::endl;   
+                   << "Map<dimension,mtype>: "   << typeid(Map<dimension,mtype>).name() << "\n" 
+                   << "device: "<< int(device)<<"\n"
+                   << "STORETYPE: " << int(STORETYPE) <<  std::endl;   
         }
         return stream;
     };
+/*
+    //복사 할당 연산자
+    Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(const Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& other){
+        if(this != &other){
+            this->ptr_comm = other.ptr_comm->clone();
+            this->ptr_map = other.ptr_map->clone();
+            this->data = other.copy_data();
+            this->filled = other.filled;
+        }
+        return *this;
+    };
 
-
+    //이동 할당 연산자
+    Tensor<dimension,DATATYPE,mtype,device,STORETYPE>& operator=(Tensor<dimension,DATATYPE,mtype,device,STORETYPE>&& other) noexcept {
+        if(this != &other){
+            this->ptr_comm = std::move(other.ptr_comm);
+            this->ptr_map = std::move(other.ptr_map);
+            this->data = std::move(other.data);
+            this->filled = other.filled;
+        }
+        return *this;
+    };
+*/
 protected:
     bool filled = false;
-    //size_t calculate_column( array_d index, size_t dim){return index[dim];};
+    //int calculate_column( array_d index, int dim){return index[dim];};
 };
 }

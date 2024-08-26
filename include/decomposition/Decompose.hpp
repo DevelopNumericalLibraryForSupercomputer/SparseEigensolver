@@ -2,6 +2,7 @@
 #include <memory>
 #include <functional>
 #include "DecomposeResult.hpp"
+#include "DecomposeOption.hpp"
 #include "DirectSolver.hpp"
 #include "IterativeSolver.hpp"
 
@@ -14,52 +15,49 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 */
 //std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(DenseTensor<DATATYPE,2,comm,map>& tensor, std::string method)
 
-//template<size_t dimension, typename DATATYPE, typename MAPTYPE, DEVICETYPE device, STORETYPE store> 
-//std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,MAPTYPE,device,store>& tensor, std::string method);
+//template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device, STORETYPE store> 
+//std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,mtype,device,store>& tensor, std::string method);
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
-{
-    if(method == "evd"){
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+    if(option.algorithm_type == DecomposeMethod::Direct){
         return evd(tensor, eigvec);
     }
-    else if(method == "davidson"){
-        DenseTensorOperations* basic_op = new DenseTensorOperations(tensor);
-        auto return_val = davidson(basic_op, eigvec);
-        free(basic_op);
+    else if(option.algorithm_type == DecomposeMethod::Davidson){
+        DenseTensorOperations<mtype, device>* basic_op = new DenseTensorOperations<mtype,device>(&tensor);
+        auto return_val = davidson(basic_op, eigvec, option);
+        delete basic_op;
         return return_val;
     }
     else{
-        std::cout << method << " is not implemented" << std::endl;
+        std::cout << int(option.algorithm_type) << " should be one of DecomposMethod type. The given algorithm is not implemented" << std::endl;
         exit(1);
     }
 };
 
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, MAPTYPE, device>& tensor, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
-{
-    if(method == "davidson"){
-        SparseTensorOperations* basic_op = new SparseTensorOperations(tensor);
-        auto return_val = davidson(basic_op, eigvec);
-        free(basic_op);
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+    if(option.algorithm_type == DecomposeMethod::Davidson){
+        SparseTensorOperations<mtype, device>* basic_op = new SparseTensorOperations(&tensor);
+        auto return_val = davidson(basic_op, eigvec, option);
+        delete basic_op;
         return return_val;
     }
     else{
-        std::cout << method << " is not implemented" << std::endl;
+        std::cout << int(option.algorithm_type) << " should be one of DecomposMethod type. The given algorithm is not implemented" << std::endl;
         exit(1);
     }
 };
 
 
-template<typename DATATYPE, typename MAPTYPE, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations* operations, DenseTensor<2, DATATYPE, MAPTYPE, device>* eigvec, std::string method)
-{
-    if(method == "davidson"){
-        return davidson(operations, eigvec);
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+    if(option.algorithm_type == DecomposeMethod::Davidson){
+        return davidson(operations, eigvec, option);
     }
     else{
-        std::cout << method << " is not implemented" << std::endl;
+        std::cout << int(option.algorithm_type) << " should be one of DecomposMethod type. The given algorithm is not implemented" << std::endl;
         exit(1);
     }
 };
