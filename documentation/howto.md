@@ -1,4 +1,4 @@
-## Installation
+## How-to-Use
 
 ### Downloads
 The repository can be cloned as follows:
@@ -137,6 +137,39 @@ auto result_matrix = TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, 
 For additional explanations about the example file (`serial_matrix_operations.cpp`), please refer to the comments within the file and the corresponding output (`serial_matrix_operations.output`).
 
 #### Example2. cpu_serial_diagonalization.cpp
+To perform matrix diagonalization, you need to decide whether you want to use direct diagonalization (for `DenseTensor` only) or iterative diagonalization.
+If the user provides a method to perform matrix-vector multiplication (`TensorOperation`) in any form, we can use it to converge the lowest few eigenvalues of the given matrix to the desired accuracy using Davidson diagonalization.
+In Davidson diagonalization, you can perform diagonalization without explicitly providing the entire matrix ($A$), as long as you can compute the product $Ax$ for guess vectors $x$.
 
+In this library, users can provide a method for performing matrix-vector multiplication in the following ways:
 
+- Provide the entire matrix (`DenseTensor`, `SparseTensor`)
+- Implement the matrix-vector multiplication directly using the functions from `SE::TensorOp`
+- Implement the matrix-vector multiplication using **Python** and `Numpy`.
+
+#### Diagonalization options
+Various options required for iterative diagonalization can be loaded from an external YAML file.
+The following is an example of an options file.
+
+```yaml
+solver_options:
+  algorithm: Davidson  # Specify the algorithm (Davidson / Direct)
+  max_iterations: 1000  # Maximum number of iterations
+  tolerance: 1e-6      # Convergence tolerance
+  max_block: 2         # Maximum number of block expansion for each iteration
+
+matrix_options:
+  matrix_type: RealSym  # Real, RealSym, Complex, Hermitian
+
+eigenvalue_options:
+  num_eigenvalues: 3  # Number of eigenvalues to compute
+
+preconditioner_options:
+  preconditioner_type: Diagonal  # Specify the preconditioner type (e.g., Diagonal, ISI2)
+  preconditioner_tolerance: 1e-3  # Tolerance for preconditioner
+  preconditioner_max_iterations: 30  # max iteration number for preconditioner
+
+locking_options:
+  use_locking: false # Enable or disable locking
+```
 Further explanations can be found in [ExaTQ webpage](https://www.exatq.net/)

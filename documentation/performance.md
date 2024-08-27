@@ -6,7 +6,7 @@
 > * Tests were conducted in the GPU environment proposed by [Woo et al. (2024)](https://doi.org/10.1021/acs.jctc.4c00721).
 > * Dataset details are provided in [Woo et al. (2024)](https://doi.org/10.1021/acs.jctc.4c00721).
 
-![Comparison with existing methods](./Figure5.png)
+<img src="./Figure5.png" alt="Comparison with existing methods" width="500"/>
 
 * Figure (a) shows the relative performances of block Davidson method with Inexact Shift-and-Invert(ISI) preconditioner and the modified ISI preconditioner with respect to Gaussian-Approximated Poisson Preconditioner(GAPP)
 * The block Davidson method with the modified Inexact Shift-and-Invert(ISI) preconditioner outperforms other methods. 

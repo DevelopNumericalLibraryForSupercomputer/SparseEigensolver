@@ -14,6 +14,7 @@
 
 #include "decomposition/Decompose.hpp"
 
+#include "decomposition/TensorOperations.hpp"
 #include "../example/TestOperations.hpp"
 #include "decomposition/PyOperations.hpp"
 
@@ -123,7 +124,7 @@ int main(int argc, char* argv[]){
     std::cout << "BlockDavidson, Sparse, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
 
     std::cout << "\n========\n Python Tensor Operation,  Davidson" << std::endl;
-    PyTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("/home/jaewook/projects/SparseEigensolver/include/decomposition/tensor_operations.py");
+    PyTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("../example/tensor_operations.py");
     std::chrono::steady_clock::time_point begin5 = std::chrono::steady_clock::now();  
     auto out5 = decompose(&test_op, ptr_guess5.get(), option);
     print_eigenvalues( "Eigenvalues", num_eig, out5.get()->real_eigvals.data(), out5.get()->imag_eigvals.data());
