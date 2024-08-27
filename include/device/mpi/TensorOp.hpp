@@ -255,6 +255,7 @@ void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+//always perform QR decomposition
 template <>
 void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const std::string method){
     //const double one = 1.0;

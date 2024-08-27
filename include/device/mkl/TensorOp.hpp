@@ -232,7 +232,6 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 //n vectors with size m should be stored in m by n matrix (row-major).
 //Each coulumn correponds to the vector should be orthonormalized.
 template <>
-//DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> 
 void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>( 
     DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat,  
     const std::string method)
@@ -258,6 +257,7 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
         
     }
     else{
+        //Lowdin symmetric orthogonalization
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
         syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data.get(), number_of_vectors, submatrix_eigvals.get());

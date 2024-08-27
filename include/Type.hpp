@@ -69,9 +69,3 @@ enum class OPTYPE{//opertor for allreduce
 };
 
 }
-
-template<typename T>
-struct Zero{
-    static constexpr T value= (T) 0.0;
-};
-
