@@ -1,6 +1,6 @@
 solver_options:
   algorithm: Davidson  # Specify the algorithm (Davidson / Direct)
-  max_iterations: 200  # Maximum number of iterations
+  max_iterations: 1000  # Maximum number of iterations
   tolerance: 1e-6      # Convergence tolerance
   max_block: 2         # Maximum number of block expansion for each iteration
 
@@ -12,7 +12,7 @@ eigenvalue_options:
   eigenvalue_guesses: 3  # Number of initial eigenvalue guesses
 
 preconditioner_options:
-  preconditioner_type: Diagonal  # Specify the preconditioner type (e.g., ISI2)
+  preconditioner_type: ISI2  # Specify the preconditioner type (e.g., ISI2)
   preconditioner_tolerance: 1e-3  # Tolerance for preconditioner
   preconditioner_max_iterations: 30  # max iteration number for preconditioner
 

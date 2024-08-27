@@ -12,8 +12,9 @@
 #include "DenseTensor.hpp"
 #include "SparseTensor.hpp"
 
-#include "decomposition/TestOperations.hpp"
 #include "decomposition/Decompose.hpp"
+
+#include "../example/TestOperations.hpp"
 #include "decomposition/PyOperations.hpp"
 
 using namespace SE;
@@ -24,8 +25,9 @@ int main(int argc, char* argv[]){
 	MKLCommInp comm_inp;
     auto ptr_comm = comm_inp.create_comm();
     
+    std::cout << "# Create Matrix" << std::endl;
     int N = 100;
-    const int num_eig = 2;
+    const int num_eig = 3;
     std::array<int, 2> shape = {N,N};
 	Contiguous1DMapInp<2> map2_inp( shape );
 
@@ -43,7 +45,10 @@ int main(int argc, char* argv[]){
             if(i !=j && i%100 == 0 && j%100 == 0)  test_data2[i+j*N] += 0.01;
         }
     }
+    
     DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix2(ptr_comm, map2_inp.create_map(), std::move(test_data2));
+    
+    std::cout << "# Copy matrix2 into matrix3" << std::endl;
     DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix3(test_matrix2);
     
     std::cout << "========================\nDense matrix davidson test" << std::endl;
@@ -51,12 +56,12 @@ int main(int argc, char* argv[]){
 	Contiguous1DMapInp<2> guess_map_inp( guess_shape );
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_guess_map = guess_map_inp.create_map();
 
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess5 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    // guess : unit vector
+    auto ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto ptr_guess5 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    // guess : unit vectors
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
         ptr_guess->global_set_value(tmp_index, 1.0);
@@ -68,7 +73,7 @@ int main(int argc, char* argv[]){
     
 	DecomposeOption option_evd;
     option_evd.algorithm_type = DecomposeMethod::Direct;
-    DecomposeOption option;
+
    
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
@@ -89,19 +94,12 @@ int main(int argc, char* argv[]){
             if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, 0.3);
             if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
             if(i!=j && i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
-            //if( (j*N+i)%53 == 0) test_sparse.global_insert_value(index, 0.01);
         }
     }
     test_sparse.complete();
     std::cout << "matrix construction complete" << std::endl;
 
-    /*
-    std::cout <<  test_sparse << std::endl;
-    std::cout << "SPMV" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
-    std::cout << "sgemm" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
-    */
+    DecomposeOption option("ISI.yaml");
     std::cout << "\n========\nDense Tensor Operation,  Davidson" << std::endl;
     std::chrono::steady_clock::time_point begin2 = std::chrono::steady_clock::now();  
     auto out2 = decompose(test_matrix3, ptr_guess2.get(), option);

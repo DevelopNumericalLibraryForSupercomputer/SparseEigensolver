@@ -1,5 +1,5 @@
 #pragma once
-#include "TensorOperations.hpp"
+#include "decomposition/TensorOperations.hpp"
 
 namespace SE{
 
