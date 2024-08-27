@@ -329,7 +329,6 @@ void SE::TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::Conti
 template <>
 void SE::TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
                                double* norm, const int norm_size){
-
 	assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
 	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
     assert (mat1.ptr_map->get_global_shape()[1] >= norm_size);

@@ -35,7 +35,7 @@ public:
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
     int num_eigenvalues         = 3;
-    int eigenvalue_guesses      = 3;
+//    int eigenvalue_guesses      = 3;
 //    bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
     double preconditioner_tolerance      = 1E-3;
@@ -95,7 +95,7 @@ void DecomposeOption::set_option_worker(){
     this->matrix_type    = table_match<MAT_TYPE>(mat_table, config["matrix_options"]["matrix_type"].as<std::string>());
 
     this->num_eigenvalues    = config["eigenvalue_options"]["num_eigenvalues"].as<int>();
-    this->eigenvalue_guesses = config["eigenvalue_options"]["eigenvalue_guesses"].as<int>();
+//    this->eigenvalue_guesses = config["eigenvalue_options"]["eigenvalue_guesses"].as<int>();
 
 //    this->use_preconditioner            = config["preconditioner_options"]["use_preconditioner"].as<bool>();
     this->preconditioner                = table_match<PRECOND_TYPE>(precond_table, config["preconditioner_options"]["preconditioner_type"].as<std::string>());

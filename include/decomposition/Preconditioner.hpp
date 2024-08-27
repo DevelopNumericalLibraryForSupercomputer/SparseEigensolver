@@ -15,6 +15,7 @@ public:
 	virtual ~Preconditioner() = default;
 	virtual std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (
                                                                DenseTensor<2, DATATYPE, mtype, device>& residual, //vec_size * block_size
+                                                               int number_of_vectors,
                                                                DATATYPE* sub_eigval) const=0;                           //block_size
 															   
     friend std::ostream& operator<< (std::ostream& stream, const Preconditioner<DATATYPE, mtype, device>& preconditioner){
@@ -38,12 +39,12 @@ public:
 	DiagonalPreconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
+                                                       int number_of_vectors,
 													   DATATYPE* sub_eigval) const{
 		
-	
         int vec_size = residual.ptr_map->get_global_shape()[0];
-        int num_eig  = residual.ptr_map->get_global_shape()[1];
-        //int num_eig = this->option.num_eigenvalues;
+        //int num_eig  = residual.ptr_map->get_global_shape()[1];
+        int num_eig = number_of_vectors;//this->option.num_eigenvalues;
         //int new_block_size = block_size + num_eig;
         
         std::array<int, 2> new_guess_shape = {vec_size, num_eig};
@@ -69,7 +70,7 @@ public:
         }
     
     
-        TensorOp::scale_vectors(additional_guess, scale_factor);
+        TensorOp::scale_vectors_(additional_guess, scale_factor);
         free<device>(scale_factor);
 //        auto new_guess = TensorOp::append_vectors(guess, additional_guess);
     
@@ -86,6 +87,7 @@ public:
 		this->pcg_precond=std::make_unique<DiagonalPreconditioner<DATATYPE,mtype,device> > (operations,option);
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
+                                                       int number_of_vectors,
 													   DATATYPE* sub_eigval) const {
 		
 
@@ -121,7 +123,7 @@ public:
 		if( check_initial_norm ==false){
 			free<device>(shift_values);
 			free<device>(norm2);
-			return this->pcg_precond->call( *p_i, sub_eigval) ;
+			return this->pcg_precond->call( *p_i, p_i->ptr_map->get_global_shape()[1], sub_eigval) ;
 		}
 
 		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
@@ -137,7 +139,7 @@ public:
 		////// line 7 end 
 		
 		////// line 8 start
-		auto p = this->pcg_precond->call( *r, sub_eigval) ;
+		auto p = this->pcg_precond->call( *r, r->ptr_map->get_global_shape()[1], sub_eigval) ;
 		////// line 8 end
 
 		////// line 9 start
@@ -174,7 +176,7 @@ public:
 			///// line 15 end
 			
 			///// line 16 end
-			z = this->pcg_precond->call( *r, sub_eigval) ;
+			z = this->pcg_precond->call( *r, r->ptr_map->get_global_shape()[1], sub_eigval) ;
 			///// line 16 end
 
 			

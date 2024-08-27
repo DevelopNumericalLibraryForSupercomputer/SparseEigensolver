@@ -68,7 +68,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > subspace_matrix = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::matmul(*new_guess, *w_iter, TRANSTYPE::T, TRANSTYPE::N) );
 
     //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
-    DATATYPE* sub_eigval = malloc<DATATYPE, device>(eigvec->ptr_map->get_global_shape(1) ) ;
+    DATATYPE* sub_eigval = malloc<DATATYPE, device>(option.num_eigenvalues) ;
     std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > sub_eigvec = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (TensorOp::diagonalize(*subspace_matrix, sub_eigval) );
 
     //calculate ritz vector
@@ -104,17 +104,17 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<mtyp
             }
 
             //block expansion starts
-            int block_size = option.num_eigenvalues*(i_block+1);
+//            int block_size = option.num_eigenvalues*(i_block+1);
 
             if(i_block == option.max_block){
-                block_size = option.num_eigenvalues;
+//                block_size = option.num_eigenvalues;
                 TensorOp::copy_vectors<DATATYPE, mtype, device>(*eigvec, *ritz_vec, option.num_eigenvalues);
                 new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
             }
             else{
                 //preconditioning
-                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, sub_eigval) );
-                block_size = option.num_eigenvalues*(i_block+2);
+                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, option.num_eigenvalues, sub_eigval) );
+//                block_size = option.num_eigenvalues*(i_block+2);
                 TensorOp::orthonormalize(*new_guess, "default");
             }
             // W_iterk = A V_k

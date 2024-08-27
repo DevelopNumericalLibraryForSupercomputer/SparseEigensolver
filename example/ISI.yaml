@@ -9,10 +9,9 @@ matrix_options:
 
 eigenvalue_options:
   num_eigenvalues: 3  # Number of eigenvalues to compute
-  eigenvalue_guesses: 3  # Number of initial eigenvalue guesses
 
 preconditioner_options:
-  preconditioner_type: ISI2  # Specify the preconditioner type (e.g., ISI2)
+  preconditioner_type: Diagonal  # Specify the preconditioner type (e.g., Diagonal, ISI2)
   preconditioner_tolerance: 1e-3  # Tolerance for preconditioner
   preconditioner_max_iterations: 30  # max iteration number for preconditioner
 
