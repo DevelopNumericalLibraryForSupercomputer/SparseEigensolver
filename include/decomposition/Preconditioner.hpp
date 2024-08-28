@@ -45,17 +45,19 @@ public:
         int num_eig  = residual.ptr_map->get_global_shape()[1];
         //int num_eig = number_of_vectors;//this->option.num_eigenvalues;
         //int new_block_size = block_size + num_eig;
-        
+        std::cout << "Diagonal, (" << vec_size << ", " << num_eig << std::endl;
         std::array<int, 2> new_guess_shape = {vec_size, num_eig};
     	auto p_map_inp = residual.ptr_map->generate_map_inp();
     	p_map_inp->global_shape = {vec_size, num_eig};
     	auto p_new_guess_map = p_map_inp->create_map();
-    
+		std::cout << "Newguessmap " << *p_new_guess_map << std::endl;
     
         DenseTensor<2, DATATYPE, mtype, device> additional_guess(residual.copy_comm(), p_new_guess_map);
         TensorOp::copy_vectors(additional_guess, residual, num_eig);
+		std::cout << "residual " << residual << std::endl;
+		std::cout << "additional_guess " << additional_guess << std::endl;
         DATATYPE* scale_factor = malloc<DATATYPE, device>(num_eig);
-    
+    	std::cout << "scale_factor :  ";
         for(int index=0; index< num_eig; index++){
     //        array_index = {index, index};
             //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
@@ -66,10 +68,13 @@ public:
             else{
                 scale_factor[index] = 0.0;
             }
+			std::cout << scale_factor[index] << "  ";
         }
+		std::cout << std::endl;
     
     
         TensorOp::scale_vectors_(additional_guess, scale_factor);
+		std::cout << "additional_guess " << additional_guess << std::endl;
         free<device>(scale_factor);
 //        auto new_guess = TensorOp::append_vectors(guess, additional_guess);
     

@@ -128,7 +128,9 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(
                 //preconditioning
                 new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, sub_eigval) );
 //                block_size = option.num_eigenvalues*(i_block+2);
+                std::cout << "OUTSIDE=========\nnew_guess : " << *new_guess << std::endl;
                 TensorOp::orthonormalize(*new_guess, "default");
+                std::cout << "orthonormalize=========\nnew_guess : " << *new_guess << std::endl;
             }
             // W_iterk = A V_k
             w_iter = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( operations->matvec(*new_guess) );

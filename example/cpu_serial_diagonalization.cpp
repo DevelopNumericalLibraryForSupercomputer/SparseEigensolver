@@ -27,7 +27,7 @@ int main(int argc, char* argv[]){
     auto ptr_comm = comm_inp.create_comm();
     
     std::cout << "# Create Matrix" << std::endl;
-    int N = 300;
+    int N = 30;
     const int num_eig = 3;
     std::array<int, 2> shape = {N,N};
 	Contiguous1DMapInp<2> map2_inp( shape );
