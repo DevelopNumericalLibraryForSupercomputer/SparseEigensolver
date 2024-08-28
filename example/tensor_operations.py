@@ -1,5 +1,4 @@
 #Example tensor operation file
-
 import numpy as np
 
 # Example matrix for demonstration

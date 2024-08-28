@@ -61,7 +61,7 @@ int main(int argc, char* argv[]){
             if(i!=j && i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
         }
     }
-    test_sparse.complete(true);
+    test_sparse.complete();
     std::cout << "# Matrix construction complete" << std::endl;
     
     std::cout << "# Create guess vectors" << std::endl;
