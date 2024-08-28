@@ -359,7 +359,7 @@ void SE::TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::Contiguous
 template <>
 void SE::TensorOp::copy_vectors(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
-        DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, int new_size){
+        const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, int new_size){
     assert(mat1.ptr_map->get_global_shape()[1] >= new_size);
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
     int vec_size = mat1.ptr_map->get_global_shape()[0];

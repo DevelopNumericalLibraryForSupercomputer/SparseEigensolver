@@ -15,7 +15,7 @@ std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > calculate_residual( //
     const DATATYPE* sub_eigval,                                 //block_size
     const DenseTensor<2, DATATYPE, mtype, device>& sub_eigvec,  //block_size by block_size
     const DenseTensor<2, DATATYPE, mtype, device>& ritz_vec,    //vec_size by block_size
-    const int num_eigval)   
+    int num_eigval)   
 {
     //int block_size = sub_eigvec.map.get_global_shape()[0];
     //int vec_size = ritz_vec.map.get_global_shape()[0];
@@ -24,20 +24,21 @@ std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > calculate_residual( //
     auto new_map_inp = ritz_vec.ptr_map->generate_map_inp();
     new_map_inp->global_shape = {ritz_vec.ptr_map->get_global_shape()[0], num_eigval};
     auto new_map = new_map_inp->create_map();
-    DenseTensor<2, DATATYPE, mtype, device> scaled_ritz(ritz_vec.copy_comm(), new_map); // vec_size by num_eigval
+
+    auto scaled_ritz = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (ritz_vec.copy_comm(), new_map); // vec_size by num_eigval
     
-    TensorOp::copy_vectors(scaled_ritz, ritz_vec, num_eigval);
+    TensorOp::copy_vectors(*scaled_ritz, ritz_vec, num_eigval);
     //lambda_ki x_ki
-    TensorOp::scale_vectors_(scaled_ritz, sub_eigval);
+    TensorOp::scale_vectors_(*scaled_ritz, sub_eigval);
 
     //W_iterk y_ki - lambda_ki x_ki
     auto tmp_residual = TensorOp::matmul(w_iter, sub_eigvec);
 
-    DenseTensor<2, DATATYPE, mtype, device> residual(tmp_residual.copy_comm(), new_map);    // vec_size by num_eigval
-    TensorOp::copy_vectors(residual, tmp_residual, num_eigval);
+    auto residual = std::make_unique< DenseTensor<2, DATATYPE, mtype, device> > (tmp_residual.copy_comm(), new_map);    // vec_size by num_eigval
+    TensorOp::copy_vectors(*residual, tmp_residual, num_eigval);
 
-    TensorOp::add_(residual, scaled_ritz, -1.0);
-    return residual;
+    TensorOp::add_(*residual, *scaled_ritz, -1.0);
+    return std::move(residual);
 }
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
@@ -125,7 +126,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(
             }
             else{
                 //preconditioning
-                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, option.num_eigenvalues, sub_eigval) );
+                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, sub_eigval) );
 //                block_size = option.num_eigenvalues*(i_block+2);
                 TensorOp::orthonormalize(*new_guess, "default");
             }

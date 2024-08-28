@@ -118,7 +118,7 @@ public:
 		if( check_initial_norm ==false){
 			free<device>(shift_values);
 			free<device>(norm2);
-			return this->pcg_precond->call( *p_i, p_i->ptr_map->get_global_shape()[1], sub_eigval) ;
+			return this->pcg_precond->call( *p_i, sub_eigval) ;
 		}
 
 		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
@@ -134,7 +134,7 @@ public:
 		////// line 7 end 
 		
 		////// line 8 start
-		auto p = this->pcg_precond->call( *r, r->ptr_map->get_global_shape()[1], sub_eigval) ;
+		auto p = this->pcg_precond->call( *r, sub_eigval) ;
 		////// line 8 end
 
 		////// line 9 start
@@ -171,7 +171,7 @@ public:
 			///// line 15 end
 			
 			///// line 16 end
-			z = this->pcg_precond->call( *r, r->ptr_map->get_global_shape()[1], sub_eigval) ;
+			z = this->pcg_precond->call( *r, sub_eigval) ;
 			///// line 16 end
 
 			

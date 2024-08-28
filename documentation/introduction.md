@@ -41,15 +41,17 @@ The Davidson algorithm is a powerful iterative method commonly used to find the 
 If you refer to this project, please use the following BibTeX entry:
 
 ```bibtex
-@article{WOO2024,
-title = {- ,
+@article{doi:10.1021/acs.jctc.4c00721,
+author = {Woo, Jeheon and Youn Kim, Woo and Choi, Sunghwan},
+title = {Efficient Shift-and-Invert Preconditioning for Multi-GPU Accelerated Density Functional Calculations},
 journal = {Journal of Chemical Theory and Computation},
-volume = {-},
-pages = {-},
-year = {2024},
-issn = {-},
-doi = {https://doi.org/10.1021/acs.jctc.4c00721},
-url = {https://doi.org/10.1021/acs.jctc.4c00721},
-author = {Jeheon Woo and Woo Youn Kim and Sunghwan Choi}
-}
+volume = {0},
+number = {0},
+pages = {null},
+year = {0},
+doi = {10.1021/acs.jctc.4c00721},
+    note ={PMID: 39190438},
 
+URL = {  https://doi.org/10.1021/acs.jctc.4c00721},
+eprint = { https://doi.org/10.1021/acs.jctc.4c00721} 
+````
