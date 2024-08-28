@@ -9,14 +9,14 @@ namespace SE{
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class Preconditioner{
 public:
-	Preconditioner<DATATYPE,mtype,device>(const TensorOperations<mtype, device>* operations,const DecomposeOption option, std::string type): option(option), operations(operations), type(type){
+	Preconditioner<DATATYPE,mtype,device>(const TensorOperations<mtype, device>* operations,const DecomposeOption option, std::string type):
+	  option(option), operations(operations), type(type){
 		return;
 	}
 	virtual ~Preconditioner() = default;
 	virtual std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (
                                                                DenseTensor<2, DATATYPE, mtype, device>& residual, //vec_size * block_size
-                                                               int number_of_vectors,
-                                                               DATATYPE* sub_eigval) const=0;                           //block_size
+                                                               DATATYPE* sub_eigval) const=0;                     //block_size
 															   
     friend std::ostream& operator<< (std::ostream& stream, const Preconditioner<DATATYPE, mtype, device>& preconditioner){
     //void print_tensor_info() const{
@@ -36,15 +36,14 @@ protected:
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class DiagonalPreconditioner: public Preconditioner<DATATYPE, mtype, device>{
 public:
-	DiagonalPreconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
-	}
+	DiagonalPreconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option)
+      :Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){}
+
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
-                                                       int number_of_vectors,
-													   DATATYPE* sub_eigval) const{
-		
+                                                                     DATATYPE* sub_eigval) const{		
         int vec_size = residual.ptr_map->get_global_shape()[0];
-        //int num_eig  = residual.ptr_map->get_global_shape()[1];
-        int num_eig = number_of_vectors;//this->option.num_eigenvalues;
+        int num_eig  = residual.ptr_map->get_global_shape()[1];
+        //int num_eig = number_of_vectors;//this->option.num_eigenvalues;
         //int new_block_size = block_size + num_eig;
         
         std::array<int, 2> new_guess_shape = {vec_size, num_eig};
@@ -82,21 +81,17 @@ public:
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class ISI2Preconditioner: public Preconditioner<DATATYPE, mtype, device>{
 public:
-
-	ISI2Preconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "ISI2"){
+	ISI2Preconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option)
+	  :Preconditioner<DATATYPE,mtype,device>(operations, option, "ISI2"){
 		this->pcg_precond=std::make_unique<DiagonalPreconditioner<DATATYPE,mtype,device> > (operations,option);
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
-                                                       int number_of_vectors,
-													   DATATYPE* sub_eigval) const {
-		
-
+                                                                     DATATYPE* sub_eigval) const {
 
     	const int i_zero = 0;
     	const int i_one  = 1;
     	const DATATYPE one  = 1.;
-    	const DATATYPE zero = 0.;
-    
+    	const DATATYPE zero = 0.;    
 
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
