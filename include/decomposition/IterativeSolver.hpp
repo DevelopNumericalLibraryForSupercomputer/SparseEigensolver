@@ -102,7 +102,6 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(
 			//if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
-
             //check convergence
             bool is_converged = check_convergence<DATATYPE,mtype,device>(*residual, option.num_eigenvalues, option.tolerance);
             if(is_converged){
@@ -128,9 +127,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(
                 //preconditioning
                 new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residual, sub_eigval) );
 //                block_size = option.num_eigenvalues*(i_block+2);
-                std::cout << "OUTSIDE=========\nnew_guess : " << *new_guess << std::endl;
                 TensorOp::orthonormalize(*new_guess, "default");
-                std::cout << "orthonormalize=========\nnew_guess : " << *new_guess << std::endl;
             }
             // W_iterk = A V_k
             w_iter = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( operations->matvec(*new_guess) );

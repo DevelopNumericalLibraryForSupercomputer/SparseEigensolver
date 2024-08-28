@@ -103,7 +103,7 @@ public:
     }
 
     // Sparse Tensor Only 
-    void complete(bool reuse=false);
+    void complete(bool reuse=true);
     
     DATATYPE operator() (const int local_index) const { return this->data[local_index]; };
 
