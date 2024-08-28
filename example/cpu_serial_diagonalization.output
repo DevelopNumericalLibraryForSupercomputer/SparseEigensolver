@@ -1,0 +1,61 @@
+# Create Comm
+# Create Matrix
+# Matrix construction complete
+# Create guess vectors
+  Number of guess vectors = 3
+# Guess vectors construction complete
+1. Direct diagonalization (using MKL)
+========================
+Dense matrix diag start
+========================
+Dense matrix diag done
+
+Eigenvalues
+ -33.32529740 -30.58568083 -28.52720180
+Direct, calculation time of 15 by 15 matrix= 0.078705[sec]
+
+
+2. Iterative diagonalization (Block-Davidson algorithm)
+
+2-1. Matrix is given by DenseTensor
+========================
+Dense matrix diag start
+CONVERGED, iter = 6
+========================
+Dense matrix diag done
+
+Eigenvalues
+ -33.32529740 -30.58568083 -28.52720180
+BlockDavidson, DenseTensor, calculation time of 15 by 15 matrix= 0.091465[sec]
+
+
+2-2. Matrix is given by SparseTensor
+========================
+Sparse matrix diag start
+CONVERGED, iter = 6
+========================
+Sparse matrix diag done
+
+Eigenvalues
+ -33.32529740 -30.58568083 -28.52720180
+BlockDavidson, SparseTensor, calculation time of 15 by 15 matrix= 0.012726[sec]
+
+
+2-3. User-defined matrix-vector operation, "TestTensor.hpp"
+========================
+Test Tensor Operation, Davidson
+CONVERGED, iter = 6
+
+Eigenvalues
+ -33.32529740 -30.58568083 -28.52720180
+BlockDavidson, TestTensorOperations, calculation time of 15 by 15 matrix= 0.003538[sec]
+
+
+2-4. User-defined matrix-vector operation, "tensor_operations.py"
+========================
+Python Tensor Operation, Davidson
+CONVERGED, iter = 6
+
+Eigenvalues
+ -33.32529740 -30.58568083 -28.52720180
+BlockDavidson, Python tensor operations, calculation time of 15 by 15 matrix= 0.0034[sec]
