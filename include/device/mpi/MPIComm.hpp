@@ -16,9 +16,17 @@ int ictxt ;
 template<>
 //Comm<DEVICETYPE::MPI>::Comm(int rank, int world_size, std::array<int,2> nprow): rank(rank), world_size(world_size), nprow(nprow) {
 Comm<DEVICETYPE::MPI>::Comm(int rank, int world_size, std::array<int,2> nprow) {
+    const int i_zero = 0, i_negone = -1;
+
 	this->rank=rank;
 	this->world_size = world_size;
 	this->nprow = nprow;
+
+	if (Comm<DEVICETYPE::MPI>::get_count_comm()==0){
+		blacs_get( &i_negone, &i_zero, &ictxt );
+        blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
+	}
+
 	count_comm++; 
 	return;
 };
@@ -31,7 +39,7 @@ Comm<DEVICETYPE::MPI>::~Comm(){
     if (this->count_comm==0 && mpi_comm!=MPI_COMM_NULL){
         //int status = MPI_Finalize();
         //assert (status == MPI_SUCCESS);
-        //mpi_comm=MPI_COMM_NULL;
+        mpi_comm=MPI_COMM_NULL;
 		int i_zero=0;
         blacs_gridexit( &ictxt );
 		blacs_exit(&i_zero);
@@ -131,13 +139,8 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
 {
 	public:
     	std::unique_ptr<Comm<DEVICETYPE::MPI> > create_comm(){
-        	const int i_zero = 0, i_one = 1, i_negone = -1;
-            int rank ,world_size;
+            int rank=0,world_size=1;
         
-			if (Comm<DEVICETYPE::MPI>::get_count_comm()==0){
-				blacs_get( &i_negone, &i_zero, &ictxt );
-                blacs_gridinit( &ictxt, "C", &this->nprow[0], &this->nprow[1] );
-			}
 			blacs_pinfo( &rank, &world_size );
 
             /*
@@ -150,12 +153,14 @@ class MPICommInp: public CommInp<DEVICETYPE::MPI>
 			*/
         	mpi_comm = MPI_COMM_WORLD;
         
-            //std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
-            assert(world_size>0);
-            assert(rank>=0);
-			//Comm<DEVICETYPE::MPI> test_comm ( rank, world_size, nprow );
-
-            return std::move(std::make_unique< Comm<DEVICETYPE::MPI> >( rank, world_size, nprow ));
+//            //std::cout << "MPI Comm (" << rank << "," << world_size << ")"<< std::endl;
+//            assert(world_size>0);
+//            assert(rank>=0);
+//			//Comm<DEVICETYPE::MPI> test_comm ( rank, world_size, nprow );
+//
+			//std::unique_ptr<Comm<DEVICETYPE::MPI>>  return_val ( new Comm<DEVICETYPE::MPI>( rank, world_size, nprow ));
+            //return return_val;
+            return std::make_unique< Comm<DEVICETYPE::MPI> >( rank, world_size, nprow );
         };
 
 		MPICommInp(std::array<int,2> nprow):nprow(nprow){};

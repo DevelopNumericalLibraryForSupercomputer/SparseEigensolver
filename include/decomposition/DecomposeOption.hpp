@@ -18,8 +18,9 @@ enum class DecomposeMethod{
 };
 
 enum class PRECOND_TYPE{
-    Diagonal=0,
-	ISI2    =1,
+    No=0,
+    Diagonal=1,
+	ISI2    =2,
 };
 
 class DecomposeOption{
@@ -49,19 +50,19 @@ public:
     int eigenvalue_guesses      = 2;
     bool use_preconditioner        = false;
     PRECOND_TYPE preconditioner    = PRECOND_TYPE::Diagonal;
-    double preconditioner_tolerance      = 1E-3;
+    double preconditioner_tolerance      = 1E-5;
     int preconditioner_max_iterations = 30;
     bool use_locking               = false;
 
 private:
-    //void set_option_worker();
-    template<typename enum_type> enum_type table_match(std::map<std::string, enum_type> table, std::string str);
-    std::map<std::string, DecomposeMethod> const algo_table =
-        { {"Direct", DecomposeMethod::Direct}, {"Davidson", DecomposeMethod::Davidson}};//, {"LOBPCG", DecomposeMethod::LOBPCG} };
-    std::map<std::string, MAT_TYPE> const mat_table =
-        { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
-    std::map<std::string, PRECOND_TYPE> const precond_table =
-        { {"Diagonal", PRECOND_TYPE::Diagonal}};
+//    //void set_option_worker();
+//    template<typename enum_type> enum_type table_match(std::map<std::string, enum_type> table, std::string str);
+//    std::map<std::string, DecomposeMethod> const algo_table =
+//        { {"Direct", DecomposeMethod::Direct}, {"Davidson", DecomposeMethod::Davidson}};//, {"LOBPCG", DecomposeMethod::LOBPCG} };
+//    std::map<std::string, MAT_TYPE> const mat_table =
+//        { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
+//    std::map<std::string, PRECOND_TYPE> const precond_table =
+//        { {"Diagonal", PRECOND_TYPE::Diagonal}};
     //YAML::Node config;
 };
 DecomposeOption::DecomposeOption(){

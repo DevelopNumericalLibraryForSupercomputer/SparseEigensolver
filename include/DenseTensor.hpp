@@ -70,18 +70,19 @@ public:
             else{
                 stream << "========= Tensor Content"<< rank << "=========" <<std::endl;
                 if(dimension == 1){
-                    auto const num_row = tensor.ptr_map->get_local_shape(0);
+                    const auto num_row = tensor.ptr_map->get_local_shape(0);
                     for (int i=0; i<num_row; i++){
                         stream << tensor.data[i] << " ";
                     }
                     stream << std::endl;
                 }
                 else if (dimension == 2){
-                    auto const num_row = tensor.ptr_map->get_local_shape(0);
-                    auto const num_col = tensor.ptr_map->get_local_shape(1);
+                    const auto num_row = tensor.ptr_map->get_local_shape(0);
+                    const auto num_col = tensor.ptr_map->get_local_shape(1);
                     for (int i=0; i<num_row; i++){
                         for (int j=0; j<num_col; j++){
-                            stream << std::fixed << std::setw(5) << std::setprecision(2) << tensor.data[i*num_col + j] << " ";
+                            stream << std::fixed << std::setw(9) << std::scientific << tensor.data[i*num_col + j] << " ";
+                            //stream << std::fixed << std::setw(9) << std::setprecision(6) << tensor.data[i*num_col + j] << " ";
                         }
                         stream << std::endl;
                     }
@@ -92,9 +93,9 @@ public:
                     }
                     stream  << "value" << std::endl;
                     stream  << "=================================" << std::endl;
-                    auto const num = tensor.ptr_map->get_num_local_elements();
+                    const auto num = tensor.ptr_map->get_num_local_elements();
                     for (int i=0; i<num; i++){
-                        auto global_index_array_tmp = tensor.ptr_map->local_to_global(tensor.ptr_map->pack_local_index(i));
+                        const auto global_index_array_tmp = tensor.ptr_map->local_to_global(tensor.ptr_map->pack_local_index(i));
                         for(int j=0; j<dimension;j++){
                             stream << global_index_array_tmp[j] << '\t';
                         }
@@ -111,10 +112,10 @@ public:
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
 DenseTensor<dimension,DATATYPE,mtype,device>::DenseTensor(const std::unique_ptr<Comm<device> >& ptr_comm, const std::unique_ptr<Map<dimension,mtype>>& ptr_map)
 :Tensor<dimension,DATATYPE,mtype,device,STORETYPE::DENSE>(ptr_comm,ptr_map){
-    auto data_size = this->ptr_map->get_num_local_elements();
-    std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
-    this->data = std::move(return_data);
-    memset<DATATYPE,device>( this->data.get(), 0, data_size);
+    const auto data_size = this->ptr_map->get_num_local_elements();
+    //std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
+    this->data = std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>>( malloc<DATATYPE, device>( data_size ), free<device> );
+    memset<DATATYPE,device>( this->data.get(), (DATATYPE) 0.0, data_size);
     this->filled=false;
 };
 
@@ -135,7 +136,7 @@ std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > DenseTensor<dimensi
 //std::unique_ptr<DATATYPE[]> DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
 	//auto deleter = [&](DATATYPE* ptr){ free<device>(ptr); };
 	
-    auto data_size = this->ptr_map->get_num_local_elements();
+    const auto data_size = this->ptr_map->get_num_local_elements();
     //std::unique_ptr<DATATYPE[], > return_data ( malloc<DATATYPE, device>( data_size ) );
     std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*) > > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     memcpy<DATATYPE, device>(return_data.get(), this->data.get(), data_size);

@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <cmath>
 #include "DecomposeOption.hpp"
 #include "../device/TensorOp.hpp"
 #include "TensorOperations.hpp"
@@ -9,7 +10,7 @@ namespace SE{
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class Preconditioner{
 public:
-	Preconditioner<DATATYPE,mtype,device>(const TensorOperations<mtype, device>* operations,const DecomposeOption option, std::string type): option(option), operations(operations), type(type){
+	Preconditioner<DATATYPE,mtype,device>(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option, std::string type): option(option), operations(operations), type(type){
 		return;
 	}
 	virtual ~Preconditioner() = default;
@@ -28,21 +29,31 @@ public:
 	}
 protected:
 	const DecomposeOption option;
-	const TensorOperations<mtype, device>* operations;
+	const TensorOperations<DATATYPE, mtype, device>* operations;
 	const std::string  type = "Base";
+};
+template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+class NoPreconditioner: public Preconditioner<DATATYPE, mtype, device>{
+public:
+	NoPreconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
+	}
+	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
+													   DATATYPE* sub_eigval) const{
+		return residual.clone();
+	}
 };
 
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class DiagonalPreconditioner: public Preconditioner<DATATYPE, mtype, device>{
 public:
-	DiagonalPreconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
+	DiagonalPreconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
 													   DATATYPE* sub_eigval) const{
 		
 	
-        int vec_size = residual.ptr_map->get_global_shape()[0];
-        int num_eig  = residual.ptr_map->get_global_shape()[1];
+        const int vec_size = residual.ptr_map->get_global_shape()[0];
+        const int num_eig  = residual.ptr_map->get_global_shape()[1];
         //int num_eig = this->option.num_eigenvalues;
         //int new_block_size = block_size + num_eig;
         
@@ -52,8 +63,8 @@ public:
     	auto p_new_guess_map = p_map_inp->create_map();
     
     
-        DenseTensor<2, DATATYPE, mtype, device> additional_guess(residual.copy_comm(), p_new_guess_map);
-        TensorOp::copy_vectors(additional_guess, residual, num_eig);
+        auto additional_guess = std::make_unique<DenseTensor<2, DATATYPE, mtype, device>>(residual.copy_comm(), p_new_guess_map);
+        TensorOp::copy_vectors(*additional_guess, residual, num_eig);
         DATATYPE* scale_factor = malloc<DATATYPE, device>(num_eig);
     
         for(int index=0; index< num_eig; index++){
@@ -69,12 +80,12 @@ public:
         }
     
     
-        TensorOp::scale_vectors(additional_guess, scale_factor);
+        TensorOp::scale_vectors_(*additional_guess, scale_factor);
         free<device>(scale_factor);
 //        auto new_guess = TensorOp::append_vectors(guess, additional_guess);
     
 //        TensorOp::orthonormalize(new_guess, "default");
-        return std::make_unique<DenseTensor<2, DATATYPE, mtype, device> > (additional_guess);
+        return additional_guess;
     }
 };
 
@@ -82,7 +93,7 @@ template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 class ISI2Preconditioner: public Preconditioner<DATATYPE, mtype, device>{
 public:
 
-	ISI2Preconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "ISI2"){
+	ISI2Preconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "ISI2"){
 		this->pcg_precond=std::make_unique<DiagonalPreconditioner<DATATYPE,mtype,device> > (operations,option);
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
@@ -90,11 +101,7 @@ public:
 		
 
 
-    	const int i_zero = 0;
     	const int i_one  = 1;
-    	const DATATYPE one  = 1.;
-    	const DATATYPE zero = 0.;
-    
 
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
@@ -108,21 +115,27 @@ public:
     	memcpy<DATATYPE, device>(shift_values, sub_eigval, num_vec);
     	axpy<DATATYPE, device>(num_vec, -0.1, norm2, i_one, shift_values, i_one); 
     
-		bool check_initial_norm = true;
+		
+		// if residue is too big, pcg solver is not used
+		// bool check_initial_norm = true;
 		//#pragma omp parallel for 
     	for (int i=0; i<num_vec; i++){
     		if( norm2[i] >10){
     			shift_values[i]=0;
-				check_initial_norm =false;	
+				//check_initial_norm =false;	
     		}
     	}
 
+		////// line 7 start
 		auto p_i = residual.clone();
-		if( check_initial_norm ==false){
-			free<device>(shift_values);
-			free<device>(norm2);
-			return this->pcg_precond->call( *p_i, sub_eigval) ;
-		}
+		////// line 7 end
+
+
+//		if( check_initial_norm ==false){
+//			free<device>(shift_values);
+//			free<device>(norm2);
+//			return this->pcg_precond->call( *p_i, sub_eigval) ;
+//		}
 
 		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
 		DATATYPE* rzold        = malloc<DATATYPE,device> ( num_vec );
@@ -132,10 +145,10 @@ public:
 
 		////// line 7 start
     	auto r = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} *r 
-    	r = TensorOp::add<DATATYPE,mtype,device>(*r,       this->operations->matvec(*p_i),  -1.0) ; // \tilde{epsilon} *p_i -H@p_i
+    	r = TensorOp::add<DATATYPE,mtype,device>(*r,       *this->operations->matvec(*p_i),  -1.0) ; // \tilde{epsilon} *p_i -H@p_i
     	r = TensorOp::add<DATATYPE,mtype,device>(residual, *r,                           1.0) ; //r_i + \tilde{epsilon} *p_i - H@p_i
 		////// line 7 end 
-		
+	
 		////// line 8 start
 		auto p = this->pcg_precond->call( *r, sub_eigval) ;
 		////// line 8 end
@@ -151,14 +164,20 @@ public:
 		for (int i_iter = 0; i_iter<this->option.preconditioner_max_iterations; i_iter++){
 			///// line 12 start
 	    	auto scaled_p = TensorOp::scale_vectors(*p, shift_values);  //\tilde{epsilon} * p
-	    	auto hp = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
+	    	auto hp = TensorOp::add<DATATYPE,mtype,device>( *this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
 			///// line 12 end
 			
-			
+//			std::cout << "******** p " <<i_iter <<std::endl;			
+//			std::cout << *p <<std::endl;
+//			std::cout << "******** hp " <<i_iter<<std::endl;			
+//			std::cout << *hp <<std::endl;
+
 			///// line 13 start
 			TensorOp::vectorwise_dot( *TensorOp::conjugate(*p), *hp, alpha, num_vec ); 
 			for (int i=0; i<num_vec; i++){
 				alpha[i] = rzold[i] /alpha[i];
+//				std::cout << i << " alpha: " <<alpha[i]<<std::endl;
+				if(std::isnan(alpha[i])) alpha[i] =0.0;
 			}
 			///// line 13 end
 
@@ -172,10 +191,14 @@ public:
 			r = TensorOp::add(*r, *scaled_hp, -1.0) ;
 			scaled_hp.reset();
 			///// line 15 end
+//			std::cout << "******** r "<< i_iter <<std::endl;			
+//			std::cout << *r <<std::endl;
 			
 			///// line 16 end
 			z = this->pcg_precond->call( *r, sub_eigval) ;
 			///// line 16 end
+//			std::cout << "******** z " << i_iter <<std::endl;			
+//			std::cout << *z <<std::endl;
 
 			
 			///// line 17 end
@@ -189,24 +212,26 @@ public:
 				check_conv =   ( check_conv &&   (conv[j]<0.25*sqrt(norm2[j])  ) );
 				//if(residual.ptr_comm->get_rank()==0) std::cout << std::scientific<< rzold[j] <<" " << rznew[j] << " " <<rznew[j]/rzold[j]<<std::endl;
 				beta[j] = rznew[j] / rzold[j]; // beta = rznew/rzold; 
+//				std::cout << j << " beta: " <<beta[j]<<std::endl;
+				if(std::isnan(beta[j])) beta[j] =0.0;
 			}
 
 			if (check_conv){
-				auto residual_clone = residual.clone();
-				scaled_p = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} * p
-				auto val = TensorOp::add<DATATYPE,mtype,device>( this->operations->matvec(*p_i), *scaled_p, -1.0); 
-				val = TensorOp::add<DATATYPE,mtype,device>( *residual_clone, *val, -1.0 );
-				TensorOp::get_norm_of_vectors(*val, norm2, num_vec);
+//				scaled_p = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} * p
+//				auto val = TensorOp::add<DATATYPE,mtype,device>( *this->operations->matvec(*p_i), *scaled_p, -1.0); 
+//				val = TensorOp::add<DATATYPE,mtype,device>( *residual, *val, -1.0 );
+//				TensorOp::get_norm_of_vectors(*val, norm2, num_vec);
 				break;	
 			}
 			// line 22 start	
 			TensorOp::scale_vectors_(*p, beta); //only for this line rzold is same as beta
-			//TensorOp::add_(*p,*z,1.0) ; 
-			//TensorOp::add_(*z,*p,1.0) ; 
 			p = TensorOp::add(*p,*z,1.0);
 			// line 22 end 
-			//
+			
+			
+			// line 23 start	
 			memcpy<DATATYPE, device> (rzold, rznew, num_vec);
+			// line 23 end
 		}
 		free<device>(beta);
 		free<device>(rznew);
@@ -224,8 +249,11 @@ public:
 };
 
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>					
-const std::unique_ptr<Preconditioner<DATATYPE,mtype,device> > get_preconditioner(const TensorOperations<mtype, device>* operations,const DecomposeOption option){
-	if(option.preconditioner== PRECOND_TYPE::Diagonal)
+const std::unique_ptr<Preconditioner<DATATYPE,mtype,device> > get_preconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option){
+	if(option.preconditioner== PRECOND_TYPE::No){
+		return std::make_unique<NoPreconditioner<DATATYPE,mtype,device> > (NoPreconditioner<DATATYPE,mtype,device	>(operations, option) );
+	}
+	else if(option.preconditioner== PRECOND_TYPE::Diagonal)
 		return 	std::make_unique<DiagonalPreconditioner<DATATYPE,mtype,device> > ( DiagonalPreconditioner<DATATYPE,mtype,device>(operations, option) );
 	else if (option.preconditioner==PRECOND_TYPE::ISI2){
 		return std::make_unique<ISI2Preconditioner<DATATYPE,mtype,device> > (ISI2Preconditioner<DATATYPE,mtype,device>(operations, option) );

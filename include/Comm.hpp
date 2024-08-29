@@ -1,4 +1,5 @@
 #pragma once
+#include <cassert>
 #include <iostream>
 #include <string>
 #include <utility>
@@ -15,7 +16,7 @@ class CommInp;
 template<DEVICETYPE device>
 class Comm{
 public:
-    Comm(int rank, int world_size, std::array<int,2> nprow={}): rank(rank), world_size(world_size), nprow(nprow) {count_comm++;};
+    Comm(int rank, int world_size, std::array<int,2> nprow={1,1}): rank(rank), world_size(world_size), nprow(nprow) { assert(nprow[1]*nprow[0]==world_size); count_comm++;};
     Comm(){count_comm++;};
     ~Comm(){count_comm--;};
     void finalize(){};

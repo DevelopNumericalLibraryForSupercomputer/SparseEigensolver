@@ -9,7 +9,7 @@ namespace SE{
 
 // dense mv
 template <>
-DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul(
+std::unqiue_ptr<DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > TensorOp::matmul(
 //DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<double, MTYPE::Contiguous1D, Map<1,MTYPE::Contiguous1D>, DEVICETYPE::MKL>(
     const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat,
     const DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec,
@@ -30,16 +30,16 @@ DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul(
     assert ( mat.ptr_map->get_global_shape(contract_dim) == vec.ptr_map->get_global_shape(0) );
     std::array<int, 1> output_shape = {mat.ptr_map->get_global_shape(remained_dim)};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
-    DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( vec.copy_comm(), ptr_output_map);
+    std::unique_ptr<DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > output = std::make_unique<DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > ( vec.copy_comm(), ptr_output_map);
     //mby k * kby 1
     //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
-    gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output.data.get(), 1);
+    gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output->data.get(), 1);
     return output;
 }
 
 // dense mm
 template <>
-DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+std::unique_ptr<DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > TensorOp::matmul<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
 //DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
     const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
@@ -63,15 +63,15 @@ DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<doub
     std::array<int, 2> output_shape = {m,n};
 
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<2>> (output_shape, 0,1);
-    DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> output ( mat2.copy_comm(), ptr_output_map );
+    std::unique_ptr<DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > output =std::make_unique<DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> >( mat2.copy_comm(), ptr_output_map );
     //mby k * kby n
-    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data.get(), mat1.ptr_map->get_global_shape(1), mat2.data.get(), mat2.ptr_map->get_global_shape(1), 0.0, output.data.get(), n);
+    gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans1, trans2, m, n, k, 1.0, mat1.data.get(), mat1.ptr_map->get_global_shape(1), mat2.data.get(), mat2.ptr_map->get_global_shape(1), 0.0, output->data.get(), n);
     return output;
 }
 
 // sparse mv
 template <>
-DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmul<double, MTYPE::Contiguous1D, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+std::unique_ptr<DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::matmul<double, MTYPE::Contiguous1D, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     const SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat,
     const DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec,
     TRANSTYPE trans)
@@ -107,7 +107,7 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     std::array<int, 1> output_shape = {num_row};
 	std::unique_ptr<Map<1,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<1>> (output_shape, 0,1);
 
-    DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
+    std::unique_ptr<DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > output = std::make_unique<DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>>(ptr_comm, ptr_output_map );
 
     status = mkl_sparse_d_create_coo( &cooA,
                                       SPARSE_INDEX_BASE_ZERO,
@@ -124,10 +124,10 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     descrA.diag = SPARSE_DIAG_NON_UNIT;
 
     if(trans == TRANSTYPE::N){
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data.get(), 0.0, output.data.get());
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_NON_TRANSPOSE, 1.0, cooA, descrA, vec.data.get(), 0.0, output->data.get());
     }
     else{
-        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data.get(), 0.0, output.data.get());
+        status = mkl_sparse_d_mv( SPARSE_OPERATION_TRANSPOSE,     1.0, cooA, descrA, vec.data.get(), 0.0, output->data.get());
     }
     assert (status == SPARSE_STATUS_SUCCESS);
     status = mkl_sparse_destroy(cooA);
@@ -138,7 +138,7 @@ DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 
 // sparse mm 
 template <>
-DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmul<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
+std::unique_ptr< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::matmul<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     const SparseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
     const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2,
     TRANSTYPE trans1,
@@ -178,7 +178,7 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
     std::array<int, 2> output_shape = {num_row, mat2.ptr_map->get_global_shape(1)};
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D>> ptr_output_map = std::make_unique<Contiguous1DMap<2>> (output_shape, 0,1);
 
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> output(ptr_comm, ptr_output_map );
+    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > output = std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (ptr_comm, ptr_output_map );
 
     status = mkl_sparse_d_create_coo( &cooA,
                                       SPARSE_INDEX_BASE_ZERO,
@@ -205,8 +205,8 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 								  mat2.ptr_map->get_global_shape(1), 
 								  mat2.ptr_map->get_global_shape(1), 
 								  0.0, 
-								  output.data.get(), 
-								  output.ptr_map->get_global_shape(1));
+								  output->data.get(), 
+								  output->ptr_map->get_global_shape(1));
     }
     else{
         status = mkl_sparse_d_mm( SPARSE_OPERATION_TRANSPOSE,     
@@ -218,8 +218,8 @@ DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::matmu
 								  mat2.ptr_map->get_global_shape(1), 
 								  mat2.ptr_map->get_global_shape(1), 
 								  0.0, 
-								  output.data.get(), 
-								  output.ptr_map->get_global_shape(1));
+								  output->data.get(), 
+								  output->ptr_map->get_global_shape(1));
     }
     assert (status == SPARSE_STATUS_SUCCESS);
     status = mkl_sparse_destroy(cooA);
@@ -392,12 +392,12 @@ std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > S
 
  // return eigvec
 template <>
-DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> SE::TensorOp::diagonalize(
+std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp::diagonalize(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat, double* eigval){
     assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);
     int block_size = mat.ptr_map->get_global_shape()[0];
-    DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> eigvec(mat);
-    int info = syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', block_size, eigvec.data.get(), block_size, eigval);
+    auto eigvec = std::make_unique<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat);
+    int info = syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', block_size, eigvec->data.get(), block_size, eigval);
     if(info !=0){
         std::cout << "subspace_diagonalization error!" << std::endl;
         exit(-1);

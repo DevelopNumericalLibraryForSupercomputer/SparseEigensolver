@@ -45,7 +45,7 @@ public:
 	ptr_comm(tensor.ptr_comm->clone()),
 	ptr_map(tensor.ptr_map->clone()) 
 	{ 
-        data = tensor.copy_data();
+        this->data = tensor.copy_data();
         filled=tensor.get_filled();
     }
 

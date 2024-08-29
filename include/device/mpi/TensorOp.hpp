@@ -74,11 +74,14 @@ int info;
 
 
 template <>
-DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
+std::unique_ptr<DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> > TensorOp::matmul(
     const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
     const DenseTensor<1, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& vec,
     TRANSTYPE trans)
 {
+
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+
 	const double zero = 0.0;
 	const double one = 1.0;
 
@@ -111,7 +114,7 @@ DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 	map_inp->global_shape = new_global_shape;
 
 
-	DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> out( comm_inp->create_comm(), map_inp->create_map());
+	std::unique_ptr<DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> > out = std::make_unique<DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI>>( comm_inp->create_comm(), map_inp->create_map());
 
     int lld1 = MAX( mat.ptr_map->get_local_shape()[0], 1 );
     int lld2 = 1;
@@ -132,19 +135,24 @@ DenseTensor<1,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 			mat.data.get(), &i_one, &i_one, desc1, 
 			vec.data.get(), &i_one, &i_one, desc2,
             &zero, 
-			out.data.get(), &i_one, &i_one, desc3 );
+			out->data.get(), &i_one, &i_one, desc3 );
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::dense_matmul_2_1.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+
 	return out;
 	//return std::move(out);
 }
 
 template <>
 inline
-DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
+std::unique_ptr<DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> > TensorOp::matmul(
     const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
     const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2,
     TRANSTYPE trans1,
     TRANSTYPE trans2)
 {
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+
 	const double zero = 0.0;
 	const double one = 1.0;
 
@@ -187,16 +195,12 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 	auto map_inp = mat1.ptr_map->generate_map_inp();
 	map_inp->global_shape = new_global_shape;
 
-	DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> mat3( comm_inp->create_comm(),  map_inp->create_map());
-
+	std::unique_ptr<DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> > mat3 = std::make_unique<DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI>>( comm_inp->create_comm(),  map_inp->create_map());
 
     const int lld1 = MAX( mat1.ptr_map->get_local_shape()[0], 1 );
     const int lld2 = MAX( mat2.ptr_map->get_local_shape()[0], 1 );
-    const int lld3 = MAX( mat3.ptr_map->get_local_shape()[0], 1 );
+    const int lld3 = MAX( mat3->ptr_map->get_local_shape()[0], 1 );
                
-			   
-
-
     descinit( desc1, &row1, &col1, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld1, &info );
 	assert (info==0);
     descinit( desc2, &row2, &col2, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld2, &info );
@@ -212,7 +216,9 @@ DenseTensor<2,double,MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::matmul(
 			mat1.data.get(), &i_one, &i_one, desc1, 
 			mat2.data.get(), &i_one, &i_one, desc2,
             &zero, 
-			mat3.data.get(), &i_one, &i_one, desc3 );
+			mat3->data.get(), &i_one, &i_one, desc3 );
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::dense_matmul_2_2.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 	return mat3;
 	//return std::move(mat3);
 }
@@ -222,6 +228,8 @@ template <>
 void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
             const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
             const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2, const double coeff2){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
     assert(mat1.ptr_map->get_global_shape()[1] == mat2.ptr_map->get_global_shape()[1]);
 
@@ -237,7 +245,7 @@ void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
     const int lld1 = MAX( mat1.ptr_map->get_local_shape()[0], 1 );
     const int lld2 = MAX( mat2.ptr_map->get_local_shape()[0], 1 );
 
-	auto block_size = mat1.ptr_map->get_block_size();
+	const auto block_size = mat1.ptr_map->get_block_size();
 	assert (block_size == mat2.ptr_map->get_block_size());
 
     descinit( desc1, &row1, &col1, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld1, &info );
@@ -247,6 +255,8 @@ void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
 
     const char trans='N';
 	pdgeadd( &trans, &row1, &col1, &coeff2, mat2.data.get(), &i_one, &i_one, desc2, &one, mat1.data.get(), &i_one, &i_one, desc1 );
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::add.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
     //return std::move(return_mat);
 }
@@ -257,11 +267,12 @@ void TensorOp::add_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
 //template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 template <>
 void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const std::string method){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
     //const double one = 1.0;
     int desc[9];
     const int row= mat.ptr_map->get_global_shape(0);
     const int col= mat.ptr_map->get_global_shape(1);
-    auto block_size = mat.ptr_map->get_block_size();
+    const auto block_size = mat.ptr_map->get_block_size();
     const int lld = MAX( mat.ptr_map->get_local_shape()[0], 1 );
     descinit( desc, &row, &col, &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
     assert (info==0);
@@ -294,6 +305,8 @@ void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 	assert(info==0);
 
 	free<DEVICETYPE::MPI>(tau);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::orthonormalize.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 
     return;
 
@@ -302,6 +315,7 @@ void TensorOp::orthonormalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 //y_i = scale_coeff_i * x_i
 template <>
 void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const double* scale_coeff){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 
 	for (int i=0; i< mat.ptr_map->get_local_shape(1); i++ ){
 		std::array<int,2> local_arr_idx = {0, i};
@@ -310,12 +324,17 @@ void TensorOp::scale_vectors_(DenseTensor<2, double, MTYPE::BlockCycling, DEVICE
 		scal<double, DEVICETYPE::MPI>(mat.ptr_map->get_local_shape(0), scale_coeff[global_arr_idx[1]], &mat.data[local_idx],1);
 
 	}
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::orthonormalize.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 	return;
 }
 template <>
 void SE::TensorOp::scale_vectors_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
             DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, const double scale_factor){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 	scal<double, DEVICETYPE::MPI>(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::scale_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -323,6 +342,7 @@ void SE::TensorOp::scale_vectors_<double, MTYPE::BlockCycling, DEVICETYPE::MPI>(
 template <>
 void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat,
                          double* norm, const int norm_size, const bool root){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
     assert(mat.ptr_map->get_global_shape()[1] >= norm_size);
 
     const int vec_size = mat.ptr_map->get_local_shape()[0];
@@ -359,6 +379,8 @@ void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycl
 	}
 	free<DEVICETYPE::MPI>(local_sum);
 	dgsum2d(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::norm.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -366,6 +388,7 @@ void TensorOp::get_norm_of_vectors(const DenseTensor<2, double, MTYPE::BlockCycl
 template <>
 void TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2,
                                double* norm, const int norm_size){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 
 	assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
 	assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
@@ -414,6 +437,8 @@ void TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::BlockCycling, 
 	free<DEVICETYPE::MPI>(buff);
 	// summing up accross the processors (broadcast because norm array is initialized as 0)
 	dgsum2d(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::vectorwise_dot.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 
 }
@@ -424,6 +449,7 @@ template <>
 void TensorOp::copy_vectors(
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2, int new_size){
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 
     assert(mat1.ptr_map->get_global_shape()[1] >= new_size);
     assert(mat2.ptr_map->get_global_shape()[1] >= new_size);
@@ -445,6 +471,8 @@ void TensorOp::copy_vectors(
 	assert(info==0);
 
 	pdgemr2d(&row, &new_size, mat2.data.get(), &i_one, &i_one, desc2, mat1.data.get(), &i_one, &i_one, desc1, &ictxt);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::copy_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 	
 }
@@ -455,6 +483,7 @@ std::unique_ptr<DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> > T
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2){
 
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 
 	// define row and check the equaility of mat1 and mat2 row sizes 
 	const int row = mat1.ptr_map->get_global_shape(0);
@@ -501,35 +530,37 @@ std::unique_ptr<DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> > T
 
 	//memcpy<double,DEVICETYPE::MPI>(ptr_mat3->data.get(), local_array, ptr_mat3->ptr_map->get_num_local_elements());
 	//free<DEVICETYPE::MPI>(local_array);
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::append_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 	return ptr_mat3;
 	//return std::move(mat3);
 }
 
 // // return eigvec
 template<>
-DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, double* eigval){
+std::unique_ptr<DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> > TensorOp::diagonalize(DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, double* eigval){
 	
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
     assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);
 
 	// variables
-    auto block_size = mat.ptr_map->get_block_size();
-	auto global_shape = mat.ptr_map->get_global_shape();
-	auto local_shape  = mat.ptr_map->get_local_shape();
+    const auto block_size = mat.ptr_map->get_block_size();
+	const auto global_shape = mat.ptr_map->get_global_shape();
+	const auto local_shape  = mat.ptr_map->get_local_shape();
     const int lld = MAX(local_shape[0] , 1 );
     //const int lld = MAX( global_shape[0], 1 );
 	const auto N = global_shape[0]; 
 	const auto nprow = mat.ptr_map->get_nprow();
 
     // define new matrix for containing eigvec
-    DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> eigvec(mat);
-	std::cout << mat.ptr_map->get_num_global_elements() <<"(" << global_shape[0] << "," <<global_shape[1] <<")\t" << mat.ptr_map->get_num_local_elements()<<std::endl;
+    auto eigvec = std::make_unique< DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> >(mat);
+	//std::cout << mat.ptr_map->get_num_global_elements() <<"(" << global_shape[0] << "," <<global_shape[1] <<")\t" << mat.ptr_map->get_num_local_elements()<<std::endl;
+	//if (mat.ptr_comm->get_rank()==0) std::cout << block_size[0] << "," <<block_size[1] << "  " << nprow[0] <<"," <<nprow[1] << " ---- " << N << std::endl;
 	if (block_size[0]*nprow[0]>N or block_size[1]*nprow[1]>N){
-		if(mat.ptr_comm->get_rank()==0) std::cout << "serial diagonalization" << std::endl;
-
+		if(mat.ptr_comm->get_rank()==0) std::cout << "serial diagonalization " << N << std::endl;
 
 		const auto num_global_elements = mat.ptr_map->get_num_global_elements();
 		const auto num_local_elements = mat.ptr_map->get_num_local_elements();
-		std::cout << num_global_elements << "\t" <<num_local_elements <<std::endl;
 		auto src =  malloc<double, DEVICETYPE::MPI>(num_global_elements);
 		auto trg =  malloc<double, DEVICETYPE::MPI>(num_global_elements);
 		std::fill_n(src, num_global_elements, 0.0);
@@ -547,14 +578,15 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
 
 		#pragma omp parallel for 
 		for (int i =0; i< num_local_elements; i++){
-			const auto global_index = eigvec.ptr_map->local_to_global(i);
-			eigvec.data[i] = trg[global_index];
+			const auto global_index = eigvec->ptr_map->local_to_global(i);
+			eigvec->data[i] = trg[global_index];
 		}
 		free<DEVICETYPE::MPI> ( src );
 		free<DEVICETYPE::MPI> ( trg );
 
 	}
 	else{
+		if(mat.ptr_comm->get_rank()==0) std::cout << "parallel diagonalization " << global_shape[0] <<"," << global_shape[1] << "  " << local_shape[0] <<"," <<local_shape[1]  << std::endl;
     	int desc1[9]; 
     	int desc2[9]; 
     
@@ -567,16 +599,18 @@ DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI> TensorOp::diagonali
         int iwork_query;
     
     	// Workspace query for pdsyevd
-        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
+        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &iwork_query, &liwork, &info);
         lwork = (int)work_query;
         liwork = iwork_query;
         std::vector<double> work(lwork);
         std::vector<int> iwork(liwork);
     
         // Compute eigenvalues and eigenvectors
-        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec.data.get(), &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
+        pdsyevd("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, work.data(), &lwork, iwork.data(), &liwork, &info);
         assert(info == 0);
 	}
+    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+    TensorOp::ElapsedTime::diagonalize.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return eigvec ;
 	
 }

@@ -52,13 +52,10 @@ int main(int argc, char** argv){
 	int precond_type = 2;
 	if (argc>=6 ) option.preconditioner = (PRECOND_TYPE) std::stoi(argv[5]);
 
-	// num_eig variable is not used 
-    const int num_eig = 3;
 
 	MPICommInp comm_inp({p,q});
     auto ptr_comm = comm_inp.create_comm();
 	auto ptr_comm2 = ptr_comm->clone();
-	std::cout << "clone!" <<std::endl;
 
 //	std::cout << "nprow and npcol: " << p <<" " << q <<std::endl;
 //	#pragma omp parallel
@@ -97,12 +94,12 @@ int main(int argc, char** argv){
         }
     }
     
-	map_inp.global_shape = {N,num_eig};
+	map_inp.global_shape = {N,option.num_eigenvalues};
     auto guess = new DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>(comm_inp.create_comm(), map_inp.create_map());
 
-    // guess : unit vector
-    for(int i=0;i<num_eig;i++){
-		for (int j=0; j<N; j++){
+    // guess : random vector not unit vector
+    for(int i=0;i<guess->ptr_map->get_global_shape(1);i++){
+		for (int j=0; j<guess->ptr_map->get_global_shape(0); j++){
 	        std::array<int, 2> tmp_index = {j,i};
 			//if (i==j)	guess->global_set_value(tmp_index, 1.0);
 			//else	guess->global_set_value(tmp_index, 1e-3);
@@ -115,7 +112,7 @@ int main(int argc, char** argv){
     if(ptr_comm->get_rank()==0) std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, guess, option);
-    if(ptr_comm->get_rank()==0) print_eigenvalues( "Eigenvalues", num_eig, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
+    if(ptr_comm->get_rank()==0) print_eigenvalues( "Eigenvalues", option.num_eigenvalues, out1.get()->real_eigvals.data(), out1.get()->imag_eigvals.data());
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "block davidson calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     delete guess;

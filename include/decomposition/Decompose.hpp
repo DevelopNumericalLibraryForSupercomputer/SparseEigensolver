@@ -24,7 +24,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, m
         return evd(tensor, eigvec);
     }
     else if(option.algorithm_type == DecomposeMethod::Davidson){
-        DenseTensorOperations<mtype, device>* basic_op = new DenseTensorOperations<mtype,device>(&tensor);
+        DenseTensorOperations<DATATYPE, mtype, device>* basic_op = new DenseTensorOperations<DATATYPE,mtype,device>(&tensor);
         auto return_val = davidson(basic_op, eigvec, option);
         delete basic_op;
         return return_val;
@@ -39,7 +39,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, m
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
 std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
     if(option.algorithm_type == DecomposeMethod::Davidson){
-        SparseTensorOperations<mtype, device>* basic_op = new SparseTensorOperations(&tensor);
+        SparseTensorOperations<DATATYPE,mtype, device>* basic_op = new SparseTensorOperations(&tensor);
         auto return_val = davidson(basic_op, eigvec, option);
         delete basic_op;
         return return_val;
@@ -52,7 +52,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, 
 
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<DATATYPE,mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
     if(option.algorithm_type == DecomposeMethod::Davidson){
         return davidson(operations, eigvec, option);
     }
