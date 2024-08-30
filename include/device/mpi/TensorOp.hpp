@@ -448,7 +448,7 @@ void TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::BlockCycling, 
 template <>
 void TensorOp::copy_vectors(
         DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
-        DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2, int new_size){
+        const DenseTensor<2, double, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2, const int new_size){
     std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 
     assert(mat1.ptr_map->get_global_shape()[1] >= new_size);

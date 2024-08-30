@@ -146,11 +146,11 @@ private:
 
 int main(int argc, char** argv){
 	DecomposeOption option;
-    option.tolerance = 1e-5;
-    option.num_eigenvalues = 10;
-    option.max_block = 4;
-    option.max_iterations = 50;
-    option.preconditioner_max_iterations = 3;
+    option.tolerance = 1e-7;
+    option.num_eigenvalues = 50;
+    option.max_block = 5;
+    option.max_iterations = 250;
+    option.preconditioner_max_iterations = 5;
 
 	// predefined value
     int rank=0, nprocs=1, ictxt;

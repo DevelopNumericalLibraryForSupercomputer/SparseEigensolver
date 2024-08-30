@@ -71,8 +71,9 @@ int main(int argc, char* argv[]){
     
     */
     std::cout << "========================\nDense matrix davidson test" << std::endl;
-    int N = 30;
-    const int num_eig = 2;
+    const int N = 30;
+    DecomposeOption option;
+    const int num_eig = option.num_eigenvalues;
 
 
     std::array<int, 2> test_shape2 = {N,N};
@@ -135,7 +136,6 @@ int main(int argc, char* argv[]){
     
 	DecomposeOption option_evd;
     option_evd.algorithm_type = DecomposeMethod::Direct;
-    DecomposeOption option;
     
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
@@ -177,7 +177,7 @@ int main(int argc, char* argv[]){
     std::cout << "BlockDavidson, Dense Matrix, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
 
     std::cout << "\n========\nTest Tensor Operation,  Davidson" << std::endl;
-    TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
+    TestTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
     auto out4 = decompose(&test_op, ptr_guess3.get(), option);
     print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());

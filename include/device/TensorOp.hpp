@@ -161,7 +161,7 @@ void vectorwise_dot(const DenseTensor<2, DATATYPE, mtype, device>& mat1,const De
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 void copy_vectors(
         DenseTensor<2, DATATYPE, mtype, device>& mat1,
-        DenseTensor<2, DATATYPE, mtype, device>& mat2, int new_size);
+        const DenseTensor<2, DATATYPE, mtype, device>& mat2, const int new_size);
 
 //new_mat = mat1_0, mat1_1,...,mat1_N, mat2_0,...,mat2_M
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>

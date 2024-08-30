@@ -14,16 +14,26 @@ std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > calculate_residual( //
     const DenseTensor<2, DATATYPE, mtype, device>& w_iter,      //vec_size by block_size
     const DATATYPE* sub_eigval,                                   //block_size
     const DenseTensor<2, DATATYPE, mtype, device>& sub_eigvec,  //block_size by block_size
-    const DenseTensor<2, DATATYPE, mtype, device>& ritz_vec)    //vec_size by block_size
+    const DenseTensor<2, DATATYPE, mtype, device>& ritz_vec,    //vec_size by block_size
+	const int num_eigval)
 {
+
+    auto new_map_inp = ritz_vec.ptr_map->generate_map_inp();
+    new_map_inp->global_shape = {ritz_vec.ptr_map->get_global_shape()[0], num_eigval};
+    auto new_map = new_map_inp->create_map();
+    auto scaled_ritz = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > (ritz_vec.copy_comm(), new_map); // vec_size by num_eigval
+    
     //residual, r_ki =  W_iterk y_ki - lambda_ki x_ki
     //lambda_ki x_ki
-    //DenseTensor<2, DATATYPE, mtype, device> scaled_ritz(ritz_vec);
-    //TensorOp::scale_vectors_(scaled_ritz, sub_eigval);
-	auto scaled_ritz = TensorOp::scale_vectors(ritz_vec,sub_eigval);
-    //W_iterk y_ki - lambda_ki x_ki
+    TensorOp::copy_vectors(*scaled_ritz, ritz_vec, num_eigval);	
+    TensorOp::scale_vectors_(*scaled_ritz, sub_eigval);
+
     auto tmp_residual = TensorOp::matmul(w_iter, sub_eigvec);
-    auto residual = TensorOp::add(*tmp_residual, *scaled_ritz, -1.0);
+    auto residual = std::make_unique< DenseTensor<2, DATATYPE, mtype, device> > (tmp_residual->copy_comm(), new_map);    // vec_size by num_eigval
+    TensorOp::copy_vectors(*residual, *tmp_residual, num_eigval);
+
+    //W_iterk y_ki - lambda_ki x_ki
+    TensorOp::add_(*residual, *scaled_ritz, -1.0);
     return residual;
 }
 
@@ -88,7 +98,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
         for(int i_block = 0; i_block <= option.max_block; i_block++){
 			if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
-            std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec);
+            std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residual = calculate_residual<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residual
             //check convergence
             bool is_converged = check_convergence<DATATYPE,mtype,device>(*residual, option.num_eigenvalues, option.tolerance);

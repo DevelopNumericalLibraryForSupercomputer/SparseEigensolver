@@ -9,7 +9,7 @@ namespace SE{
 
 // dense mv
 template <>
-std::unqiue_ptr<DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > TensorOp::matmul(
+std::unique_ptr<DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> > TensorOp::matmul(
 //DenseTensor<1,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> TensorOp::matmul<double, MTYPE::Contiguous1D, Map<1,MTYPE::Contiguous1D>, DEVICETYPE::MKL>(
     const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat,
     const DenseTensor<1, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& vec,
@@ -260,9 +260,9 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
     else{
         auto submatrix = TensorOp::matmul(mat, mat, TRANSTYPE::T, TRANSTYPE::N);
         std::unique_ptr<double[]> submatrix_eigvals(new double[number_of_vectors]);
-        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix.data.get(), number_of_vectors, submatrix_eigvals.get());
+        syev<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, 'V', 'U', number_of_vectors, submatrix->data.get(), number_of_vectors, submatrix_eigvals.get());
 
-        auto output = TensorOp::matmul(mat, submatrix, TRANSTYPE::N, TRANSTYPE::N);
+        auto output = TensorOp::matmul(mat, *submatrix, TRANSTYPE::N, TRANSTYPE::N);
         //vector should be normalized
         for(int i=0; i<number_of_vectors; i++){
 
@@ -270,11 +270,11 @@ void SE::TensorOp::orthonormalize<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>(
 //gemm<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, TRANSTYPE::N, m, 1, k, 1.0, mat.data, mat.ptr_map->get_global_shape(1), vec.data, 1, 0.0, output.data, 1);
 //gemv<double, DEVICETYPE::MKL>(ORDERTYPE::ROW, trans, m, k, 1.0, mat.data.get(), mat.ptr_map->get_global_shape(1), vec.data.get(), 1, 0.0, output.data.get(), 1);
 
-            double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output.data[i], number_of_vectors);
+            double norm = nrm2<double, DEVICETYPE::MKL>(vector_size, &output->data[i], number_of_vectors);
             assert(norm != 0.0);
-            scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output.data[i], number_of_vectors);
+            scal<double, DEVICETYPE::MKL>(vector_size, 1.0 / norm, &output->data[i], number_of_vectors);
         }
-        memcpy<double, DEVICETYPE::MKL>(mat.data.get(), output.data.get(), number_of_vectors*vector_size);
+        memcpy<double, DEVICETYPE::MKL>(mat.data.get(), output->data.get(), number_of_vectors*vector_size);
         
     }
 }
@@ -360,7 +360,7 @@ void SE::TensorOp::vectorwise_dot(const DenseTensor<2, double, MTYPE::Contiguous
 template <>
 void SE::TensorOp::copy_vectors(
         DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
-        DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, int new_size){
+        const DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2, const int new_size){
     assert(mat1.ptr_map->get_global_shape()[1] >= new_size);
     assert(mat1.ptr_map->get_global_shape()[0] == mat2.ptr_map->get_global_shape()[0]);
     int vec_size = mat1.ptr_map->get_global_shape()[0];
