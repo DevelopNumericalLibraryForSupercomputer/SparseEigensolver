@@ -279,7 +279,7 @@ int main(int argc, char** argv){
     std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "block davidson calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
     
-	if(ptr_comm->get_rank()==0) TensorOp::ElapsedTime::print();
+	if(ptr_comm->get_rank()==0) ElapsedTime::print();
 	free<DEVICETYPE::MPI> (diag_elements);
     return 0;
 }

@@ -217,7 +217,9 @@ template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
     if(!this->filled && this->data.size() !=0){
 
-        std::sort(this->data.begin(), this->data.end());
+        // remove duplicated index and add values
+        std::sort(this->data.begin(), this->data.end(), [](const auto& a, const auto& b) { return a.first < b.first; });
+        // std::sort(this->data.begin(), this->data.end() );
         for (int i = 0; i < this->data.size() - 1; i++){
             if(this->data[i].first == this->data[i+1].first){
                 this->data[i].second += this->data[i+1].second;
@@ -230,8 +232,7 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         auto tmp_value  = malloc<DATATYPE>(this->data.size());
     
         const auto offset= this->data.size();
-
-		#pragma omp parallel for
+        #pragma omp parallel for
         for (int i = 0; i < this->data.size() ; i++){
             tmp_value[i] = this->data[i].second;
             for (int j=0; j<dimension; j++){
@@ -245,19 +246,19 @@ void SparseTensor<dimension,DATATYPE,mtype,device>::complete(bool reuse){
         }
 
         if ( (int)device <10){
-			std::unique_ptr<int[], std::function<void(int*)>> complete_index_( malloc<int,device>(nnz*dimension ), free<device> );
-			complete_index = std::move(complete_index_);
-	        std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>> complete_value_( malloc<DATATYPE,device>(nnz), free<device> );
-	        complete_value = std::move(complete_value_);
+            std::unique_ptr<int[], std::function<void(int*)>> complete_index_( malloc<int,device>(nnz*dimension ), free<device> );
+            complete_index = std::move(complete_index_);
+            std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>> complete_value_( malloc<DATATYPE,device>(nnz), free<device> );
+            complete_value = std::move(complete_value_);
             memcpy<int,      device>( complete_index.get(), tmp_index, nnz*dimension,  COPYTYPE::HOST2DEVICE);
             memcpy<DATATYPE, device>( complete_value.get(), tmp_value, nnz,            COPYTYPE::HOST2DEVICE);
-            free<device>(tmp_index);
-            free<device>(tmp_value);
         }
         else{
-			std::cout << "not yet implemented" <<std::endl;
-			exit(-1);
+            std::cout << "not yet implemented" <<std::endl;
+            exit(-1);
         }
+        free<device>(tmp_index);
+        free<device>(tmp_value);
     }
     this->filled = true;
     return;

@@ -121,22 +121,32 @@ int main(int argc, char* argv[]){
 	Contiguous1DMapInp<2> guess_map_inp( guess_shape );
 	std::unique_ptr<Map<2,MTYPE::Contiguous1D> > ptr_guess_map = guess_map_inp.create_map();
 
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
-    std::unique_ptr<DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> > ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto  ptr_guess = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto  ptr_guess2 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto  ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+    auto  ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(ptr_comm, ptr_guess_map);
+
     // guess : unit vector
     for(int i=0;i<num_eig;i++){
         std::array<int, 2> tmp_index = {i,i};
-        ptr_guess->global_set_value(tmp_index, 1.0);
+        ptr_guess-> global_set_value(tmp_index, 1.0);
         ptr_guess2->global_set_value(tmp_index, 1.0);
         ptr_guess3->global_set_value(tmp_index, 1.0);
         ptr_guess4->global_set_value(tmp_index, 1.0);
+//		for (int j=0; j<N; j++){
+//            std::array<int, 2> tmp_index = {j,i};
+//            ptr_guess->global_set_value(tmp_index, 1.0 / ( (double) i+j ));
+//            ptr_guess2->global_set_value(tmp_index, 1.0 / ( (double) i+j ));
+//            ptr_guess3->global_set_value(tmp_index, 1.0 / ( (double) i+j ));
+//            ptr_guess4->global_set_value(tmp_index, 1.0 / ( (double) i+j ));
+//		}
     }
     
 	DecomposeOption option_evd;
     option_evd.algorithm_type = DecomposeMethod::Direct;
-    
+    option_evd.max_block = 4;
+    option_evd.max_iterations = 50;
+	option_evd.preconditioner = PRECOND_TYPE::ISI2;
     std::cout << "========================\nDense matrix diag start" << std::endl;
     std::chrono::steady_clock::time_point begin = std::chrono::steady_clock::now();  
     auto out1 = decompose(test_matrix2, ptr_guess.get(), option_evd);

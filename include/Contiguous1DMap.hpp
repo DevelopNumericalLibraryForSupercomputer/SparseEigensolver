@@ -43,9 +43,9 @@ public:
     std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
     int get_split_dim() const {return split_dim;};
 
-	std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const override{
-		return std::make_unique< Contiguous1DMapInp<dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim );
-	};
+    std::unique_ptr<MapInp<dimension, MTYPE::Contiguous1D > > generate_map_inp() const override{
+        return std::make_unique< Contiguous1DMapInp<dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim );
+    };
 private:
     //array_d ranks_per_dim;      // number of processor for each dimension
     // all_local_shape store local_shape of all ranks, so all_local_shape.size() == world_size
@@ -57,33 +57,33 @@ private:
 template<int dimension>
 class Contiguous1DMapInp: public MapInp<dimension,MTYPE::Contiguous1D >
 {
-	public:
-		//std::array<int, dimension >	 global_shape;
-		//int my_rank;
-		//int world_size;
-		std::unique_ptr<Map<dimension,MTYPE::Contiguous1D> > create_map() override; 
-		Contiguous1DMapInp( std::array<int, dimension> global_shape, int my_rank=0, int world_size=1,  std::array<int, dimension> ranks_per_dim = std::array<int, dimension>{} ){
-			this->global_shape=global_shape;
-			this->my_rank = my_rank;
-			this->world_size = world_size;
-			this->ranks_per_dim = ranks_per_dim;
-		};
+    public:
+        //std::array<int, dimension >    global_shape;
+        //int my_rank;
+        //int world_size;
+        std::unique_ptr<Map<dimension,MTYPE::Contiguous1D> > create_map() override; 
+        Contiguous1DMapInp( std::array<int, dimension> global_shape, int my_rank=0, int world_size=1,  std::array<int, dimension> ranks_per_dim = std::array<int, dimension>{} ){
+            this->global_shape=global_shape;
+            this->my_rank = my_rank;
+            this->world_size = world_size;
+            this->ranks_per_dim = ranks_per_dim;
+        };
 };
 
 template<int dimension>
 std::unique_ptr< Map<dimension,MTYPE::Contiguous1D> > Contiguous1DMapInp<dimension>::create_map(){
-	if (this->ranks_per_dim[0]==0){
-		// default value(std::array<int, dimension>{}) for ranks_per_dim is set
-		return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size);
-	}
-	return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim); //shchoi add more cases
+    if (this->ranks_per_dim[0]==0){
+        // default value(std::array<int, dimension>{}) for ranks_per_dim is set
+        return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size);
+    }
+    return std::make_unique< Contiguous1DMap <dimension > > ( this->global_shape, this->my_rank, this->world_size, this->ranks_per_dim); //shchoi add more cases
 };
 
 template <int dimension>
 Contiguous1DMap<dimension>::Contiguous1DMap( std::array<int, dimension> global_shape, int my_rank, int world_size)
 :Map<dimension, MTYPE::Contiguous1D>(global_shape, my_rank, world_size){
     cumprod<dimension>(this->global_shape, this->global_shape_mult);
-	
+    
     this->ranks_per_dim.fill(1);
     this->ranks_per_dim[0]=this->world_size;
 

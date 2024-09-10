@@ -9,7 +9,8 @@
 //#include <algorithm>
 //#include <array>
 
-#include "../Type.hpp"
+#include "Type.hpp"
+#include "Utility.hpp"
 
 namespace SE{
 
@@ -38,19 +39,20 @@ template<typename DATATYPE, DEVICETYPE device=DEVICETYPE::BASE>
 void memcpy(DATATYPE* dest, const DATATYPE* source, int size, COPYTYPE copy_type=COPYTYPE::NONE){
 //    std::cout << typeid(copy_type).name() <<"\t"<< typeid(COPYTYPE::NONE).name() <<std::endl;
 //    std::cout << (int) copy_type <<"\t" << (int) COPYTYPE::NONE <<std::endl;
-    assert(COPYTYPE::NONE==(COPYTYPE) copy_type );
+    assert( (COPYTYPE::NONE==(COPYTYPE) copy_type) or (COPYTYPE::DEVICE2DEVICE==(COPYTYPE) copy_type) );
+  
     std::memcpy(dest, source, size * sizeof(DATATYPE));
 }
 
 template<typename DATATYPE, DEVICETYPE device=DEVICETYPE::BASE>
-void memset(DATATYPE* dest, int value, int size){
+void memset(DATATYPE* dest, const int value, const int size){
     std::memset(dest, value, size * sizeof(DATATYPE));
 }
 
 
 //x = a * x
-template <typename DATATYPE, DEVICETYPE device>
-void scal(const int n, const DATATYPE alpha, DATATYPE *x, const int incx);
+template <typename DATATYPE1, typename DATATYPE2, DEVICETYPE device>
+void scal(const int n, const DATATYPE1 alpha, DATATYPE2 *x, const int incx);
 
 //a * x + y
 template <typename DATATYPE, DEVICETYPE device>
@@ -69,7 +71,7 @@ void sbmv(const ORDERTYPE layout,
 
 //Euclidean norm, ||x||
 template <typename DATATYPE, DEVICETYPE device>
-DATATYPE nrm2(const int n, const DATATYPE *x, const int incx);
+typename real_type<DATATYPE>::type nrm2(const int n, const DATATYPE *x, const int incx);
 
 //y (i*N+incy) = x (i*M+incx) 
 template <typename DATATYPE, DEVICETYPE device>
@@ -82,12 +84,6 @@ void gemv(const ORDERTYPE layout, const TRANSTYPE transa, const int m, const int
           const DATATYPE beta, DATATYPE *y, const int incy);
 
 //alpha * A * x + b * y
-//void coomv;
-//void sparse mv
-//see mkl_spblas.h  / for cuda, see cusparse
-//todo - implement 
-//void sparse_status_t mkl_sparse_d_mv ()
-
 //alpha * A * B + beta * C, A : m by k, B : k by n, C : m by n
 //output : C
 template <typename DATATYPE, DEVICETYPE device>
@@ -127,11 +123,132 @@ int orgqr(const ORDERTYPE layout, int m, int n, DATATYPE* a, int lda, DATATYPE* 
                           //lapack_int n, double* a, lapack_int lda, double* wr,
                           //double* wi, double* vl, lapack_int ldvl, double* vr,
 //                          lapack_int ldvr );
+//
+
+// The arguments of geev function are not trivial.
+// for dgeev function, wr and wi are required 
+// but for zgeev function, only w is required
+// Thus, this wrapper function takes complex<double> as w reardless of datatype
+// 
 template <typename DATATYPE, DEVICETYPE device>
-int geev(const ORDERTYPE layout, char jobvl, char jobvr, const int n, DATATYPE* a, const int lda,
-          DATATYPE* wr, DATATYPE* wi, DATATYPE* vl, const int ldvl, DATATYPE* vr, const int ldvr);
+int geev(const ORDERTYPE layout, const char jobvl, const char jobvr, const int n, DATATYPE* a, const int lda,
+          std::complex<typename real_type<DATATYPE>::type>* w, DATATYPE* vl, const int ldvl, DATATYPE* vr, const int ldvr);
 
 
 template <typename DATATYPE, DEVICETYPE device>
-int syev(const ORDERTYPE layout, char jobz, char uplo, const int n, double* a, const int lda, double* w);
+int syev(const ORDERTYPE layout, const char jobz, const char uplo, const int n, DATATYPE* a, const int lda, typename real_type<DATATYPE>::type* w);
+
+template <typename DATATYPE, DEVICETYPE device>
+void vMul(const int n, const DATATYPE* a, const DATATYPE* b, DATATYPE* y );
+
+///////////////////////////////////////////////////////////////////////////////////////////////// DEVICETYPE::MPI only 
+template<typename DATATYPE>
+void p_geadd( const char* trans, 
+              const int* m,
+              const int* n,
+			  const DATATYPE* alpha,
+			  const DATATYPE* a,
+			  const int* ia, 
+			  const int* ja, 
+   		      const int desca[9],
+			  const DATATYPE* beta, 
+			        DATATYPE* c,
+			  const int* ic,
+			  const int* jc, 
+   		      const int descc[9]);
+
+template<typename DATATYPE>
+void p_gemm( const char* trans1, 
+             const char* trans2, 
+			 const int* m,
+			 const int* n,
+			 const int* k,
+			 const DATATYPE* alpha,
+			 const DATATYPE* a,
+			 const int* ia, 
+			 const int* ja, 
+   		     const int desca[9],
+			 const DATATYPE* b,
+			 const int* ib, 
+			 const int* jb, 
+   		     const int descb[9],
+			 const DATATYPE* beta, 
+			       DATATYPE* c,
+			 const int* ic,
+			 const int* jc, 
+   		     const int descc[9]);
+
+template<typename DATATYPE>
+void p_geqrf( const int* m,
+			  const int* n,
+			        DATATYPE* a,
+			  const int* ia,
+			  const int* ja,
+			  const int desca[9],
+			        DATATYPE* tau,
+			        DATATYPE* work,
+			  const int* lwork,
+			        int* info);
+
+template<typename DATATYPE>
+void p_orgqr( const int* m,
+              const int* n,
+			  const int* k,
+			        DATATYPE* a,
+			  const int* ia,
+			  const int* ja,
+			  const int desca[9],
+			  const DATATYPE* tau,
+			        DATATYPE* work,
+			  const int* lwork, 
+			        int* info
+			  );
+			
+
+template<typename DATATYPE>
+void gsum2d( const int* icontxt,
+			 const char* scope,
+			 const char* top,
+			 const int* m,
+			 const int* n,
+				   DATATYPE* a,
+			 const int* lda,
+			 const int* rdest,
+			 const int* cdest
+             );
+
+template<typename DATATYPE>
+void p_gemr2d( const int* m,
+               const int* n,
+			         DATATYPE* a,
+			   const int* ia,
+			   const int* ja,
+			   const int  desca[9],
+			         DATATYPE* b,
+			   const int* ib,
+			   const int* jb,
+			   const int  descb[9],
+			   const int* ictxt);
+
+template<typename DATATYPE>
+void p_syevd( const char* jobz,
+			  const char* uplo,
+			  const int* n,
+			        DATATYPE* a,
+			  const int* ia, 
+			  const int* ja, 
+			  const int  desca[9],
+				    typename real_type<DATATYPE>::type* w,
+					DATATYPE* z,
+			  const int* iz, 
+			  const int* jz, 
+			  const int  descz[9],
+			        DATATYPE* work,
+			  const int* lwork,
+			        typename real_type<DATATYPE>::type* rwork,
+			  const int* lrwork,
+			        int* iwork, 
+			  const int* liwork,
+			        int* info);
+              
 }

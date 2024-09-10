@@ -115,7 +115,7 @@ DenseTensor<dimension,DATATYPE,mtype,device>::DenseTensor(const std::unique_ptr<
     const auto data_size = this->ptr_map->get_num_local_elements();
     //std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
     this->data = std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)>>( malloc<DATATYPE, device>( data_size ), free<device> );
-    memset<DATATYPE,device>( this->data.get(), (DATATYPE) 0.0, data_size);
+    memset<DATATYPE,device>( this->data.get(), 0, data_size);
     this->filled=false;
 };
 
@@ -134,8 +134,8 @@ DenseTensor<dimension,DATATYPE,mtype,device>::DenseTensor(const DenseTensor<dime
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
 std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*)> > DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
 //std::unique_ptr<DATATYPE[]> DenseTensor<dimension,DATATYPE,mtype,device>::copy_data() const{
-	//auto deleter = [&](DATATYPE* ptr){ free<device>(ptr); };
-	
+    //auto deleter = [&](DATATYPE* ptr){ free<device>(ptr); };
+    
     const auto data_size = this->ptr_map->get_num_local_elements();
     //std::unique_ptr<DATATYPE[], > return_data ( malloc<DATATYPE, device>( data_size ) );
     std::unique_ptr<DATATYPE[], std::function<void(DATATYPE*) > > return_data ( malloc<DATATYPE, device>( data_size ), free<device> );
@@ -170,7 +170,7 @@ void DenseTensor<dimension,DATATYPE,mtype,device>::global_insert_value(const int
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
 void DenseTensor<dimension,DATATYPE,mtype,device>::local_insert_value(const int local_index, const DATATYPE value) {
     assert (local_index <this->ptr_map->get_num_local_elements());
-	if(local_index<0) return;
+    if(local_index<0) return;
     this->data[local_index] += value;
     return;
 }
@@ -197,7 +197,7 @@ void DenseTensor<dimension,DATATYPE,mtype,device>::global_set_value(int global_i
 template<int dimension, typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
 void DenseTensor<dimension,DATATYPE,mtype,device>::local_set_value(int local_index, DATATYPE value) {
     assert (local_index <this->ptr_map->get_num_local_elements());
-	if(local_index<0) return;
+    if(local_index<0) return;
     this->data[local_index] = value;
     return;
 }

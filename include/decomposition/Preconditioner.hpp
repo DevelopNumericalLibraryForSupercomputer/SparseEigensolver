@@ -16,7 +16,7 @@ public:
 	virtual ~Preconditioner() = default;
 	virtual std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (
                                                                DenseTensor<2, DATATYPE, mtype, device>& residual, //vec_size * block_size
-                                                               DATATYPE* sub_eigval) const=0;                           //block_size
+                                                               typename real_type<DATATYPE>::type* sub_eigval) const=0;                           //block_size
 															   
     friend std::ostream& operator<< (std::ostream& stream, const Preconditioner<DATATYPE, mtype, device>& preconditioner){
     //void print_tensor_info() const{
@@ -38,7 +38,7 @@ public:
 	NoPreconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
-													   DATATYPE* sub_eigval) const{
+													   typename real_type<DATATYPE>::type* sub_eigval) const{
 		return residual.clone();
 	}
 };
@@ -49,9 +49,12 @@ public:
 	DiagonalPreconditioner(const TensorOperations<DATATYPE, mtype, device>* operations,const DecomposeOption option):Preconditioner<DATATYPE,mtype,device>(operations, option, "DiagonalPreconditioner"){
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
-													   DATATYPE* sub_eigval) const{
+													   typename real_type<DATATYPE>::type* sub_eigval) const{
 		
 	
+		using TensorOp = TensorOp<mtype,device>;
+		using REALTYPE = typename real_type<DATATYPE>::type;
+
         const int vec_size = residual.ptr_map->get_global_shape()[0];
         const int num_eig  = residual.ptr_map->get_global_shape()[1];
         //int num_eig = this->option.num_eigenvalues;
@@ -70,7 +73,7 @@ public:
         for(int index=0; index< num_eig; index++){
     //        array_index = {index, index};
             //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
-            DATATYPE coeff_i = sub_eigval[index] - this->operations->get_diag_element(index);
+            const auto coeff_i = (DATATYPE) sub_eigval[index] - this->operations->get_diag_element(index);
             if(abs(coeff_i) > this->option.preconditioner_tolerance){
                 scale_factor[index] = 1.0/coeff_i;
             }
@@ -97,23 +100,25 @@ public:
 		this->pcg_precond=std::make_unique<DiagonalPreconditioner<DATATYPE,mtype,device> > (operations,option);
 	}
 	std::unique_ptr< DenseTensor<2, DATATYPE, mtype, device> > call (DenseTensor<2, DATATYPE, mtype, device>& residual,
-													   DATATYPE* sub_eigval) const {
+													   typename real_type<DATATYPE>::type* sub_eigval) const {
 		
 
+		using TensorOp = TensorOp<mtype,device>;
+		using REALTYPE = typename real_type<DATATYPE>::type;
 
     	const int i_one  = 1;
 
     	const int vec_size = residual.ptr_map->get_global_shape()[0];
     	const int num_vec = residual.ptr_map->get_global_shape()[1];
 
-        DATATYPE* norm2        = malloc<DATATYPE, device>( num_vec );
-        DATATYPE* shift_values = malloc<DATATYPE, device>( num_vec );
+        REALTYPE* norm2        = malloc<REALTYPE, device>( num_vec );
+        REALTYPE* shift_values = malloc<REALTYPE, device>( num_vec );
 
 		// caluclate square of residual norm 
     	TensorOp::get_norm_of_vectors(residual, norm2, num_vec, false);
     
-    	memcpy<DATATYPE, device>(shift_values, sub_eigval, num_vec);
-    	axpy<DATATYPE, device>(num_vec, -0.1, norm2, i_one, shift_values, i_one); 
+    	memcpy<REALTYPE, device>(shift_values, sub_eigval, num_vec);
+    	axpy<REALTYPE, device>(num_vec, -0.1, norm2, i_one, shift_values, i_one); 
     
 		
 		// if residue is too big, pcg solver is not used
@@ -137,16 +142,16 @@ public:
 //			return this->pcg_precond->call( *p_i, sub_eigval) ;
 //		}
 
-		DATATYPE* conv         = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* rzold        = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* alpha        = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* rznew        = malloc<DATATYPE,device> ( num_vec );
-		DATATYPE* beta         = malloc<DATATYPE,device> ( num_vec );
+		REALTYPE* conv         = malloc<REALTYPE,device> ( num_vec );
+		REALTYPE* rzold        = malloc<REALTYPE,device> ( num_vec );
+		REALTYPE* alpha        = malloc<REALTYPE,device> ( num_vec );
+		REALTYPE* rznew        = malloc<REALTYPE,device> ( num_vec );
+		REALTYPE* beta         = malloc<REALTYPE,device> ( num_vec );
 
 		////// line 7 start
     	auto r = TensorOp::scale_vectors(*p_i, shift_values);  //\tilde{epsilon} *r 
-    	r = TensorOp::add<DATATYPE,mtype,device>(*r,       *this->operations->matvec(*p_i),  -1.0) ; // \tilde{epsilon} *p_i -H@p_i
-    	r = TensorOp::add<DATATYPE,mtype,device>(residual, *r,                           1.0) ; //r_i + \tilde{epsilon} *p_i - H@p_i
+    	r = TensorOp::add(*r,       *this->operations->matvec(*p_i),  -1.0) ; // \tilde{epsilon} *p_i -H@p_i
+    	r = TensorOp::add(residual, *r,                           1.0) ; //r_i + \tilde{epsilon} *p_i - H@p_i
 		////// line 7 end 
 	
 		////// line 8 start
@@ -164,7 +169,7 @@ public:
 		for (int i_iter = 0; i_iter<this->option.preconditioner_max_iterations; i_iter++){
 			///// line 12 start
 	    	auto scaled_p = TensorOp::scale_vectors(*p, shift_values);  //\tilde{epsilon} * p
-	    	auto hp = TensorOp::add<DATATYPE,mtype,device>( *this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
+	    	auto hp = TensorOp::add( *this->operations->matvec(*p), *scaled_p, -1.0) ; // Hp -\tilde{epsilon} *p
 			///// line 12 end
 			
 //			std::cout << "******** p " <<i_iter <<std::endl;			
@@ -230,7 +235,7 @@ public:
 			
 			
 			// line 23 start	
-			memcpy<DATATYPE, device> (rzold, rznew, num_vec);
+			memcpy<REALTYPE, device> (rzold, rznew, num_vec);
 			// line 23 end
 		}
 		free<device>(beta);
