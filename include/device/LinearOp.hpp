@@ -20,20 +20,20 @@ DATATYPE* malloc(const int size){
     return static_cast<DATATYPE*>(std::malloc(size * sizeof(DATATYPE)));
 }
 
-template<>
-double* malloc<double, DEVICETYPE::MKL>(const int size);
-template<>
-double* malloc<double, DEVICETYPE::MPI>(const int size);
+//template<>
+//double* malloc<double, DEVICETYPE::MKL>(const int size);
+//template<>
+//double* malloc<double, DEVICETYPE::MPI>(const int size);
 
 template< DEVICETYPE device=DEVICETYPE::BASE>
 void free(void* ptr){
     std::free(ptr);
 }
 
-template<>
-void free <DEVICETYPE::MKL>(void* ptr);
-template<>
-void free <DEVICETYPE::MPI>(void* ptr);
+//template<>
+//void free <DEVICETYPE::MKL>(void* ptr);
+//template<>
+//void free <DEVICETYPE::MPI>(void* ptr);
 
 template<typename DATATYPE, DEVICETYPE device=DEVICETYPE::BASE>
 void memcpy(DATATYPE* dest, const DATATYPE* source, int size, COPYTYPE copy_type=COPYTYPE::NONE){
@@ -58,7 +58,7 @@ void scal(const int n, const DATATYPE1 alpha, DATATYPE2 *x, const int incx);
 template <typename DATATYPE, DEVICETYPE device>
 void axpy(const int n, const DATATYPE a, const DATATYPE *x, const int incx, DATATYPE *y, const int incy);
 
-//y = a * b
+//y := alpha*A*x + beta*y,
 template <typename DATATYPE, DEVICETYPE device>
 void sbmv(const ORDERTYPE layout, 
             const char uplo, const int n, const int k,
