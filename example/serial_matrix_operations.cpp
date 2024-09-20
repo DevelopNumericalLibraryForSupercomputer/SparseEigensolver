@@ -43,6 +43,9 @@ int main(int argc, char* argv[]){
     std::cout << "# Symmetric orthogonalization" << std::endl;
     //copy test_matrix to Symortho
     auto Symortho(test_matrix);
+    
+    using TensorOp = TensorOp<MTYPE::Contiguous1D,DEVICETYPE::MKL>;
+
     TensorOp::orthonormalize(Symortho,"symmetric");
     std::cout << Symortho << std::endl;
 
@@ -68,7 +71,7 @@ int main(int argc, char* argv[]){
     
     //Matrix-Vector Multiplication (dense-dense)
     std::cout << "# Matrix-matrix Multiplication (dense-dense)" << std::endl;
-    std::cout <<  TensorOp::matmul( test_matrix, test_vector) <<std::endl;
+    std::cout <<  *(TensorOp::matmul( test_matrix, test_vector)) <<std::endl;
     
     std::cout << "##############################\n";
     std::cout << "# Sparse matrix operation" << std::endl;
@@ -116,9 +119,9 @@ int main(int argc, char* argv[]){
     std::cout <<  test_vec_long << std::endl;       
 
     std::cout << "# Sparse matrix - vector multiplication" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N ) <<std::endl;
+    std::cout <<  *(TensorOp::matmul( test_sparse, test_vec_long, TRANSTYPE::N) ) <<std::endl;
     std::cout << "# Sparse matrix - dense matrix multiplication" << std::endl;
-    std::cout <<  TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) <<std::endl;
+    std::cout <<  *(TensorOp::matmul( test_sparse, test_matrix2, TRANSTYPE::N, TRANSTYPE::N ) ) <<std::endl;
     
   return 0;
 }

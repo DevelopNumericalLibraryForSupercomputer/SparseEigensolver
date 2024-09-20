@@ -18,8 +18,9 @@ enum class DecomposeMethod{
 };
 
 enum class PRECOND_TYPE{
-    Diagonal=0,
-	ISI2    =1,
+    No=0,
+    Diagonal=1,
+	ISI2    =2,
 };
 
 class DecomposeOption{

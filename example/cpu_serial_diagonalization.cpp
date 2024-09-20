@@ -118,7 +118,7 @@ int main(int argc, char* argv[]){
 
     std::cout << "\n\n2-3. User-defined matrix-vector operation, \"TestTensor.hpp\"" << std::endl;
     std::cout << "========================\nTest Tensor Operation, Davidson" << std::endl;
-    TestTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
+    TestTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
     auto out4 = decompose(&test_op, ptr_guess4.get(), option);
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
@@ -127,7 +127,7 @@ int main(int argc, char* argv[]){
 
     std::cout << "\n\n2-4. User-defined matrix-vector operation, \"tensor_operations.py\"" << std::endl;
     std::cout << "========================\nPython Tensor Operation, Davidson" << std::endl;
-    PyTensorOperations<MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("../example/tensor_operations.py");
+    PyTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("../example/tensor_operations.py");
     std::chrono::steady_clock::time_point begin5 = std::chrono::steady_clock::now();  
     auto out5 = decompose(&test_op, ptr_guess5.get(), option);
     std::chrono::steady_clock::time_point end5 = std::chrono::steady_clock::now();

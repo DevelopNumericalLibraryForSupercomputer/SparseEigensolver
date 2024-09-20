@@ -7,9 +7,9 @@ enum class DEVICETYPE: int{
     MKL=1,
     MPI=2,
 // accelerator that has independent memory space have larger than 10  
-    CUDA=11,
-    NCCL=12,
-
+    CUDA=11, // deprecated
+    NCCL=12, // deprecated
+    SYCL=13,
 };
 
 enum class MTYPE: int{

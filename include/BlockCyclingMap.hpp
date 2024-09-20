@@ -71,72 +71,72 @@ public:
     int find_rank_from_global_array_index(array_d global_array_index) const override;
 
     //std::vector< array_d > get_all_local_shape() const{return all_local_shape;};
-	array_d get_nprow() const override{return this->nprow;};
+    array_d get_nprow() const override{return this->nprow;};
     array_d get_my_array_rank() const {return this->my_array_rank;};
-	array_d get_block_size() const override {return this->block_size;};
-	std::unique_ptr<MapInp<dimension, MTYPE::BlockCycling> > generate_map_inp() const override{
-		return  std::make_unique<BlockCyclingMapInp<dimension> > (this->global_shape, this->my_rank, this->world_size,this->block_size, this->nprow);
-	};
+    array_d get_block_size() const override {return this->block_size;};
+    std::unique_ptr<MapInp<dimension, MTYPE::BlockCycling> > generate_map_inp() const override{
+        return  std::make_unique<BlockCyclingMapInp<dimension> > (this->global_shape, this->my_rank, this->world_size,this->block_size, this->nprow);
+    };
 private:
     array_d nprow;      // number of processor for each dimension
     array_d my_array_rank; // processor_id for each dimension
-	array_d block_size; // block size for each dimension
+    array_d block_size; // block size for each dimension
 };
 
 template<int dimension>
 class BlockCyclingMapInp: public MapInp<dimension, MTYPE::BlockCycling >{
-	public:
+    public:
 
-		std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > create_map() override;
+        std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > create_map() override;
 
-		BlockCyclingMapInp( std::array<int, dimension> global_shape, int my_rank, int world_size, std::array<int, dimension> block_size, std::array<int, dimension> nprow){
-			this->global_shape=global_shape;
-			this->my_rank = my_rank;
-			this->world_size = world_size;
-			this->block_size = block_size;
-			this->nprow=nprow;
-		};
+        BlockCyclingMapInp( std::array<int, dimension> global_shape, int my_rank, int world_size, std::array<int, dimension> block_size, std::array<int, dimension> nprow){
+            this->global_shape=global_shape;
+            this->my_rank = my_rank;
+            this->world_size = world_size;
+            this->block_size = block_size;
+            this->nprow=nprow;
+        };
 
 };
 
 template<int dimension>
 std::unique_ptr< Map<dimension,MTYPE::BlockCycling> > BlockCyclingMapInp<dimension>::create_map(){
-	return std::make_unique<BlockCyclingMap<dimension> > ( this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
+    return std::make_unique<BlockCyclingMap<dimension> > ( this->global_shape, this->my_rank, this->world_size, this->block_size, this->nprow);
 };
 
 template <int dimension>
 BlockCyclingMap<dimension>::BlockCyclingMap( const std::array<int,dimension> global_shape, const int my_rank, const int world_size, const std::array<int, dimension> block_size, 
-											 const std::array<int, dimension> nprow)
+                                             const std::array<int, dimension> nprow)
 :Map<dimension, MTYPE::BlockCycling>(global_shape, my_rank, world_size){
     assert( world_size == std::accumulate(nprow.begin(), nprow.end(), 1, std::multiplies<int>()) );
-	int idx = my_rank;
-	for (int dim=0; dim<dimension; dim++){
-		this->my_array_rank[dim] = idx % nprow[dim];
-		idx  /= nprow[dim];
-	}
-	this->block_size=block_size;
-	this->nprow = nprow;
+    int idx = my_rank;
+    for (int dim=0; dim<dimension; dim++){
+        this->my_array_rank[dim] = idx % nprow[dim];
+        idx  /= nprow[dim];
+    }
+    this->block_size=block_size;
+    this->nprow = nprow;
 
 
-	for (int dim = 0; dim<dimension; dim++){
-		this->local_shape[dim]=0;
-		for (int i = this->my_array_rank[dim]; i<std::ceil((double)this->global_shape[dim] / (double)block_size[dim]); i+=nprow[dim] ){
-			int start_idx = i*block_size[dim];
-			int end_idx = std::min((i+1)*block_size[dim], this->global_shape[dim] );
-			this->local_shape[dim]+= end_idx-start_idx;
-		}
-	}		
-	
+    for (int dim = 0; dim<dimension; dim++){
+        this->local_shape[dim]=0;
+        for (int i = this->my_array_rank[dim]; i<std::ceil((double)this->global_shape[dim] / (double)block_size[dim]); i+=nprow[dim] ){
+            int start_idx = i*block_size[dim];
+            int end_idx = std::min((i+1)*block_size[dim], this->global_shape[dim] );
+            this->local_shape[dim]+= end_idx-start_idx;
+        }
+    }       
+    
 }
 template <int dimension>
 int BlockCyclingMap<dimension>::get_num_local_elements() const 
 {
 
-	int num_elements =1;
-	for (int dim = 0; dim<dimension; dim++){
-		num_elements*=this->local_shape[dim];
-	}
-	return num_elements;	
+    int num_elements =1;
+    for (int dim = 0; dim<dimension; dim++){
+        num_elements*=this->local_shape[dim];
+    }
+    return num_elements;    
 }
 
 template <int dimension>
@@ -162,8 +162,8 @@ std::array<int, dimension> BlockCyclingMap<dimension>::local_to_global(const std
 
     // Calculate global block index for each dimension and calculate global index
     for (int dim = 0; dim < local_array_index.size(); ++dim) {
-		//local_index[dim] / this->block_size[dim] is local block index
-		int global_block_index = this->nprow[dim] * (local_array_index[dim] / this->block_size[dim])+this->my_array_rank[dim];
+        //local_index[dim] / this->block_size[dim] is local block index
+        int global_block_index = this->nprow[dim] * (local_array_index[dim] / this->block_size[dim])+this->my_array_rank[dim];
         global_array_index[dim] = global_block_index * this->block_size[dim] + local_array_index[dim] % this->block_size[dim];
     }
 
@@ -175,22 +175,22 @@ std::array<int, dimension> BlockCyclingMap<dimension>::global_to_local(const std
 {
     std::array<int, dimension> local_array_index;
     std::array<int, dimension> global_block_index;
-	bool tag = true;
+    bool tag = true;
     for (int dim = 0; dim < dimension; ++dim) {
-		global_block_index[dim] =  global_array_index[dim] / this->block_size[dim];
-		local_array_index[dim]  = (global_block_index[dim] / this->nprow[dim])*this->block_size[dim] + global_array_index[dim]%this->block_size[dim];
+        global_block_index[dim] =  global_array_index[dim] / this->block_size[dim];
+        local_array_index[dim]  = (global_block_index[dim] / this->nprow[dim])*this->block_size[dim] + global_array_index[dim]%this->block_size[dim];
 
-		if(this->my_array_rank[dim]!=(global_block_index[dim]%this->nprow[dim]) ){
-			tag = false;
-			break;
-		}
-	}
-	if(!tag){
-		for (int dim = 0; dim < local_array_index.size(); ++dim) {
-			local_array_index[dim] = -1;
-		}
-	}
-	return 	local_array_index;
+        if(this->my_array_rank[dim]!=(global_block_index[dim]%this->nprow[dim]) ){
+            tag = false;
+            break;
+        }
+    }
+    if(!tag){
+        for (int dim = 0; dim < local_array_index.size(); ++dim) {
+            local_array_index[dim] = -1;
+        }
+    }
+    return  local_array_index;
 }
 
 
@@ -306,7 +306,7 @@ int BlockCyclingMap<dimension>::find_rank_from_global_array_index(std::array<int
         stride *= nprow[dim];
     }
 
-    return proc_id;	
+    return proc_id; 
 }
 
 }

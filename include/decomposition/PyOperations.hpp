@@ -14,16 +14,16 @@ namespace SE{
 //typedef double (*GetDiagElementCallback)(int index, void* user_data);
 //typedef void   (*GetGlobalShapeCallback)(int* shape, void* user_data);
 
-template<MTYPE mtype, DEVICETYPE device>
-class PyTensorOperations: public TensorOperations<mtype, device>{
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+class PyTensorOperations: public TensorOperations<DATATYPE, mtype, device>{
 private:
     //Todo:
     // 1) each wrapper function should notify python function about the global_index of input_vecs
     // 2) return_vec gather return_vec from all processors : allgather(SUM)
 
-    void MatrixOneVec_wrapper(double* input_vec, double* return_vec, int size) const; //just a wrapper of MatrixMultVec_wrapper
-    void MatrixMultVec_wrapper(double* input_vec, double* return_vec, int num_vec, int size) const;
-    double GetDiagElement_wrapper(int index) const;
+    void MatrixOneVec_wrapper(DATATYPE* input_vec, DATATYPE* return_vec, int size) const; //just a wrapper of MatrixMultVec_wrapper
+    void MatrixMultVec_wrapper(DATATYPE* input_vec, DATATYPE* return_vec, int num_vec, int size) const;
+    DATATYPE GetDiagElement_wrapper(int index) const;
     void GetGlobalShape_wrapper(int* shape) const;
 
     void initialize_numpy() const{
@@ -42,24 +42,24 @@ public:
     PyTensorOperations(std::string filename){
         set_python_pathway(filename);
     }
-    DenseTensor<1, double, mtype, device> matvec(const DenseTensor<1, double, mtype, device>& vec) const override{
-        auto return_vec = DenseTensor<1, double, mtype, device>(vec);
+    std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > matvec(const DenseTensor<1, DATATYPE, mtype, device>& vec) const override{
+        auto return_vec = vec.clone();
         int size = vec.ptr_map->get_global_shape(0);
         //double* input_vec = vec.copy_data();
-        MatrixOneVec_wrapper(vec.data.get(), return_vec.data.get(), size);
+        MatrixOneVec_wrapper(vec.data.get(), return_vec->data.get(), size);
 
         return return_vec;
     }
-    DenseTensor<2, double, mtype, device> matvec(const DenseTensor<2, double, mtype, device>& vec) const override{
-        auto return_vec = DenseTensor<2, double, mtype, device>(vec);
+    std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > matvec(const DenseTensor<2, DATATYPE, mtype, device>& vec) const override{
+        auto return_vec = vec.clone();
         int size = vec.ptr_map->get_global_shape(0);
         int num_vec = vec.ptr_map->get_global_shape(1);
         //double* input_vec = vec.copy_data();
-        MatrixMultVec_wrapper(vec.data.get(), return_vec.data.get(), num_vec, size);
+        MatrixMultVec_wrapper(vec.data.get(), return_vec->data.get(), num_vec, size);
 
         return return_vec;
     }
-    double get_diag_element(const int index) const override{
+    DATATYPE get_diag_element(const int index) const override{
         return GetDiagElement_wrapper(index);
     }
     std::array<int, 2> get_global_shape() const override{
@@ -67,6 +67,7 @@ public:
         GetGlobalShape_wrapper(shape);
         return {static_cast<int>(shape[0]), static_cast<int>(shape[1])};
     }
+
     void set_python_pathway(std::string new_filename){
         int pos = new_filename.rfind('/');
         
@@ -86,16 +87,15 @@ public:
         }
     }
 
-
 };
 
-template<MTYPE mtype, DEVICETYPE device>
-void PyTensorOperations<mtype, device>::MatrixOneVec_wrapper(double* input_vec, double* return_vec, int size) const{
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+void PyTensorOperations<DATATYPE, mtype, device>::MatrixOneVec_wrapper(DATATYPE* input_vec, DATATYPE* return_vec, int size) const{
     MatrixMultVec_wrapper(input_vec, return_vec, 1, size);
 };
 
-template<MTYPE mtype, DEVICETYPE device>
-void PyTensorOperations<mtype, device>::MatrixMultVec_wrapper(double* input_vec, double* return_vec, int num_vec, int size) const{
+template<>
+void PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::MatrixMultVec_wrapper(double* input_vec, double* return_vec, int num_vec, int size) const{
     Py_Initialize();
     initialize_numpy(); // Initialize NumPy API
 
@@ -167,8 +167,8 @@ void PyTensorOperations<mtype, device>::MatrixMultVec_wrapper(double* input_vec,
     }
 };
 
-template<MTYPE mtype, DEVICETYPE device>
-double PyTensorOperations<mtype, device>::GetDiagElement_wrapper(int index) const{
+template<>
+double PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::GetDiagElement_wrapper(int index) const{
     Py_Initialize();
     // Add the directory containing EOMCC.py to the Python path
     PyRun_SimpleString("import sys");
@@ -220,8 +220,8 @@ double PyTensorOperations<mtype, device>::GetDiagElement_wrapper(int index) cons
 
 };
 
-template<MTYPE mtype, DEVICETYPE device>
-void PyTensorOperations<mtype, device>::GetGlobalShape_wrapper(int* shape) const{
+template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+void PyTensorOperations<DATATYPE, mtype, device>::GetGlobalShape_wrapper(int* shape) const{
     Py_Initialize();
 
     // Add the directory containing EOMCC.py to the Python path
@@ -278,7 +278,7 @@ void PyTensorOperations<mtype, device>::GetGlobalShape_wrapper(int* shape) const
         Py_Finalize();
         throw std::runtime_error("Failed to load Python module");
     }
-}
+};
 
 
 } 

@@ -20,8 +20,6 @@
 #include "Utility.hpp"
 using namespace SE;
 
-// predefined const variables 
-const int i_zero = 0, i_one = 1, i_four = 4, i_negone = -1;
 
 //// print funciton 
 //std::ostream& operator<<(std::ostream& os, std::array<int,3> &A){
@@ -103,9 +101,8 @@ std::pair<int, std::vector<double>> readMatrixFromBinaryFile(const std::string& 
 int main(int argc, char** argv){
 	// predefined value
     int rank=0, nprocs=1, ictxt;
-	DecomposeOption option;
 	std::string  filename;
-
+	DecomposeOption option;
 	// input 
 	int p=1;
 	if (argc>=2 ) p = std::stoi( argv[1] ); 
@@ -140,7 +137,7 @@ int main(int argc, char** argv){
 		std::cout << "p: number of rows in processor grid\n" 
                   << "q: number of columns in processor grid\n" 
                   << "nb: number of block size\n" 
-                  << "precond_type: 0 (diagonal) 1 (ISI2)\n" 
+                  << "precond_type: 0 (no) 1 (Diagonal) 2 (ISI2)\n" 
                   << "file_number: 0,1,2 "
                   << std::endl; 
 		return 0;
@@ -159,12 +156,12 @@ int main(int argc, char** argv){
 //	assert ( output.second.size() ==N*N);
 //    std::chrono::steady_clock::time_point end1 = std::chrono::steady_clock::now();
 //    if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end1 - begin1).count())/1000000.0 << "[sec]" << std::endl;
-//	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
+	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
     std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
 	auto output = readMatrixFromBinaryFile(filename);
 	const int N = output.first;
 	assert ( output.second.size() ==N*N);
-	//printMatrix(output.second, N, N);
+    //printMatrix(output.second, N, N);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
     if(ptr_comm->get_rank()==0) std::cout << "reading matrix takes" << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 << "[sec]" << std::endl;
 	////////////////////////////////////////////////////////////////////////////////////////////////////////////////  Part 2 construct matrices
