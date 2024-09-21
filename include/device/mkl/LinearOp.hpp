@@ -160,6 +160,8 @@ int geev<double, DEVICETYPE::MKL>(const ORDERTYPE order, const char jobvl, const
     for (int i=0; i<n; i++){
         w[i] = std::complex<double>(wr[i],wi[i]);
     }
+    delete[] wr;
+    delete[] wi;
     return return_val;
 }
 

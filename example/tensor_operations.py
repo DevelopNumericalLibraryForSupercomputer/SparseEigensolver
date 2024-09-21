@@ -2,11 +2,11 @@
 import numpy as np
 
 # Example matrix for demonstration
-N = 2000
+N = 1000
+invh2 = 1.0
 
 def matvec(vec):
     n, m = vec.shape
-    invh2 = 1.0
     return_vec = np.zeros_like(vec)
 
     for i in range(n):
@@ -24,15 +24,15 @@ def matvec(vec):
         return_ivec[4:] += ivec[:-4] * (-0.1)
         return_ivec[:-4] += ivec[4:] * (-0.1)
         
-        if i % 100 ==0:
-            for j in range(0,n,100):
-                if i!=j:
-                    return_ivec += ivec[j] * 0.01
+        #if i % 100 ==0:
+        #    for j in range(0,n,100):
+        #        if i!=j:
+        #            return_ivec += ivec[j] * 0.01
         return_vec[i] = return_ivec
     return return_vec
 
 def get_diagonal_element(index):
-    return 2.0 * float(index) - N
+    return 2.0 * float(index) - 2.0*float(N) - invh2 * 5.0 / 2.0
 
 def get_global_shape():
     return (N, N)

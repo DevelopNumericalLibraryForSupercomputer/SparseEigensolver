@@ -15,11 +15,13 @@ public:
         DATATYPE invh2 = 1.0;
         for(int i=0;i<matrix_size;i++){
             return_vec->data[i] = vec.data[i]* ( 2.0*((DATATYPE)i-(DATATYPE)matrix_size)   - invh2*5.0/2.0 );
-            if(i%100==0){
-                for(int j=0;j<matrix_size;j=j+100){
+            /*
+            if(i%17==0){
+                for(int j=0;j<matrix_size;j=j+17){
                     if(i!=j) return_vec->data[i] += vec.data[j]*0.01;
                 }
             }
+            */
         }
         for(int i=1;i<matrix_size;i++){
             return_vec->data[i] += vec.data[i-1]* ( invh2*4.0/3.0);

@@ -179,7 +179,8 @@ public:
 			for (int i=0; i<num_vec; i++){
 				alpha[i] = rzold[i] /alpha[i];
 //				std::cout << i << " alpha: " <<alpha[i]<<std::endl;
-				if(std::isnan(alpha[i])) alpha[i] =0.0;
+				//if(std::isnan(alpha[i])) alpha[i] =0.0;
+				if(alpha[i] != alpha[i]) alpha[i] =0.0;
 			}
 			///// line 13 end
 
@@ -215,7 +216,8 @@ public:
 				//if(residual.ptr_comm->get_rank()==0) std::cout << std::scientific<< rzold[j] <<" " << rznew[j] << " " <<rznew[j]/rzold[j]<<std::endl;
 				beta[j] = rznew[j] / rzold[j]; // beta = rznew/rzold; 
 //				std::cout << j << " beta: " <<beta[j]<<std::endl;
-				if(std::isnan(beta[j])) beta[j] =0.0;
+				//if(std::isnan(beta[j])) beta[j] =0.0;
+				if(beta[j] != beta[j]) beta[j] =0.0;
 			}
 
 			if (check_conv){

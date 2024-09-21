@@ -27,7 +27,7 @@ int main(int argc, char* argv[]){
     auto ptr_comm = comm_inp.create_comm();
     
     std::cout << "# Create Matrix" << std::endl;
-    int N = 15;
+    int N = 1000;
     const int num_eig = 3;
     std::array<int, 2> shape = {N,N};
 	Contiguous1DMapInp<2> map2_inp( shape );
@@ -43,7 +43,7 @@ int main(int argc, char* argv[]){
             if(i == j +2 || i == j -2)  matrix_data[i+j*N] -= invh2*1.0/12.0;
             if(i == j +3 || i == j -3)  matrix_data[i+j*N] += 0.3;
             if(i == j +4 || i == j -4)  matrix_data[i+j*N] -= 0.1;
-            if(i !=j && i%100 == 0 && j%100 == 0)  matrix_data[i+j*N] += 0.01;
+            //if(i !=j && i%17 == 0 && j%17 == 0)  matrix_data[i+j*N] += 0.01;
         }
     }    
     DenseTensor<2,double,MTYPE::Contiguous1D, DEVICETYPE::MKL> test_matrix(ptr_comm, map2_inp.create_map(), std::move(matrix_data));
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]){
             if(i == j +2 || i == j -2)   test_sparse.global_insert_value(index, invh2*(-1.0)/12.0);
             if(i == j +3 || i == j -3)   test_sparse.global_insert_value(index, 0.3);
             if(i == j +4 || i == j -4)   test_sparse.global_insert_value(index, -0.1);
-            if(i!=j && i%100 == 0 && j%100 == 0)  test_sparse.global_insert_value(index, 0.01);
+            //if(i!=j && i%17 == 0 && j%17 == 0)  test_sparse.global_insert_value(index, 0.01);
         }
     }
     test_sparse.complete();
@@ -81,6 +81,11 @@ int main(int argc, char* argv[]){
     auto ptr_guess3 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
     auto ptr_guess4 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
     auto ptr_guess5 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
+    
+    auto ptr_guess6 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
+    auto ptr_guess7 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
+    auto ptr_guess8 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
+    auto ptr_guess9 = std::make_unique< DenseTensor<2, double, MTYPE::Contiguous1D, DEVICETYPE::MKL> >(*ptr_guess1);
     std::cout << "# Guess vectors construction complete" << std::endl;
 
     std::cout << "1. Direct diagonalization (using MKL)" << std::endl;
@@ -95,8 +100,9 @@ int main(int argc, char* argv[]){
     print_eigenvalues( "Eigenvalues", num_eig, out_direct.get()->real_eigvals.data(), out_direct.get()->imag_eigvals.data());
     std::cout << "Direct, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end - begin).count())/1000000.0 << "[sec]" << std::endl;
 
-    std::cout << "\n\n2. Iterative diagonalization (Block-Davidson algorithm)" << std::endl;
-    DecomposeOption option("ISI.yaml");
+    std::cout << "\n\n2. Iterative diagonalization (Block-Davidson algorithm), diagonal preconditioner" << std::endl;
+
+   DecomposeOption option("Diagonal.yaml");
 
     std::cout << "\n2-1. Matrix is given by DenseTensor" << std::endl;
     std::cout << "========================\nDense matrix diag start" << std::endl;
@@ -120,6 +126,7 @@ int main(int argc, char* argv[]){
     std::cout << "========================\nTest Tensor Operation, Davidson" << std::endl;
     TestTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
     std::chrono::steady_clock::time_point begin4 = std::chrono::steady_clock::now();  
+    std::cout << "========================\nTestTensorOperations diag done" << std::endl; 
     auto out4 = decompose(&test_op, ptr_guess4.get(), option);
     std::chrono::steady_clock::time_point end4 = std::chrono::steady_clock::now();
     print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());
@@ -131,8 +138,51 @@ int main(int argc, char* argv[]){
     std::chrono::steady_clock::time_point begin5 = std::chrono::steady_clock::now();  
     auto out5 = decompose(&test_op, ptr_guess5.get(), option);
     std::chrono::steady_clock::time_point end5 = std::chrono::steady_clock::now();
+    std::cout << "========================\nPyTensorOperations diag done" << std::endl; 
     print_eigenvalues( "Eigenvalues", num_eig, out5.get()->real_eigvals.data(), out5.get()->imag_eigvals.data());
     std::cout << "BlockDavidson, Python tensor operations, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end5 - begin5).count())/1000000.0 << "[sec]" << std::endl;
 
+
+    std::cout << "\n\n ISI2 preconditioner \n\n" << std::endl;
+    option.preconditioner = PRECOND_TYPE::ISI2;
+/*
+    std::cout << "\n3-1. Matrix is given by DenseTensor" << std::endl;
+    std::cout << "========================\nDense matrix diag start" << std::endl;
+    begin2 = std::chrono::steady_clock::now();  
+    out2 = decompose(test_matrix, ptr_guess6.get(), option);
+    end2 = std::chrono::steady_clock::now();
+    std::cout << "========================\nDense matrix diag done" << std::endl; 
+    print_eigenvalues( "Eigenvalues", num_eig, out2.get()->real_eigvals.data(), out2.get()->imag_eigvals.data());
+    std::cout << "BlockDavidson, DenseTensor, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end2 - begin2).count())/1000000.0 << "[sec]" << std::endl;
+
+    std::cout << "\n\n3-2. Matrix is given by SparseTensor" << std::endl;
+    std::cout << "========================\nSparse matrix diag start" << std::endl;
+    begin3 = std::chrono::steady_clock::now();  
+    out3 = decompose(test_sparse, ptr_guess7.get(), option);
+    end3 = std::chrono::steady_clock::now();
+    std::cout << "========================\nSparse matrix diag done" << std::endl; 
+    print_eigenvalues( "Eigenvalues", num_eig, out3.get()->real_eigvals.data(), out3.get()->imag_eigvals.data());    
+    std::cout << "BlockDavidson, SparseTensor, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end3 - begin3).count())/1000000.0 << "[sec]" << std::endl;
+
+    std::cout << "\n\n3-3. User-defined matrix-vector operation, \"TestTensor.hpp\"" << std::endl;
+    std::cout << "========================\nTest Tensor Operation, Davidson" << std::endl;
+    //TestTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> test_op(N);//= new TestTensorOperations<MTYPE::Contiguous1D, DEVICETYPE::MKL>(N);
+    begin4 = std::chrono::steady_clock::now();  
+    std::cout << "========================\nTestTensorOperations diag done" << std::endl; 
+    out4 = decompose(&test_op, ptr_guess8.get(), option);
+    end4 = std::chrono::steady_clock::now();
+    print_eigenvalues( "Eigenvalues", num_eig, out4.get()->real_eigvals.data(), out4.get()->imag_eigvals.data());
+    std::cout << "BlockDavidson, TestTensorOperations, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end4 - begin4).count())/1000000.0 << "[sec]" << std::endl;
+
+    std::cout << "\n\n3-4. User-defined matrix-vector operation, \"tensor_operations.py\"" << std::endl;
+    std::cout << "========================\nPython Tensor Operation, Davidson" << std::endl;
+    //PyTensorOperations<double,MTYPE::Contiguous1D,DEVICETYPE::MKL> py_op("../example/tensor_operations.py");
+    begin5 = std::chrono::steady_clock::now();  
+    out5 = decompose(&test_op, ptr_guess9.get(), option);
+    end5 = std::chrono::steady_clock::now();
+    std::cout << "========================\nPyTensorOperations diag done" << std::endl; 
+    print_eigenvalues( "Eigenvalues", num_eig, out5.get()->real_eigvals.data(), out5.get()->imag_eigvals.data());
+    std::cout << "BlockDavidson, Python tensor operations, calculation time of " << N << " by " << N << " matrix= " << ((double)std::chrono::duration_cast<std::chrono::microseconds>(end5 - begin5).count())/1000000.0 << "[sec]" << std::endl;
+*/
     return 0;
 }

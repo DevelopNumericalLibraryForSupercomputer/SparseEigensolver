@@ -1,8 +1,8 @@
 solver_options:
   algorithm: Davidson  # Specify the algorithm (Davidson / Direct)
-  max_iterations: 1000  # Maximum number of iterations
+  max_iterations: 2000  # Maximum number of iterations
   tolerance: 1e-6      # Convergence tolerance
-  max_block: 2         # Maximum number of block expansion for each iteration
+  max_block: 3         # Maximum number of block expansion for each iteration
 
 matrix_options:
   matrix_type: RealSym  # Real, RealSym, Complex, Hermitian
