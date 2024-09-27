@@ -32,15 +32,25 @@ private:
             throw std::runtime_error("numpy.core.multiarray failed to import");
         }
     };
-    std::string filename;
-    std::string filepath;
+
+    void module_loader(std::string new_filename);
+
+    PyObject* pModule;
+
 public:
     PyTensorOperations(){
-        this->filename = "tensor_operations";
-        this->filepath = "";
+        module_loader("tensor_operations");
     };
     PyTensorOperations(std::string filename){
-        set_python_pathway(filename);
+        //set_python_pathway(filename);
+        module_loader(filename);
+    }
+
+    ~PyTensorOperations(){
+        if(pModule != nullptr){
+            Py_DECREF(pModule);
+        }
+        Py_Finalize();
     }
     std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > matvec(const DenseTensor<1, DATATYPE, mtype, device>& vec) const override{
         auto return_vec = vec.clone();
@@ -68,25 +78,6 @@ public:
         return {static_cast<int>(shape[0]), static_cast<int>(shape[1])};
     }
 
-    void set_python_pathway(std::string new_filename){
-        int pos = new_filename.rfind('/');
-        
-        if(pos != std::string::npos){
-            this->filepath = new_filename.substr(0, pos);
-            this->filename = new_filename.substr(pos+1);
-        }
-        else{
-            this->filename = new_filename;
-            this->filepath = "";
-        }
-        if( this->filename.size() >= 3 && this->filename.compare(this->filename.size()-3, 3, ".py") == 0){
-            this->filename = this->filename.substr(0, this->filename.size()-3);
-        }
-        else{
-            //this->filename = this->filename;
-        }
-    }
-
 };
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
@@ -96,19 +87,6 @@ void PyTensorOperations<DATATYPE, mtype, device>::MatrixOneVec_wrapper(DATATYPE*
 
 template<>
 void PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::MatrixMultVec_wrapper(double* input_vec, double* return_vec, int num_vec, int size) const{
-    Py_Initialize();
-    initialize_numpy(); // Initialize NumPy API
-
-    // Add the directory containing EOMCC.py to the Python path
-    PyRun_SimpleString("import sys");
-    if(filepath.size() > 0){
-        PyRun_SimpleStringFlags(("sys.path.append('" + filepath + "')").c_str(), nullptr);
-    }
-
-    // Import the Python module containing the function
-    PyObject* pName = PyUnicode_DecodeFSDefault(filename.c_str());
-    PyObject* pModule = PyImport_Import(pName);
-    Py_DECREF(pName);
 
     if (pModule != nullptr) {
         // Get the function from the module
@@ -121,8 +99,6 @@ void PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::MatrixMul
 
             if (!pArray) {
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_Finalize();
                 throw std::runtime_error("Failed to create numpy array");
             }
             // Call the Python function
@@ -138,48 +114,25 @@ void PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::MatrixMul
                 } else {
                     Py_DECREF(pValue);
                     Py_DECREF(pFunc);
-                    Py_DECREF(pModule);
-                    Py_Finalize();
                     throw std::runtime_error("Python function did not return a numpy array");
                 }
 
                 Py_DECREF(pValue);
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_Finalize();
             } else {
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
                 PyErr_Print();
-                Py_Finalize();
                 throw std::runtime_error("Failed to call Python function");
             }
         } else {
             PyErr_Print();
-            Py_DECREF(pModule);
-            Py_Finalize();
             throw std::runtime_error("Python function not callable");
         }
-    } else {
-        PyErr_Print();
-        Py_Finalize();
-        throw std::runtime_error("Failed to load Python module");
     }
 };
 
 template<>
 double PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::GetDiagElement_wrapper(int index) const{
-    Py_Initialize();
-    // Add the directory containing EOMCC.py to the Python path
-    PyRun_SimpleString("import sys");
-    if(filepath.size() > 0){
-        PyRun_SimpleStringFlags(("sys.path.append('" + filepath + "')").c_str(), nullptr);
-    }
-
-    // Import the Python module containing the function
-    PyObject* pName = PyUnicode_DecodeFSDefault(filename.c_str());
-    PyObject* pModule = PyImport_Import(pName);
-    Py_DECREF(pName);
 
     if (pModule != nullptr) {
         // Get the function from the module
@@ -196,20 +149,14 @@ double PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::GetDiag
                 double result = PyFloat_AsDouble(pValue);
                 Py_DECREF(pValue);
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_Finalize();
                 return result;
             } else {
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
                 PyErr_Print();
-                Py_Finalize();
                 throw std::runtime_error("Failed to call Python function");
             }
         } else {
             PyErr_Print();
-            Py_DECREF(pModule);
-            Py_Finalize();
             throw std::runtime_error("Python function not callable");
         }
     } else {
@@ -222,18 +169,6 @@ double PyTensorOperations<double, MTYPE::Contiguous1D, DEVICETYPE::MKL>::GetDiag
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 void PyTensorOperations<DATATYPE, mtype, device>::GetGlobalShape_wrapper(int* shape) const{
-    Py_Initialize();
-
-    // Add the directory containing EOMCC.py to the Python path
-    PyRun_SimpleString("import sys");
-    if(filepath.size() > 0){
-        PyRun_SimpleStringFlags(("sys.path.append('" + filepath + "')").c_str(), nullptr);
-    }
-
-    // Import the Python module containing the function
-    PyObject* pName = PyUnicode_DecodeFSDefault(filename.c_str());
-    PyObject* pModule = PyImport_Import(pName);
-    Py_DECREF(pName);
 
     if (pModule != nullptr) {
         // Get the function from the module
@@ -251,34 +186,67 @@ void PyTensorOperations<DATATYPE, mtype, device>::GetGlobalShape_wrapper(int* sh
                 } else {
                     Py_DECREF(pValue);
                     Py_DECREF(pFunc);
-                    Py_DECREF(pModule);
-                    Py_Finalize();
                     throw std::runtime_error("Python function did not return a tuple of size 2");
                 }
 
                 Py_DECREF(pValue);
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
-                Py_Finalize();
             } else {
                 Py_DECREF(pFunc);
-                Py_DECREF(pModule);
                 PyErr_Print();
-                Py_Finalize();
                 throw std::runtime_error("Failed to call Python function");
             }
         } else {
             PyErr_Print();
-            Py_DECREF(pModule);
-            Py_Finalize();
             throw std::runtime_error("Python function not callable");
         }
     } else {
         PyErr_Print();
+        throw std::runtime_error("Failed to load Python module");
+    }
+}
+
+template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
+void PyTensorOperations<DATATYPE, mtype, device>::module_loader(std::string new_filename) {
+    std::string filepath;
+    std::string filename;
+
+    int pos = new_filename.rfind('/');
+    
+    if(pos != std::string::npos){
+        filepath = new_filename.substr(0, pos);
+        filename = new_filename.substr(pos+1);
+    }
+    else{
+        filename = new_filename;
+        filepath = "";
+    }
+    if( filename.size() >= 3 && filename.compare(filename.size()-3, 3, ".py") == 0){
+        filename = filename.substr(0, filename.size()-3);
+    }
+    else{
+        //this->filename = this->filename;
+    }
+    //std::cout << "filename = " << this->filename << std::endl;
+    //std::cout << "filepath = " << this->filepath << std::endl;
+
+    // Initialize Python interpreter
+    Py_Initialize();
+    initialize_numpy(); // Initialize NumPy API
+    // Add the directory containing EOMCC.py to the Python path
+    PyRun_SimpleString("import sys");
+    if(filepath.size() > 0){
+        PyRun_SimpleStringFlags(("sys.path.append('" + filepath + "')").c_str(), nullptr);
+    }
+    PyObject* pName = PyUnicode_DecodeFSDefault(filename.c_str());
+    this->pModule = PyImport_Import(pName);
+    Py_DECREF(pName);
+    if(this->pModule == nullptr){
+        PyErr_Print();
         Py_Finalize();
         throw std::runtime_error("Failed to load Python module");
     }
-};
-
+    
+}
 
 } 
