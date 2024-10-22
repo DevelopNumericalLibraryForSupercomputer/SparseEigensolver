@@ -38,7 +38,7 @@ std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > calculate_residue( // 
 }
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residue, 
+bool check_convergence_residue(const DenseTensor<2, DATATYPE, mtype, device>& residue, 
                        const int num_eigenvalues, 
 					   const double tolerance){
 	using TensorOp = TensorOp<mtype,device>;
@@ -48,7 +48,7 @@ bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residue,
     REALTYPE* norm = malloc<REALTYPE, device>(num_eigenvalues);
     TensorOp::get_norm_of_vectors(residue, norm, num_eigenvalues);
     for(int i=0;i<num_eigenvalues;i++){
-		if(residue.ptr_comm->get_rank()==0) std::cout << i << " " << norm[i] <<std::endl; 
+		//if(residue.ptr_comm->get_rank()==0) std::cout << i << " " << norm[i] <<std::endl; 
         if(norm[i] > tolerance){
             free<device>(norm);
             return false;
@@ -58,11 +58,29 @@ bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residue,
     return true;
 }
 
+template<typename DATATYPE>
+bool check_convergence_eigval(typename real_type<DATATYPE>::type* old_sub_eigval, typename real_type<DATATYPE>::type* sub_eigval, const int num_eigenvalues, const double tolerance, double* max_eigdiff){
+    using REALTYPE = typename real_type<DATATYPE>::type;
+    bool flag = true;
+    max_eigdiff[0] = 0.0;
+    for(int i=0;i<num_eigenvalues;i++){
+        REALTYPE diff = std::abs(sub_eigval[i] - old_sub_eigval[i]);
+        //update old_sub_eigval
+        old_sub_eigval[i] = sub_eigval[i];
+        if(diff > tolerance){
+            flag = false;
+        }
+        if(diff > max_eigdiff[0]){
+            max_eigdiff[0] =  diff;
+        }
+    }
+    return flag;
+}
+
 
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
-//std::unique_ptr<DecomposeResult<DATATYPE> > davidson(DenseTensor<2, DATATYPE, mtype, device>& tensor){
 std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATATYPE, mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, const DecomposeOption& option){
-    //DecomposeOption option;
+
 	using TensorOp = TensorOp<mtype,device>;
     using REALTYPE = typename real_type<DATATYPE>::type;
 
@@ -71,46 +89,66 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
 
     const auto shape = operations->get_global_shape();
     assert (shape[0] == shape[1]);
-    //eigvec is guess.
-
 	int block_size = shape[1];
+
     //Define preconditioner
     auto preconditioner  = get_preconditioner<DATATYPE,mtype,device>(operations, option);
 
     //0th iteration.
+    //eigvec is guess.
     auto new_guess = eigvec->clone();
     auto w_iter = operations->matvec(*new_guess);
     auto subspace_matrix = TensorOp::matmul(*TensorOp::conjugate(*new_guess), *w_iter, TRANSTYPE::T, TRANSTYPE::N) ;
-    //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
-    //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > w_iter = operations->matvec(*new_guess);
-    //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > subspace_matrix = TensorOp::matmul(*TensorOp::conjugate(*new_guess), *w_iter, TRANSTYPE::T, TRANSTYPE::N) ;
 
     //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
     REALTYPE* sub_eigval = malloc<REALTYPE, device>(eigvec->ptr_map->get_global_shape(1) ) ;
+
     auto sub_eigvec = TensorOp::diagonalize(*subspace_matrix, sub_eigval) ;
-    //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > sub_eigvec = TensorOp::diagonalize(*subspace_matrix, sub_eigval) ;
+
+    //old_sub_eigval stores previous eigenvalues
+    REALTYPE* old_sub_eigval = malloc<REALTYPE, device>(eigvec->ptr_map->get_global_shape(1) ) ;
+    //initialize old_sub_eigval
+    std::fill(old_sub_eigval, old_sub_eigval+option.num_eigenvalues, 10000.0);
 
     //calculate ritz vector
     //Ritz vector calculation, x_ki = V_k y_ki
-    //ritz vectors are new eigenvector candidates
     auto ritz_vec = TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) ;
-    //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > ritz_vec = TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) ;
     
     bool return_result = false;
     //outer loop
     //1 ~ option.max_iterations th iteration
+    
+    const int max_print = std::min(5, option.num_eigenvalues);
+    if(eigvec->ptr_comm->get_rank()==0) std::cout << "ITER / EIGVALS" << std::endl;
+
     for(int i_iter = 1; i_iter < option.max_iterations ; i_iter++){
         //block expansion loop
         //i_block = number of block expanded
         int i_block = 0;
         for(int i_block = 0; i_block <= option.max_block; i_block++){
-			if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
+			if(eigvec->ptr_comm->get_rank()==0){
+                std::cout << i_iter << "-" << i_block << " : ";
+                for(int i=0;i<max_print;i++){
+                    std::cout << std::fixed << std::setw(9) << std::setprecision(6) << sub_eigval[i] << "\t";
+                }
+            }
+
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residue
             auto residue = calculate_residue(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
             //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residue = calculate_residue<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
             
             //check convergence
-            bool is_converged = check_convergence<DATATYPE,mtype,device>(*residue, option.num_eigenvalues, option.tolerance);
+            bool is_converged = false;
+            if(option.convergence_type==CONV_TYPE::Residual){
+                is_converged = check_convergence_residue<DATATYPE,mtype,device>(*residue, option.num_eigenvalues, option.tolerance);
+                
+                std::cout << std::endl;
+            }
+            else if(option.convergence_type==CONV_TYPE::Eigenvalue){
+                double max_eigdiff;
+                is_converged = check_convergence_eigval<DATATYPE>(old_sub_eigval, sub_eigval, option.num_eigenvalues, option.tolerance, &max_eigdiff);
+                if(eigvec->ptr_comm->get_rank()==0) std::cout << "MAX_DIFF (a.u.) : " << max_eigdiff << std::endl;
+            }
             if(is_converged){
                 return_result = true;
                 real_eigvals.assign(sub_eigval, sub_eigval+option.num_eigenvalues);
@@ -129,25 +167,22 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
                 //block_size = option.num_eigenvalues;
                 TensorOp::copy_vectors(*eigvec, *ritz_vec, option.num_eigenvalues);
                 new_guess = eigvec->clone();
-                //new_guess = std::make_unique< DenseTensor<2, DATATYPE, mtype, device>  > ( *eigvec);
             }
             else{
-                //preconditioning
-                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residue, sub_eigval) );
-				//block_size = new_guess->ptr_map->get_global_shape(1);
-                //block_size = option.num_eigenvalues*(i_block+2);
-                TensorOp::orthonormalize(*new_guess, "default");
+                //preconditioning, expanding the vector space which new_guess expands
+                new_guess = TensorOp::append_vectors(*new_guess, *preconditioner->call(*residue, sub_eigval) );
+                //orthonormalization
+                TensorOp::orthonormalize(*new_guess, "qr");
             }
             // W_iterk = A V_k
             w_iter = operations->matvec(*new_guess) ;
             subspace_matrix = TensorOp::matmul(*TensorOp::conjugate(*new_guess), *w_iter, TRANSTYPE::T, TRANSTYPE::N) ;
-            //subspace_matrix = TensorOp::matmul(*TensorOp::conjugate(*new_guess), *w_iter, TRANSTYPE::T, TRANSTYPE::N) ;
-
+            
             //get eigenpair of Rayleigh matrix (lambda_ki, y_ki) of H_k
             free<device>(sub_eigval);
             sub_eigval =  malloc<REALTYPE, device>(new_guess->ptr_map->get_global_shape(1) );
             sub_eigvec =  TensorOp::diagonalize(*subspace_matrix, sub_eigval) ;
-
+            
             //calculate ritz vector
             //Ritz vector calculation, x_ki = V_k y_ki
             ritz_vec = TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) ;

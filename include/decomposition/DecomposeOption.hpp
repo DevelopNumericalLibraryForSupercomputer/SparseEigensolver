@@ -23,6 +23,11 @@ enum class PRECOND_TYPE{
 	ISI2    =2,
 };
 
+enum class CONV_TYPE{
+    Eigenvalue=0,
+    Residual  =1,
+};
+
 class DecomposeOption{
 public:
     DecomposeOption();
@@ -33,6 +38,7 @@ public:
     DecomposeMethod algorithm_type = DecomposeMethod::Davidson;
     int max_iterations          = 200;
     double tolerance               = 1e-6;
+    CONV_TYPE convergence_type = CONV_TYPE::Eigenvalue;
     int max_block               = 2;
     MAT_TYPE matrix_type           = MAT_TYPE::RealSym;
     int num_eigenvalues         = 3;
@@ -52,6 +58,8 @@ private:
         { {"Real", MAT_TYPE::Real}, {"RealSym", MAT_TYPE::RealSym}, {"Complex", MAT_TYPE::Complex},{"Hermitian", MAT_TYPE::Hermitian} };
     std::map<std::string, PRECOND_TYPE> const precond_table =
         { {"Diagonal", PRECOND_TYPE::Diagonal}, {"ISI2", PRECOND_TYPE::ISI2}};
+    std::map<std::string, CONV_TYPE> const conv_table =
+        { {"Eigenvalue", CONV_TYPE::Eigenvalue}, {"Residual", CONV_TYPE::Residual}};
     YAML::Node config;
 };
 DecomposeOption::DecomposeOption(){
@@ -92,6 +100,7 @@ void DecomposeOption::set_option_worker(){
     this->max_iterations = config["solver_options"]["max_iterations"].as<int>();
     this->tolerance      = config["solver_options"]["tolerance"].as<double>();
     this->max_block      = config["solver_options"]["max_block"].as<int>();
+    this->convergence_type = table_match<CONV_TYPE>(conv_table, config["solver_options"]["convergence_type"].as<std::string>());
 
     this->matrix_type    = table_match<MAT_TYPE>(mat_table, config["matrix_options"]["matrix_type"].as<std::string>());
 

@@ -195,5 +195,16 @@ void vMul<std::complex<double>, DEVICETYPE::MKL>(const int n, const std::complex
     return vzMul(n,a,b,y);  
 }
 
+/*
+template <>
+void vDiv<double, DEVICETYPE::MKL>(const int n, const double* a, const double* b, double* y){
+    return vdDiv(n,a,b,y);  
+}
+
+template <>
+void vDiv<std::complex<double>, DEVICETYPE::MKL>(const int n, const std::complex<double>* a, const std::complex<double>* b, std::complex<double>* y){
+    return vzDiv(n,a,b,y);  
+}
+*/
 
 }

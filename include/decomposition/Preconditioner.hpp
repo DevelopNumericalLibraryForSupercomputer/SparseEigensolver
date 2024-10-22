@@ -55,36 +55,51 @@ public:
 		using TensorOp = TensorOp<mtype,device>;
 		using REALTYPE = typename real_type<DATATYPE>::type;
 
+		//std::cout << "residual" << std::endl;
+		//std::cout << residual << std::endl;
+
         const int vec_size = residual.ptr_map->get_global_shape()[0];
         const int num_eig  = residual.ptr_map->get_global_shape()[1];
-        //int num_eig = this->option.num_eigenvalues;
-        //int new_block_size = block_size + num_eig;
         
-        std::array<int, 2> new_guess_shape = {vec_size, num_eig};
-    	auto p_map_inp = residual.ptr_map->generate_map_inp();
-    	p_map_inp->global_shape = {vec_size, num_eig};
-    	auto p_new_guess_map = p_map_inp->create_map();
-    
-        auto additional_guess = std::make_unique<DenseTensor<2, DATATYPE, mtype, device>>(residual.copy_comm(), p_new_guess_map);
-        TensorOp::copy_vectors(*additional_guess, residual, num_eig);
-        DATATYPE* scale_factor = malloc<DATATYPE, device>(num_eig);
-        for(int index=0; index< num_eig; index++){
-    //        array_index = {index, index};
-            //DATATYPE coeff_i = sub_eigval[index] - tensor(tensor.map.global_to_local(tensor.map.unpack_global_array_index(array_index)));
-            const auto coeff_i = (DATATYPE) sub_eigval[index] - this->operations->get_diag_element(index);
-            if(abs(coeff_i) > this->option.preconditioner_tolerance){
-                scale_factor[index] = 1.0/coeff_i;
-            }
-            else{
-                scale_factor[index] = 0.0;
-            }
-        }
-    
-        TensorOp::scale_vectors_(*additional_guess, scale_factor);
-        free<device>(scale_factor);
-//        auto new_guess = TensorOp::append_vectors(guess, additional_guess);
-    
-//        TensorOp::orthonormalize(new_guess, "default");
+
+        //std::array<int, 2> new_guess_shape = {vec_size, num_eig}; // same as residual
+    	//auto p_map_inp = residual.ptr_map->generate_map_inp();
+    	//p_map_inp->global_shape = {vec_size, num_eig};
+    	//auto p_new_guess_map = p_map_inp->create_map();
+
+        //auto additional_guess = std::make_unique<DenseTensor<2, DATATYPE, mtype, device>>(residual.copy_comm(), p_new_guess_map);
+
+		auto additional_guess = residual.clone();
+
+		auto diag_elements = this->operations->get_diag_elements(residual);
+		
+		for(int index=0; index<num_eig; index++){
+			for(int i=0; i<vec_size; i++){
+				std::array<int, 2> residue_array_index = {i,index};
+				auto residue_local_index = residual.ptr_map->global_to_local(residual.ptr_map->unpack_global_array_index(residue_array_index));
+				std::array<int, 2> diag_array_index = {i,0};
+				auto diag_local_index = diag_elements->ptr_map->global_to_local(diag_elements->ptr_map->unpack_global_array_index(diag_array_index));
+				DATATYPE buff[4] = {0.0, 0.0, 0.0,0.0};
+				if(residue_local_index>=0){
+					buff[0] = residual(residue_local_index);
+				}
+				if(diag_local_index>=0){
+					buff[1] = diag_elements->operator()(diag_local_index);
+				}
+				residual.ptr_comm->allreduce(&buff[0], 1, &buff[2], OPTYPE::SUM);
+				diag_elements->ptr_comm->allreduce(&buff[1], 1, &buff[3], OPTYPE::SUM);
+				buff[3] = sub_eigval[index] - buff[3];
+				if(abs(buff[3]) > this->option.preconditioner_tolerance){
+					additional_guess->global_set_value(residue_array_index, buff[2] / buff[3] );
+				}
+				else{
+					additional_guess->global_set_value(residue_array_index, 0.0 );
+				}
+				
+			}
+		}
+
+
         return additional_guess;
     }
 };

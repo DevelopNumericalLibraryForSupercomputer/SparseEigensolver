@@ -17,6 +17,7 @@ namespace ElapsedTime{
 	std::vector<double> scale_vectors ;
 	std::vector<double> add ;
 	std::vector<double> conjugate;
+    //std::vector<double> elementwise_division;
 	std::vector<double> norm;
 	std::vector<double> vectorwise_dot;
 	std::vector<double> copy_vectors;
@@ -41,6 +42,7 @@ namespace ElapsedTime{
 		std::cout << "======= scale_vectors: "; print_one(scale_vectors, detail);
 		std::cout << "======= add: "; print_one(add, detail);
 		std::cout << "======= conjugate: "; print_one(conjugate, detail);
+        //std::cout << "======= elementwise_division: "; print_one(elementwise_division, detail);
 		std::cout << "======= norm: "; print_one( norm, detail);
 		std::cout << "======= vectorwise_dot: "; print_one( vectorwise_dot, detail);
 		std::cout << "======= copy_vectors: "; print_one( copy_vectors, detail);
@@ -203,6 +205,12 @@ public:
     	conjugate_(*output);
     	return output;
     }
+/*
+    //new_mat_ij = mat1_ij / mat2_ij 
+    template <int dimension, typename DATATYPE>
+    static std::unique_ptr< DenseTensor<dimension, DATATYPE, mtype, device> > elementwise_division(const DenseTensor<dimension, DATATYPE, mtype, device>& mat1,
+                            const DenseTensor<dimension, DATATYPE, mtype, device>& mat2);
+*/
     
     //norm_i = ||mat_i|| (i=0~norm_size-1)
     template <typename DATATYPE>

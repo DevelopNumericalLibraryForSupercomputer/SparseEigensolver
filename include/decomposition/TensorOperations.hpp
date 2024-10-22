@@ -17,7 +17,22 @@ public:
 
     virtual std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > matvec(const DenseTensor<1, DATATYPE, mtype, device>& vec) const=0;
     virtual std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > matvec(const DenseTensor<2, DATATYPE, mtype, device>& vec) const=0;
-    virtual DATATYPE get_diag_element(const int index)const =0;
+    virtual DATATYPE get_diag_element(const int index) const =0;
+    //virtual std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > get_diag_elements() const =0;
+    std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > get_diag_elements(const DenseTensor<2, DATATYPE, mtype, device>& ref_vec) const{
+        auto shape = this->get_global_shape();
+        std::array<int, 2> output_shape = {std::min(shape[0], shape[1]),1};
+        auto comm_inp = ref_vec.ptr_comm->generate_comm_inp();
+        auto map_inp = ref_vec.ptr_map->generate_map_inp();
+        map_inp->global_shape = output_shape;
+        std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > output = std::make_unique<DenseTensor<2, DATATYPE, mtype, device>>(comm_inp->create_comm(), map_inp->create_map());
+
+        for(int i=0;i<output_shape[0];i++){
+            std::array<int, 2> global_array_index = {i,0};
+            output->global_set_value(global_array_index, this->get_diag_element(i));
+        }
+        return output;
+    };
     virtual std::array<int, 2> get_global_shape() const=0;
 
 };
@@ -45,7 +60,21 @@ public:
         p_tensor->ptr_comm->allreduce(&buff[0], 1, &buff[1], OPTYPE::SUM);
         return buff[1];
     };
+    /*
+    std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > get_diag_elements() const override{
+        auto shape = p_tensor->ptr_map->get_global_shape();
+        std::array<int, 1> output_shape = {std::min(shape[0], shape[1])};
+        auto comm_inp = p_tensor->ptr_comm->generate_comm_inp();
+        auto map_inp = p_tensor->ptr_map->generate_map_inp();
+        map_inp->global_shape = output_shape;
+        std::unique_ptr<DenseTensor<1, DATATYPE, mtype, device> > output = std::make_unique<DenseTensor<1, DATATYPE, mtype, device>>(comm_inp->create_comm(), map_inp->create_map());
 
+        for(int i=0;i<output_shape[0];i++){
+            output->operator()(i) = get_diag_element(i);
+        }
+        return output;
+    };
+    */
     std::array<int, 2> get_global_shape() const override{
         return p_tensor->ptr_map->get_global_shape();
     };
@@ -89,7 +118,21 @@ public:
         p_tensor->ptr_comm->allreduce(&buff[0], 1, &buff[1], OPTYPE::SUM);
         return buff[1];
     };
+    /*
+    std::unique_ptr<SparseTensor<1, DATATYPE, mtype, device> > get_diag_elements() const override{
+        auto shape = p_tensor->ptr_map->get_global_shape();
+        std::array<int, 1> output_shape = {std::min(shape[0], shape[1])};
+        auto comm_inp = p_tensor->ptr_comm->generate_comm_inp();
+        auto map_inp = p_tensor->ptr_map->generate_map_inp();
+        map_inp->global_shape = output_shape;
+        std::unique_ptr<SparseTensor<1, DATATYPE, mtype, device> > output = std::make_unique<SparseTensor<1, DATATYPE, mtype, device>>(comm_inp->create_comm(), map_inp->create_map());
 
+        for(int i=0;i<output_shape[0];i++){
+            output->operator()(i) = get_diag_element(i);
+        }
+        return output;
+    };
+    */
     std::array<int, 2> get_global_shape() const override{
         return p_tensor->ptr_map->get_global_shape();
     };

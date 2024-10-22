@@ -1,6 +1,7 @@
 solver_options:
   algorithm: Davidson  # Specify the algorithm (Davidson / Direct)
   max_iterations: 2000  # Maximum number of iterations
+  convergence_type : Eigenvalue
   tolerance: 1e-6      # Convergence tolerance
   max_block: 3         # Maximum number of block expansion for each iteration
 

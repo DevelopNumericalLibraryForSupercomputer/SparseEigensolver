@@ -446,7 +446,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::vectorwise_dot(const DenseT
     auto buff = malloc<DATATYPE, DEVICETYPE::MPI>(local_size);
 
     // element-wise multiplication
-    vdMul(local_size, mat1.data.get(), mat2.data.get(), buff);
+    vdMul(local_size, mat1.data.get(), mat2.data.get(), buff); // vdMul only works for double! 
 
     // get norm (almost same to the above function)
     const int vec_size = mat1.ptr_map->get_local_shape()[0];
@@ -674,5 +674,27 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
     return eigvec ;
     
 }
+
+/*
+//new_mat_ij = mat1_ij / mat2_ij 
+//static std::unique_ptr< DenseTensor<dimension, DATATYPE, mtype, device> > elementwise_division(const DenseTensor<dimension, DATATYPE, mtype, device>& mat1,
+//                      const DenseTensor<dimension, DATATYPE, mtype, device>& mat2);
+template<>
+template <int dimension, typename DATATYPE>
+std::unique_ptr<DenseTensor<dimension, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> > TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::elementwise_division(
+        const DenseTensor<dimension, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat1,
+        const DenseTensor<dimension, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat2){
+
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+    assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
+    assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
+    
+    auto new_mat = std::make_unique<DenseTensor<dimension, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> > (mat1.copy_comm(), mat1.copy_map());
+    const int local_size = mat1.ptr_map->get_num_local_elements();
+    vdDiv(local_size, mat1.data.get(), mat2.data.get(), new_mat->data.get()); // vdDiv only works for double!
+    return new_mat;
+}
+*/
+
 
 }

@@ -536,9 +536,24 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::Contiguous1D, DEVICETYPE::MKL> >
     }
     return eigvec;
 }
-
-
-
+/*
+//new_mat_ij = mat1_ij / mat2_ij 
+//static std::unique_ptr< DenseTensor<dimension, DATATYPE, mtype, device> > elementwise_division(const DenseTensor<dimension, DATATYPE, mtype, device>& mat1,
+//                      const DenseTensor<dimension, DATATYPE, mtype, device>& mat2);
+template<>
+template <int dimension, typename DATATYPE>
+std::unique_ptr<DenseTensor<dimension, DATATYPE, MTYPE::Contiguous1D, DEVICETYPE::MKL> > SE::TensorOp<MTYPE::Contiguous1D,DEVICETYPE::MKL>::elementwise_division(
+        const DenseTensor<dimension, DATATYPE, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat1,
+        const DenseTensor<dimension, DATATYPE, MTYPE::Contiguous1D, DEVICETYPE::MKL>& mat2){
+    assert (mat1.ptr_map->get_global_shape() == mat2.ptr_map->get_global_shape());
+    assert (mat1.ptr_map->get_local_shape() == mat2.ptr_map->get_local_shape());
+    
+    auto new_mat = std::make_unique<DenseTensor<dimension, DATATYPE, MTYPE::Contiguous1D, DEVICETYPE::MKL> > (mat1.copy_comm(), mat1.copy_map());
+    const int local_size = mat1.ptr_map->get_num_local_elements();
+    vDiv<DATATYPE, DEVICETYPE::MKL>(local_size, mat1.data.get(), mat2.data.get(), new_mat->data.get());
+    return new_mat;
+}
+*/
 
 
 }

@@ -141,6 +141,9 @@ int syev(const ORDERTYPE layout, const char jobz, const char uplo, const int n, 
 template <typename DATATYPE, DEVICETYPE device>
 void vMul(const int n, const DATATYPE* a, const DATATYPE* b, DATATYPE* y );
 
+//template <typename DATATYPE, DEVICETYPE device>
+//void vDiv(const int n, const DATATYPE* a, const DATATYPE* b, DATATYPE* y );
+
 ///////////////////////////////////////////////////////////////////////////////////////////////// DEVICETYPE::MPI only 
 template<typename DATATYPE>
 void p_geadd( const char* trans, 
