@@ -12,6 +12,7 @@
 #include "Type.hpp"
 #include "Utility.hpp"
 
+
 namespace SE{
 
 //memory managament

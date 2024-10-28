@@ -136,7 +136,8 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
             }
             else{
                 //preconditioning
-                new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residue, sub_eigval) );
+                new_guess = TensorOp::append_vectors(*new_guess, *preconditioner->call(*residue, sub_eigval) );
+                //new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residue, sub_eigval) );
 				block_size = new_guess->ptr_map->get_global_shape(1);
                 //block_size = option.num_eigenvalues*(i_block+2);
                 TensorOp::orthonormalize(*new_guess, "default");

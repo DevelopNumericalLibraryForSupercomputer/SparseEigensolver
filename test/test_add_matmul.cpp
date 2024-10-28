@@ -1,12 +1,14 @@
 #include "mkl_blacs.h"
 #include "mkl_pblas.h"
 #include "mkl_scalapack.h"
+
 #include "BlockCyclingMap.hpp"
 #include "DenseTensor.hpp"
 #include <cassert>
 #include <math.h>
 #include "device/mpi/TensorOp.hpp"
 
+#define MKL_Complex16 std::complex<double>
 /* Definition of MIN and MAX functions */
 #define MAX(a,b)((a)<(b)?(b):(a))
 #define MIN(a,b)((a)>(b)?(b):(a))
@@ -109,22 +111,22 @@ int main(int argc, char* argv[]){
 	assert (info==0);
 
 	double anorm, bnorm;
-	anorm = pdlange( "F", &n, &n, A.data, &i_one, &i_one, descA, work );
-    bnorm = pdlange( "F", &n, &n, B.data, &i_one, &i_one, descB, work );
+	anorm = pdlange( "F", &n, &n, A.data.get(), &i_one, &i_one, descA, work );
+    bnorm = pdlange( "F", &n, &n, B.data.get(), &i_one, &i_one, descB, work );
 
 	// C=A@B	
-    pdgemm( "N", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, B.data, &i_one, &i_one, descB,
-             &zero, C.data, &i_one, &i_one, descC );
+    pdgemm( "N", "N", &n, &n, &n, &one, A.data.get(), &i_one, &i_one, descA, B.data.get(), &i_one, &i_one, descB,
+             &zero, C.data.get(), &i_one, &i_one, descC );
 	// B=inv_A@C
-    pdgemm( "T", "N", &n, &n, &n, &one, A.data, &i_one, &i_one, descA, C.data, &i_one, &i_one, descC,
-             &negone, B.data, &i_one, &i_one, descB );
+    pdgemm( "T", "N", &n, &n, &n, &one, A.data.get(), &i_one, &i_one, descA, C.data.get(), &i_one, &i_one, descC,
+             &negone, B.data.get(), &i_one, &i_one, descB );
 
-	auto result1 = TensorOp::matmul(A, B, TRANSTYPE::N, TRANSTYPE::N);
-	auto result2 = TensorOp::matmul(A, result1, TRANSTYPE::T, TRANSTYPE::N);
-	auto result3 = TensorOp::add( B, result2, -1.0);
+	auto result1 = SE::TensorOp<MTYPE::BlockCycling,DEVICETYPE::MPI>::matmul<double>(A, B, TRANSTYPE::N, TRANSTYPE::N);
+	auto result2 = SE::TensorOp<MTYPE::BlockCycling,DEVICETYPE::MPI>::matmul<double>(A, *result1, TRANSTYPE::T, TRANSTYPE::N);
+	auto result3 = SE::TensorOp<MTYPE::BlockCycling,DEVICETYPE::MPI>::add<double>( B, *result2, -1.0);
 
-	double diffnorm1 = pdlange( "I", &n, &n, B.data, &i_one, &i_one, descB, work );
-	double diffnorm2 = pdlange( "I", &n, &n, result3.data, &i_one, &i_one, descB, work );
+	double diffnorm1 = pdlange( "I", &n, &n, B.data.get(), &i_one, &i_one, descB, work );
+	double diffnorm2 = pdlange( "I", &n, &n, result3->data.get(), &i_one, &i_one, descB, work );
 	if( rank == 0 ){ 
 		//printf("%03.11f\n", sqrt(normA) );
 		printf( ".. Norms of A and B are computed ( p?lange ) ..\n" ); 

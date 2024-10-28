@@ -161,7 +161,7 @@ public:
 
     //scale_coeff * x
     template <typename DATATYPE>
-    static void scale_vectors_(DenseTensor<2, DATATYPE, mtype, device>& mat, const const typename real_type<DATATYPE>::type scale_factor);
+    static void scale_vectors_(DenseTensor<2, DATATYPE, mtype, device>& mat, const typename real_type<DATATYPE>::type scale_factor);
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     

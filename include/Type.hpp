@@ -15,6 +15,7 @@ enum class DEVICETYPE: int{
 enum class MTYPE: int{
     Contiguous1D=0,
 	BlockCycling=1,
+    Contiguous1DCol=2,
 };
 
 

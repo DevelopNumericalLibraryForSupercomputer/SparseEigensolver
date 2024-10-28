@@ -1,5 +1,6 @@
 #pragma once
 #include "../../Utility.hpp"
+#include "../../Type.hpp"
 #include "mkl.h"
 
 namespace SE{
