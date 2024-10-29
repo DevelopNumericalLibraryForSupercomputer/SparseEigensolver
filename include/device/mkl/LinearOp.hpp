@@ -3,7 +3,7 @@
 #define MKL_Complex16 std::complex<double>
 #include "../../Device.hpp"
 #include "../LinearOp.hpp"
-#include "Utility.hpp"
+#include "UtilDevice.hpp"
 #include "mkl.h"
 
 namespace SE{

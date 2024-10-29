@@ -1,6 +1,7 @@
 #pragma once
 #include <memory>
 #include <functional>
+#include "device/LinearOp.hpp"
 #include "DecomposeResult.hpp"
 #include "DecomposeOption.hpp"
 #include "DirectSolver.hpp"
@@ -19,9 +20,9 @@ std::unique_ptr<DecomposeResult<DATATYPE, 2, comm, map> > decompose(std::functio
 //std::unique_ptr<DecomposeResult<DATATYPE> > decompose(Tensor<dimension,DATATYPE,mtype,device,store>& tensor, std::string method);
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+std::unique_ptr<DecomposeResult<DATATYPE,device> > decompose(DenseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
     if(option.algorithm_type == DecomposeMethod::Direct){
-        return evd(tensor, eigvec);
+        return DirectSolver<mtype,device>::template evd<DATATYPE>(tensor, eigvec);
     }
     else if(option.algorithm_type == DecomposeMethod::Davidson){
         DenseTensorOperations<DATATYPE, mtype, device>* basic_op = new DenseTensorOperations<DATATYPE,mtype,device>(&tensor);
@@ -37,7 +38,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(DenseTensor<2, DATATYPE, m
 
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+std::unique_ptr<DecomposeResult<DATATYPE,device> > decompose(SparseTensor<2, DATATYPE, mtype, device>& tensor, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
     if(option.algorithm_type == DecomposeMethod::Davidson){
         SparseTensorOperations<DATATYPE,mtype, device>* basic_op = new SparseTensorOperations<DATATYPE,mtype, device>(&tensor);
         auto return_val = davidson(basic_op, eigvec, option);
@@ -52,7 +53,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > decompose(SparseTensor<2, DATATYPE, 
 
 
 template<typename DATATYPE, MTYPE mtype, DEVICETYPE device> 
-std::unique_ptr<DecomposeResult<DATATYPE> > decompose(TensorOperations<DATATYPE,mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
+std::unique_ptr<DecomposeResult<DATATYPE,device> > decompose(TensorOperations<DATATYPE,mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, DecomposeOption& option){
     if(option.algorithm_type == DecomposeMethod::Davidson){
         return davidson(operations, eigvec, option);
     }

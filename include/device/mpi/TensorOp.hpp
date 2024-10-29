@@ -289,7 +289,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::orthonormalize(DenseTensor<
 
     auto m = mat.ptr_map->get_global_shape(0);
     auto n = mat.ptr_map->get_global_shape(1);
-
+    assert (m>=n);
     int lwork = -1;
     std::vector<DATATYPE> work(1,0.0);
 
@@ -659,9 +659,10 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
         lwork = (int)work_query;
         lrwork = (int) rwork_query;
         liwork = iwork_query;
-
         std::vector<DATATYPE> work(lwork);
-        std::vector<typename real_type<DATATYPE>::type> rwork(lrwork); // not used for double precision but defined anyway.
+        // not used for double precision but defined anyway.
+        // in case of double, lrwork is still -1 thus std::max is used
+        std::vector<typename real_type<DATATYPE>::type> rwork(std::max(0,lrwork)); 
         std::vector<int> iwork(liwork);
     
         // Compute eigenvalues and eigenvectors

@@ -10,7 +10,7 @@
 //#include <array>
 
 #include "Type.hpp"
-#include "Utility.hpp"
+#include "../include/Utility.hpp"
 
 
 namespace SE{
@@ -72,7 +72,9 @@ void sbmv(const ORDERTYPE layout,
 
 //Euclidean norm, ||x||
 template <typename DATATYPE, DEVICETYPE device>
+//auto nrm2(const int n, const DATATYPE *x, const int incx)->typename std::conditional<SE::is_complex_v<DATATYPE, DATATYPE, DATATYPE::value_type>;
 typename real_type<DATATYPE>::type nrm2(const int n, const DATATYPE *x, const int incx);
+//auto nrm2(const int n, const DATATYPE *x, const int incx) -> typename real_type<DATATYPE>::type;
 
 //y (i*N+incy) = x (i*M+incx) 
 template <typename DATATYPE, DEVICETYPE device>

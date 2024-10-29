@@ -1,7 +1,7 @@
 #pragma once
 #include <complex>
 #define MKL_Complex16 std::complex<double>
-#include "Utility.hpp"
+#include "UtilDevice.hpp"
 #include "Device.hpp"
 #include "device/LinearOp.hpp"
 

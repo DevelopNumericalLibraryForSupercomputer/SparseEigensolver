@@ -62,13 +62,17 @@ bool check_convergence(const DenseTensor<2, DATATYPE, mtype, device>& residue,
 
 template <typename DATATYPE, MTYPE mtype, DEVICETYPE device>
 //std::unique_ptr<DecomposeResult<DATATYPE> > davidson(DenseTensor<2, DATATYPE, mtype, device>& tensor){
-std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATATYPE, mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, const DecomposeOption& option){
+std::unique_ptr<DecomposeResult<DATATYPE, device> > davidson(const TensorOperations<DATATYPE, mtype,device>* operations, DenseTensor<2, DATATYPE, mtype, device>* eigvec, const DecomposeOption& option){
     //DecomposeOption option;
 	using TensorOp = TensorOp<mtype,device>;
     using REALTYPE = typename real_type<DATATYPE>::type;
 
-    std::vector<REALTYPE> real_eigvals(option.num_eigenvalues);
-    std::vector<REALTYPE> imag_eigvals(option.num_eigenvalues);
+    //std::vector<REALTYPE> real_eigvals(option.num_eigenvalues);
+    //std::vector<REALTYPE> imag_eigvals(option.num_eigenvalues);
+    std::unique_ptr<REALTYPE[], std::function<void(REALTYPE*)>> real_eigvals( malloc<DATATYPE,device>(option.num_eigenvalues), free<device>);
+    std::unique_ptr<REALTYPE[], std::function<void(REALTYPE*)>> imag_eigvals( malloc<DATATYPE,device>(option.num_eigenvalues), free<device>);
+    // initialize imaginary part as 0
+    memset<REALTYPE, device>(imag_eigvals.get(), 0, option.num_eigenvalues );
 
     const auto shape = operations->get_global_shape();
     assert (shape[0] == shape[1]);
@@ -116,10 +120,12 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
             bool is_converged = check_convergence<DATATYPE,mtype,device>(*residue, option.num_eigenvalues, option.tolerance);
             if(is_converged){
                 return_result = true;
-                real_eigvals.assign(sub_eigval, sub_eigval+option.num_eigenvalues);
+                memcpy<REALTYPE, device> ( real_eigvals.get(), sub_eigval, option.num_eigenvalues, COPYTYPE::DEVICE2DEVICE);
+
+                //real_eigvals.assign(sub_eigval, sub_eigval+option.num_eigenvalues);
                 //imag_eigvals should be filled from the diagonalization result.
                 //Up to now, davidson only works for symmetric matrix, so the imaginary part should be zero.
-                std::fill(imag_eigvals.begin(), imag_eigvals.end(), 0.0);
+                //std::fill(imag_eigvals.begin(), imag_eigvals.end(), 0.0);
 
                 TensorOp::copy_vectors(*eigvec, *ritz_vec, option.num_eigenvalues);
                 break;
@@ -140,6 +146,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
                 //new_guess = TensorOp::append_vectors(*ritz_vec, *preconditioner->call(*residue, sub_eigval) );
 				block_size = new_guess->ptr_map->get_global_shape(1);
                 //block_size = option.num_eigenvalues*(i_block+2);
+                assert( new_guess->ptr_map->get_global_shape(0) >=new_guess->ptr_map->get_global_shape(1)  && "matrix size is less than the block size. please check block size");
                 TensorOp::orthonormalize(*new_guess, "default");
             }
             // W_iterk = A V_k
@@ -171,7 +178,7 @@ std::unique_ptr<DecomposeResult<DATATYPE> > davidson(const TensorOperations<DATA
         exit(-1);
     }
     free<device>(sub_eigval);
-    std::unique_ptr<DecomposeResult<DATATYPE> > return_val(new DecomposeResult<DATATYPE>( (const int) option.num_eigenvalues,real_eigvals,imag_eigvals));
+    std::unique_ptr<DecomposeResult<DATATYPE,device> > return_val(new DecomposeResult<DATATYPE,device>( (const int) option.num_eigenvalues,real_eigvals.get(),imag_eigvals.get()));
  
     return std::move(return_val);
 }
