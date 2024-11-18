@@ -140,6 +140,17 @@ void gsum2d<double>( const int* icontxt,
              ){
     return dgsum2d(icontxt, scope, top, m,n,a,lda,rdest,cdest);  
 }
+template<>
+void gebs2d<double>( const int* icontxt,
+             const char* scope,
+             const char* top,
+             const int* m,
+             const int* n,
+             double* a,
+             const int* lda){
+    return dgebs2d(icontxt, scope, top, m,n,a,lda);    
+}
+
 
 template<>
 void p_gemr2d<double>( const int* m,
@@ -262,6 +273,16 @@ void gsum2d<std::complex<double>>( const int* icontxt,
                      const int* cdest
              ){
     return zgsum2d(icontxt, scope, top, m,n,reinterpret_cast<double*>(a),lda,rdest,cdest); 
+}
+template<>
+void gebs2d<std::complex<double>>( const int* icontxt,
+             const char* scope,
+             const char* top,
+             const int* m,
+             const int* n,
+             std::complex<double>* a,
+             const int* lda){
+    return zgebs2d(icontxt, scope, top, m,n,reinterpret_cast<double*>(a),lda);
 }
 
 template<>

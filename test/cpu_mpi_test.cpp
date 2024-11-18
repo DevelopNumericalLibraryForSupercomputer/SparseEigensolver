@@ -35,7 +35,8 @@ int main(int argc, char** argv){
 	// predefined value
     int rank=0, nprocs=1, ictxt;
 	DecomposeOption option;
-	
+	option.num_eigenvalues = 3;
+    option.max_block=2;
 	// input 
 	int p=1;
 	if (argc>=2 ) p = std::stoi( argv[1] ); 

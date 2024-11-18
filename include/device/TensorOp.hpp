@@ -9,19 +9,35 @@
 namespace SE{
 
 namespace ElapsedTime{
-	std::vector<double> dense_matmul_2_1;
-	std::vector<double> dense_matmul_2_2;
-	std::vector<double> sparse_matmul_2_1;
-	std::vector<double> sparse_matmul_2_2;
-	std::vector<double> orthonormalize;
-	std::vector<double> scale_vectors ;
-	std::vector<double> add ;
-	std::vector<double> conjugate;
-	std::vector<double> norm;
-	std::vector<double> vectorwise_dot;
-	std::vector<double> copy_vectors;
-	std::vector<double> append_vectors;
-	std::vector<double> diagonalize;
+    std::map<std::string, std::vector<double> > time_record{ {"dense_matmul_2_1", std::vector<double>()},
+                                                             {"dense_matmul_2_2", std::vector<double>()},
+                                                             {"sparse_matmul_2_1", std::vector<double>()},
+                                                             {"sparse_matmul_2_1", std::vector<double>()},
+                                                             {"orthonormalize", std::vector<double>()},
+                                                             {"scale_vectors", std::vector<double>()},
+                                                             {"add", std::vector<double>()},
+                                                             {"conjugate", std::vector<double>()},
+                                                             {"norm", std::vector<double>()},
+                                                             {"vectorwise_dot", std::vector<double>()},
+                                                             {"copy_vectors", std::vector<double>()},
+                                                             {"append_vectors", std::vector<double>()},
+                                                             {"diagonalize", std::vector<double>()},
+                                                           };
+
+//
+//	std::vector<double> dense_matmul_2_1;
+//	std::vector<double> dense_matmul_2_2;
+//	std::vector<double> sparse_matmul_2_1;
+//	std::vector<double> sparse_matmul_2_2;
+//	std::vector<double> orthonormalize;
+//	std::vector<double> scale_vectors ;
+//	std::vector<double> add ;
+//	std::vector<double> conjugate;
+//	std::vector<double> norm;
+//	std::vector<double> vectorwise_dot;
+//	std::vector<double> copy_vectors;
+//	std::vector<double> append_vectors;
+//	std::vector<double> diagonalize;
 
 	void print_one(const std::vector<double>& values, bool detail=false){
 		std::cout << values.size() << " " << std::fixed << std::setw(9) << std::setprecision(6) << std::accumulate(values.begin(), values.end(), 0.0) <<std::endl;
@@ -33,19 +49,22 @@ namespace ElapsedTime{
 		return;
 	}
 	void print(bool detail=false){
-		std::cout << "======= dense_matmul_2_1: "; print_one(dense_matmul_2_1, detail);
-		std::cout << "======= dense_matmul_2_2: "; print_one(dense_matmul_2_2, detail);
-		std::cout << "======= sparse_matmul_2_1: "; print_one(sparse_matmul_2_1, detail);
-		std::cout << "======= sparse_matmul_2_2: "; print_one(sparse_matmul_2_2, detail);
-		std::cout << "======= orthonormalize: "; print_one(orthonormalize, detail);
-		std::cout << "======= scale_vectors: "; print_one(scale_vectors, detail);
-		std::cout << "======= add: "; print_one(add, detail);
-		std::cout << "======= conjugate: "; print_one(conjugate, detail);
-		std::cout << "======= norm: "; print_one( norm, detail);
-		std::cout << "======= vectorwise_dot: "; print_one( vectorwise_dot, detail);
-		std::cout << "======= copy_vectors: "; print_one( copy_vectors, detail);
-		std::cout << "======= append_vectors: "; print_one( append_vectors, detail);
-		std::cout << "======= diagonalize: "; print_one( diagonalize, detail);
+        for (const auto data : time_record){
+            std::cout << "======= " << data.first << ": "; print_one(data.second, detail);
+        }
+//		std::cout << "======= dense_matmul_2_1: "; print_one(dense_matmul_2_1, detail);
+//		std::cout << "======= dense_matmul_2_2: "; print_one(dense_matmul_2_2, detail);
+//		std::cout << "======= sparse_matmul_2_1: "; print_one(sparse_matmul_2_1, detail);
+//		std::cout << "======= sparse_matmul_2_2: "; print_one(sparse_matmul_2_2, detail);
+//		std::cout << "======= orthonormalize: "; print_one(orthonormalize, detail);
+//		std::cout << "======= scale_vectors: "; print_one(scale_vectors, detail);
+//		std::cout << "======= add: "; print_one(add, detail);
+//		std::cout << "======= conjugate: "; print_one(conjugate, detail);
+//		std::cout << "======= norm: "; print_one( norm, detail);
+//		std::cout << "======= vectorwise_dot: "; print_one( vectorwise_dot, detail);
+//		std::cout << "======= copy_vectors: "; print_one( copy_vectors, detail);
+//		std::cout << "======= append_vectors: "; print_one( append_vectors, detail);
+//		std::cout << "======= diagonalize: "; print_one( diagonalize, detail);
 		return;
 	}
 };

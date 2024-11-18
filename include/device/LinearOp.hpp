@@ -207,6 +207,14 @@ void p_orgqr( const int* m,
 			        int* info
 			  );
 			
+template<typename DATATYPE>
+void gebs2d( const int* icontxt,
+             const char* scope,
+             const char* top,
+             const int* m,
+             const int* n,
+             DATATYPE* a,
+             const int* lda);
 
 template<typename DATATYPE>
 void gsum2d( const int* icontxt,

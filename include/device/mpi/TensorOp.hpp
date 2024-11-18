@@ -140,7 +140,7 @@ std::unique_ptr<DenseTensor<1,DATATYPE,MTYPE::BlockCycling, DEVICETYPE::MPI> > T
             &zero, 
             out->data.get(), &i_one, &i_one, desc3 );
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::dense_matmul_2_1.push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["dense_matmul_2_1"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 
     return out;
     //return std::move(out);
@@ -181,7 +181,7 @@ std::unique_ptr<DenseTensor<2,DATATYPE,MTYPE::BlockCycling, DEVICETYPE::MPI> > T
     auto nprow = mat1.ptr_map->get_nprow();
     assert (nprow==mat2.ptr_map->get_nprow());
     auto block_size = mat1.ptr_map->get_block_size();
-    assert (block_size == mat2.ptr_map->get_block_size());
+    //assert (block_size == mat2.ptr_map->get_block_size());
 
     int info;
     int row1, col1, row2, col2;
@@ -222,7 +222,7 @@ std::unique_ptr<DenseTensor<2,DATATYPE,MTYPE::BlockCycling, DEVICETYPE::MPI> > T
                       &zero, 
                       mat3->data.get(), &i_one, &i_one, desc3 );
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::dense_matmul_2_2.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["dense_matmul_2_2"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return mat3;
     //return std::move(mat3);
 }
@@ -263,7 +263,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::add_<DATATYPE>(
     const char trans='N';
     p_geadd<DATATYPE>( &trans, &row1, &col1, &coeff2, mat2.data.get(), &i_one, &i_one, desc2, &one, mat1.data.get(), &i_one, &i_one, desc1 );
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::add.push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["add"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
     //return std::move(return_mat);
 }
@@ -316,7 +316,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::orthonormalize(DenseTensor<
 
     free<DEVICETYPE::MPI>(tau);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::orthonormalize.push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["orthonormalize"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
 
     return;
 
@@ -336,7 +336,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::scale_vectors_(DenseTensor<
 
     }
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::scale_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["scale_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -347,7 +347,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::scale_vectors_(
     std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
     scal<DATATYPE, DATATYPE, DEVICETYPE::MPI>(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::scale_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["scale_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -366,7 +366,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::scale_vectors_(DenseTensor<
 
     }
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::scale_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["scale_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -378,7 +378,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::scale_vectors_(
     std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
     scal<REALTYPE, DATATYPE, DEVICETYPE::MPI>(mat.ptr_map->get_num_local_elements(), scale_factor, mat.data.get(),1);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::scale_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["scale_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -425,7 +425,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::get_norm_of_vectors(const D
     free<DEVICETYPE::MPI>(local_sum);
     gsum2d<DATATYPE>(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::norm.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["norm"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 }
 
@@ -483,9 +483,10 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::vectorwise_dot(const DenseT
     free<DEVICETYPE::MPI>(local_sum);
     free<DEVICETYPE::MPI>(buff);
     // summing up accross the processors (broadcast because norm array is initialized as 0)
-    gsum2d<DATATYPE>(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
+    gebs2d<DATATYPE>(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one);
+    //gebs2d<DATATYPE>(&ictxt, "R", "1-tree", &i_one, &norm_size, norm, &i_one, &i_negone, &i_negone);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::vectorwise_dot.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["vectorwise_dot"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
 
 }
@@ -522,7 +523,7 @@ void TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::copy_vectors(
 
     p_gemr2d<DATATYPE>(&row, &new_size, mat2.data.get(), &i_one, &i_one, desc2, mat1.data.get(), &i_one, &i_one, desc1, &ictxt);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::copy_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["copy_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return;
     
 }
@@ -584,7 +585,7 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
     //memcpy<double,DEVICETYPE::MPI>(ptr_mat3->data.get(), local_array, ptr_mat3->ptr_map->get_num_local_elements());
     //free<DEVICETYPE::MPI>(local_array);
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::append_vectors.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["append_vectors"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return ptr_mat3;
     //return std::move(mat3);
 }
@@ -593,8 +594,8 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
 template<>
 template<typename DATATYPE>
 std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> > TensorOp<MTYPE::BlockCycling, DEVICETYPE::MPI>::diagonalize(DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI>& mat, typename real_type<DATATYPE>::type* eigval){
-    
-    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+
+    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();
     int info;
     const int i_zero = 0, i_one = 1, i_negone = -1;
     assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);
@@ -603,14 +604,14 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
     const auto block_size = mat.ptr_map->get_block_size();
     const auto global_shape = mat.ptr_map->get_global_shape();
     const auto local_shape  = mat.ptr_map->get_local_shape();
-    const int lld = MAX(local_shape[0] , 1 );
+    const int lld = std::max(local_shape[0] , 1 );
     //const int lld = MAX( global_shape[0], 1 );
-    const auto N = global_shape[0]; 
+    const auto N = global_shape[0];
     const auto nprow = mat.ptr_map->get_nprow();
 
     // define new matrix for containing eigvec
     auto eigvec = std::make_unique< DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >(mat);
-    if (block_size[0]*nprow[0]>N or block_size[1]*nprow[1]>N){
+//    if (block_size[0]*nprow[0]>N or block_size[1]*nprow[1]>N){
 //      if(mat.ptr_comm->get_rank()==0) std::cout << "serial diagonalization " << N << std::endl;
 //
 //      const auto num_global_elements = mat.ptr_map->get_num_global_elements();
@@ -619,59 +620,187 @@ std::unique_ptr<DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >
 //      auto trg =  malloc<DATATYPE, DEVICETYPE::MPI>(num_global_elements);
 //      std::fill_n(src, num_global_elements, 0.0);
 //      std::fill_n(trg, num_global_elements, 0.0);
-//      #pragma omp parallel for 
+//      #pragma omp parallel for
 //      for (int i =0; i<num_local_elements; i++){
 //          const auto global_index = mat.ptr_map->local_to_global(i);
 //          src[global_index] = mat.data[i];
 //      }
 //      mat.ptr_comm->allreduce(src, num_global_elements, trg, OPTYPE::SUM);
 //
-//        LAPACKE_dsyev(LAPACK_ROW_MAJOR, 
-//                    'V', 'U', 
+//        LAPACKE_dsyev(LAPACK_ROW_MAJOR,
+//                    'V', 'U',
 //                    N, trg, N, eigval);
 //
-//      #pragma omp parallel for 
+//      #pragma omp parallel for
 //      for (int i =0; i< num_local_elements; i++){
 //          const auto global_index = eigvec->ptr_map->local_to_global(i);
 //          eigvec->data[i] = trg[global_index];
 //      }
 //      free<DEVICETYPE::MPI> ( src );
 //      free<DEVICETYPE::MPI> ( trg );
-        assert(false); // debugging
-    }
-    else{
-        if(mat.ptr_comm->get_rank()==0) std::cout << "parallel diagonalization " << global_shape[0] <<"," << global_shape[1] << "  " << local_shape[0] <<"," <<local_shape[1]  << std::endl;
-        int desc1[9]; 
-        int desc2[9]; 
-    
-        // desc1 for mat desc2 for eigvec   
+//        assert(false); // debugging
+//    }
+//    else{
+        //if(mat.ptr_comm->get_rank()==0) std::cout << "parallel diagonalization " << global_shape[0] <<"," << global_shape[1] << "  " << local_shape[0] <<"," <<local_shape[1]  << std::endl;
+        int desc1[9];
+        int desc2[9];
+        int desc1_[9];
+        int desc2_[9];
+
+        // desc1 for mat desc2 for eigvec
         descinit( desc1, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
         descinit( desc2, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
-    
+
         int lwork = -1, liwork = -1, lrwork=-1;
         DATATYPE work_query =-1.0;
         typename real_type<DATATYPE>::type rwork_query = -1.0;
         int iwork_query =-1;
-    
-        // Workspace query for pdsyevd
-        p_syevd<DATATYPE>("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &rwork_query, &lrwork, &iwork_query, &liwork, &info);
 
+        // compute block sizes
+        //std::array<int,2> new_block_size = {std::max(32, static_cast<int>(global_shape[0] / mat.ptr_comm->get_nprow()[0])),
+        //                                    std::max(32, static_cast<int>(global_shape[1] / mat.ptr_comm->get_nprow()[1]))};
+        std::array<int,2> new_block_size = {4, 4};
+
+        const auto new_map_inp  = mat.ptr_map->generate_map_inp();
+        new_map_inp->block_size = new_block_size;
+        auto new_map = new_map_inp->create_map();
+        auto new_lld = std::max( new_map->get_local_shape(0), 1);
+        auto inp = malloc<DATATYPE, DEVICETYPE::MPI>(new_map->get_num_local_elements());
+        auto out = malloc<DATATYPE, DEVICETYPE::MPI>(new_map->get_num_local_elements());
+
+        // desc1 for mat desc2 for eigvec
+        descinit( desc1_, &global_shape[0], &global_shape[1], &new_block_size[0], &new_block_size[1], &i_zero, &i_zero, &ictxt, &new_lld, &info );
+        descinit( desc2_, &global_shape[0], &global_shape[1], &new_block_size[0], &new_block_size[1], &i_zero, &i_zero, &ictxt, &new_lld, &info );
+
+        // copy mat.data to inp
+        p_gemr2d<DATATYPE> ( &global_shape[0], &global_shape[1], mat.data.get(), &i_one, &i_one, desc1, inp, &i_one, &i_one, desc1_, &ictxt);
+        // Workspace query for pdsyevd
+        p_syevd<DATATYPE> ("V", "U", &N, inp, &i_one, &i_one, desc1_, eigval, out, &i_one, &i_one, desc2_, &work_query, &lwork, &rwork_query, &lrwork, &iwork_query, &liwork, &info);
+        assert(info == 0);
+        //p_syevd<DATATYPE>("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &rwork_query, &lrwork, &iwork_query, &liwork, &info);
         lwork = (int)work_query;
         lrwork = (int) rwork_query;
         liwork = iwork_query;
         std::vector<DATATYPE> work(lwork);
         // not used for double precision but defined anyway.
         // in case of double, lrwork is still -1 thus std::max is used
-        std::vector<typename real_type<DATATYPE>::type> rwork(std::max(0,lrwork)); 
+        std::vector<typename real_type<DATATYPE>::type> rwork(std::max(0,lrwork));
         std::vector<int> iwork(liwork);
-    
+
         // Compute eigenvalues and eigenvectors
-        p_syevd<DATATYPE>("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, work.data(), &lwork, rwork.data(), &lrwork, iwork.data(), &liwork, &info);
+        p_syevd<DATATYPE>("V", "U", &N, inp, &i_one, &i_one, desc1_, eigval, out, &i_one, &i_one, desc2_, work.data(), &lwork, rwork.data(), &lrwork, iwork.data(), &liwork, &info);
         assert(info == 0);
-    }
+        // copy out to eigvec->data
+        p_gemr2d<DATATYPE> ( &global_shape[0], &global_shape[1], out, &i_one, &i_one, desc2_, eigvec->data.get(), &i_one, &i_one, desc2, &ictxt);
+        free<DEVICETYPE::MPI>(inp);
+        free<DEVICETYPE::MPI>(out);
+//    }
+
     std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
-    ElapsedTime::diagonalize.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+    ElapsedTime::time_record["diagonalize"].push_back( ((DATATYPE)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
     return eigvec ;
+    
+////    std::chrono::steady_clock::time_point begin0 = std::chrono::steady_clock::now();  
+////    int info;
+////    const int i_zero = 0, i_one = 1, i_negone = -1;
+////    assert(mat.ptr_map->get_global_shape()[0] == mat.ptr_map->get_global_shape()[1]);
+////
+////    // variables
+////    const auto block_size = mat.ptr_map->get_block_size();
+////    const auto global_shape = mat.ptr_map->get_global_shape();
+////    const auto local_shape  = mat.ptr_map->get_local_shape();
+////    const int lld = MAX(local_shape[0] , 1 );
+////    //const int lld = MAX( global_shape[0], 1 );
+////    const auto N = global_shape[0]; 
+////    const auto nprow = mat.ptr_map->get_nprow();
+////
+////    // define new matrix for containing eigvec
+////    auto eigvec = std::make_unique< DenseTensor<2, DATATYPE, MTYPE::BlockCycling, DEVICETYPE::MPI> >(mat);
+////    if (block_size[0]*nprow[0]>N or block_size[1]*nprow[1]>N){
+//////      if(mat.ptr_comm->get_rank()==0) std::cout << "serial diagonalization " << N << std::endl;
+//////
+//////      const auto num_global_elements = mat.ptr_map->get_num_global_elements();
+//////      const auto num_local_elements = mat.ptr_map->get_num_local_elements();
+//////      auto src =  malloc<DATATYPE, DEVICETYPE::MPI>(num_global_elements);
+//////      auto trg =  malloc<DATATYPE, DEVICETYPE::MPI>(num_global_elements);
+//////      std::fill_n(src, num_global_elements, 0.0);
+//////      std::fill_n(trg, num_global_elements, 0.0);
+//////      #pragma omp parallel for 
+//////      for (int i =0; i<num_local_elements; i++){
+//////          const auto global_index = mat.ptr_map->local_to_global(i);
+//////          src[global_index] = mat.data[i];
+//////      }
+//////      mat.ptr_comm->allreduce(src, num_global_elements, trg, OPTYPE::SUM);
+//////
+//////        LAPACKE_dsyev(LAPACK_ROW_MAJOR, 
+//////                    'V', 'U', 
+//////                    N, trg, N, eigval);
+//////
+//////      #pragma omp parallel for 
+//////      for (int i =0; i< num_local_elements; i++){
+//////          const auto global_index = eigvec->ptr_map->local_to_global(i);
+//////          eigvec->data[i] = trg[global_index];
+//////      }
+//////      free<DEVICETYPE::MPI> ( src );
+//////      free<DEVICETYPE::MPI> ( trg );
+////        assert(false); // debugging
+////    }
+////    else{
+////        if(mat.ptr_comm->get_rank()==0) std::cout << "parallel diagonalization " << global_shape[0] <<"," << global_shape[1] << "  " << local_shape[0] <<"," <<local_shape[1]  << std::endl;
+////        int desc1[9]; 
+////        int desc2[9]; 
+////        int desc1_[9]; 
+////        int desc2_[9]; 
+////    
+////        // desc1 for mat desc2 for eigvec   
+////        descinit( desc1, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+////        descinit( desc2, &global_shape[0], &global_shape[1], &block_size[0], &block_size[1], &i_zero, &i_zero, &ictxt, &lld, &info );
+////    
+////        int lwork = -1, liwork = -1, lrwork=-1;
+////        DATATYPE work_query =-1.0;
+////        typename real_type<DATATYPE>::type rwork_query = -1.0;
+////        int iwork_query =-1;
+////        
+////        // compute block sizes 
+////        std::array<int,2> new_block_size = {std::max(32, static_cast<int>(global_shape[0] / std::sqrt(mat.ptr_comm->nprow[0]))),
+////                                            std::max(32, static_cast<int>(global_shape[1] / std::sqrt(mat.ptr_comm->nprow[1])))};
+////
+////        const auto new_map_inp  = mat.ptr_map->generate_map_inp();
+////        new_map_inp->block_size = new_block_size;
+////        auto new_map = new_map_inp->create_map();
+////        auto new_lld = MAX( new_map->get_local_shape(0), 1);
+////
+////        auto inp = malloc<DATATYPE, device>(new_map->get_num_local_elements());
+////        auto out = malloc<DATATYPE, device>(new_map->get_num_local_elements());
+////
+////        // desc1 for mat desc2 for eigvec   
+////        descinit( desc1_, &global_shape[0], &global_shape[1], &new_block_size[0], &new_block_size[1], &i_zero, &i_zero, &ictxt, &new_lld, &info );
+////        descinit( desc2_, &global_shape[0], &global_shape[1], &new_block_size[0], &new_block_size[1], &i_zero, &i_zero, &ictxt, &new_lld, &info );
+////
+////        // copy mat.data to inp
+////        p_gemr2d<DATATYP> ( &global_shape[0], &global_shape[1], mat.data.get(), &i_one, &i_one, desc1, inp, &i_one, &i_one, desc1_, &ictxt); 
+////        // Workspace query for pdsyevd
+////        p_syevd<DATATYPE> ("V", "U", &N, inp, &i_one, &i_one, desc1_, eigval, out, &i_one, &i_one, desc2_, &work_query, &lwork, &rwork_query, &lrwork, &iwork_query, &liwork, &info);
+////        //p_syevd<DATATYPE>("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, &work_query, &lwork, &rwork_query, &lrwork, &iwork_query, &liwork, &info);
+////
+////        lwork = (int)work_query;
+////        lrwork = (int) rwork_query;
+////        liwork = iwork_query;
+////        std::vector<DATATYPE> work(lwork);
+////        // not used for double precision but defined anyway.
+////        // in case of double, lrwork is still -1 thus std::max is used
+////        std::vector<typename real_type<DATATYPE>::type> rwork(std::max(0,lrwork)); 
+////        std::vector<int> iwork(liwork);
+////    
+////        // Compute eigenvalues and eigenvectors
+////        p_syevd<DATATYPE>("V", "U", &N, mat.data.get(), &i_one, &i_one, desc1, eigval, eigvec->data.get(), &i_one, &i_one, desc2, work.data(), &lwork, rwork.data(), &lrwork, iwork.data(), &liwork, &info);
+////        assert(info == 0);
+////        // copy out to eigvec->data
+////        p_gemr2d<DATATYP> ( &global_shape[0], &global_shape[1], out, &i_one, &i_one, desc2_, eigvec->data.get(), &i_one, &i_one, desc2, &ictxt); 
+////    }
+////    std::chrono::steady_clock::time_point end0 = std::chrono::steady_clock::now();
+////    ElapsedTime::diagonalize.push_back( ((double)std::chrono::duration_cast<std::chrono::microseconds>(end0 - begin0).count())/1000000.0 );
+////    return eigvec ;
     
 }
 

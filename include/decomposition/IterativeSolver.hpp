@@ -101,7 +101,6 @@ std::unique_ptr<DecomposeResult<DATATYPE, device> > davidson(const TensorOperati
     auto ritz_vec = TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) ;
     //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > ritz_vec = TensorOp::matmul(*new_guess, *sub_eigvec, TRANSTYPE::N, TRANSTYPE::N) ;
     
-    
     bool return_result = false;
     //outer loop
     //1 ~ option.max_iterations th iteration
@@ -110,7 +109,7 @@ std::unique_ptr<DecomposeResult<DATATYPE, device> > davidson(const TensorOperati
         //i_block = number of block expanded
         int i_block = 0;
         for(int i_block = 0; i_block <= option.max_block; i_block++){
-			if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
+			//if(eigvec->ptr_comm->get_rank()==0) std::cout << i_iter << " " << i_block <<std::endl; 
             //using previous w_iter, sub_eigval, sub_eigvec, ritz_vec, get residue
             auto residue = calculate_residue(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
             //std::unique_ptr<DenseTensor<2, DATATYPE, mtype, device> > residue = calculate_residue<DATATYPE,mtype, device>(*w_iter, sub_eigval, *sub_eigvec, *ritz_vec, option.num_eigenvalues);
@@ -175,6 +174,7 @@ std::unique_ptr<DecomposeResult<DATATYPE, device> > davidson(const TensorOperati
     if(!return_result){
         if(eigvec->ptr_comm->get_rank()==0) std::cout << "NOT CONVERGED!" << std::endl;
         free<device>(sub_eigval);
+        throw std::runtime_error("NOT Converged!");
         exit(-1);
     }
     free<device>(sub_eigval);
